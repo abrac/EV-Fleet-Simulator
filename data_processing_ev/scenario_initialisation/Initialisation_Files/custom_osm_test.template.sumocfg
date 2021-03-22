@@ -1,0 +1,68 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+
+    <input>
+        <net-file value="osm.net.xml" />
+        <route-files value="osm_pt.rou.xml,osm_activitygen.merged.rou.xml,/home/c_abraham/Documents/Git_Repositories/etaxi/Experiments/Data_Processing_Taxi/4_E_Mobility/Taxi_Routes/osm_out_T1000_20131101_20151031.trip.xml/osm_out_T1000_20131101_20151031_000.rou.xml" />
+        <!-- CUSTOM -->
+        <additional-files value="osm_polygons.add.xml,osm_stops.add.xml,osm_complete_parking_areas.add.xml,osm_parking_rerouters.add.xml,basic.vType.xml" />
+    </input>
+
+    <time>
+        <begin value="25200.0" />
+        <step-length value="1" />
+        <end value="54000.0" />
+    </time>
+
+    <output>
+        <!-- CUSTOM -->
+        <!-- <output-prefix value="output." /> -->
+        <summary-output value="./Output/summary.xml" />
+        <tripinfo-output value="./Output/tripinfo.xml" />
+        <!-- <tripinfo-output.write-unfinished value="false" /> -->
+
+        <!-- CUSTOM -->
+        <battery-output value="./Output/Battery.out.xml"/>
+        <!-- <battery-output.precision value="4"/> -->
+        <!-- <device.battery.probability value="1"/> -->
+        <!-- <summary-output value="summary_100.xml"/> -->
+
+        <!-- <emission-output value="./Output/Emissions.out.xml"/> -->
+        <!-- <edgeData id="<DETECTOR_ID>" type="emissions" freq="<FREQUENCY>" file="<OUTPUT_FILE>" [excludeEmpty="true"]/> -->
+    </output>
+
+    <processing>
+        <ignore-route-errors value="true" />
+        <lateral-resolution value="0.8" />
+        <ignore-junction-blocker value="60" />
+        <collision.action value="teleport" />
+        <time-to-teleport value="300" />
+        <max-depart-delay value="900" />
+        <time-to-impatience value="120" />
+        <pedestrian.model value="striping" />
+        <pedestrian.striping.stripe-width value="0.55" />
+        <pedestrian.striping.jamtime value="60" />
+    </processing>
+
+    <routing>
+        <persontrip.transfer.car-walk value="parkingAreas,ptStops,allJunctions" />
+        <!-- CUSTOM -->
+        <!-- <device.rerouting.probability value="1" /> -->
+        <!-- <device.rerouting.period value="300" /> -->
+        <!-- <device.rerouting.pre-period value="300" /> -->
+        <!-- <person-device.rerouting.probability value="1" /> -->
+        <!-- <person-device.rerouting.period value="300" /> -->
+    </routing>
+
+    <report>
+        <verbose value="true" />
+        <no-step-log value="true" />
+        <duration-log.statistics value="true" />
+        <duration-log.disable value="false" />
+        <no-warnings value="false" />
+    </report>
+
+    <random_number>
+        <seed value="42" />
+    </random_number>
+
+</configuration>

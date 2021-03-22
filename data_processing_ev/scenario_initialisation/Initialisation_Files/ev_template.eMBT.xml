@@ -1,0 +1,18 @@
+<routes>
+    <vType id="e_minibus_taxi" length="5.4" width="1.9" height="2.3" emissionClass="Energy/unknown" maxSpeed="27.78" vClass="taxi" guiShape="delivery" personCapacity="16" boardingDuration="5" >
+        <param key="has.battery.device" value="true"/>
+        <!-- <param key="has.taxi.device" value="true"/> -->
+        <param key="maximumBatteryCapacity" value="2000000"/> 
+        <param key="maximumPower" value="100000"/> 
+        <param key="vehicleMass" value="2900"/> 
+        <param key="frontsurfacearea" value="4"/> 
+        <param key="airDragCoefficient" value="0.35"/> 
+        <param key="internalMomentOfInertia" value="0.01"/> 
+        <param key="radialDragCoefficient" value="0.5"/> 
+        <param key="rollDragCoefficient" value="0.01"/> 
+        <param key="constantPowerIntake" value="100"/> 
+        <param key="propulsionEfficiency" value="0.8"/> 
+        <param key="recuperationEfficiency" value="0.5"/> 
+        <param key="stoppingTreshold" value="0.1"/> 
+    </vType>
+</routes>

@@ -1,0 +1,20 @@
+<routes>
+    <vType id="Tesla_S70D" length="5" width="2.2" height="1.4" emissionClass="Energy/unknown" maxSpeed="22.22" vClass="passenger" guiShape="passenger" personCapacity="5" boardingDuration="5" >
+      <!-- Max speed selected as 22.22 m/s = 80 km/h. This is the speed used in the EPA -->
+        <param key="has.battery.device" value="true"/>
+        <!-- <param key="has.taxi.device" value="true"/> -->
+        <param key="maximumBatteryCapacity" value="2000000"/> 
+        <param key="maximumPower" value="100000"/> 
+          <!-- Actual maxpower is ~615 kW -->
+        <param key="vehicleMass" value="2240"/> 
+        <param key="frontsurfacearea" value="2.34"/> 
+        <param key="airDragCoefficient" value="0.24"/> 
+        <param key="internalMomentOfInertia" value="0.01"/> 
+        <param key="radialDragCoefficient" value="0.5"/> 
+        <param key="rollDragCoefficient" value="0.01"/> 
+        <param key="constantPowerIntake" value="50"/> 
+        <param key="propulsionEfficiency" value="0.8"/> 
+        <param key="recuperationEfficiency" value="0.64"/> 
+        <param key="stoppingTreshold" value="0.1"/> 
+    </vType>
+</routes>
