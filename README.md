@@ -1,6 +1,7 @@
 Installation
 ============
 
+1. Make sure that you have installed the dependencies listed in [depencies.md](./dependencies.md)
 1. Clone the project to your local PC, into a folder of your choice. 
     ```sh
     mkdir -p ~/Applications  # Make a folder called "Applications" in your home directory.
