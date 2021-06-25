@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 This script generates box-plots of PV charging potential. It takes the stop-
 arrival and -duration data from the Time Clustering step. It then ...
