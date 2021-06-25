@@ -1,7 +1,7 @@
 > Note: Version numbers are just the ones that I tested the program with. Other versions may also work.
 > But many packages and software introduce breaking changes between releases. So be aweare of that.
 
-> Note: Items marked with a `*` are mandatory. The software may still work with the other items.
+> Note: Packages marked with a `*` are mandatory. The other packages are recommended, but the software may work without them.
 
 
 Software
@@ -43,4 +43,4 @@ Python Packages
 | *scikit-learn |         |                                               |
 | haversine     |  2.3.1  | Calculating distance between GPS coordinates. |
 
-[^1]: Make sure that libsumo is compiled with SUMO. The Ubuntu PPA does not include it by default.
+[^1]: Make sure that libsumo is compiled with SUMO. The Ubuntu PPA does not include it by default. Libsumo is required by *Step 4 (Routing)*. The other steps will work without libsumo.
