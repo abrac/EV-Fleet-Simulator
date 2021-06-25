@@ -90,13 +90,23 @@ If you want to edit the functionality of a particular step, you have to open the
 
 If you have made any changes that are worth contributing back to the main project, we would be glad to accept them. Please do the following:
 
-1. Open the repository on GitLab and create a *fork*.
+1. Create a *branch* in your local copy of the repository. 
+    ```sh
+    git branch my-branch-name
+    ```
 
-2. Clone your fork to your PC. 
+2. Commit your changes to your branch. 
+    ```sh
+    git add file-i-changed
+    git commit -m a-short-summary-of-the-change
+    ```
 
-3. Make the changes to your fork.
+3. Push the change to the online copy of the repository.
+    ```sh
+    git push
+    ```
 
-4. Make a merge-request on GitLab, to merge your changes into our repository.
+4. Open the repository in GitLab in your web-browser and create a *merge-request*.
 
 ---
 
