@@ -21,6 +21,7 @@ from typing import List, Tuple, Iterator
 import datetime as dt
 from itertools import repeat
 from tqdm import tqdm
+from haversine import haversine
 
 
 def _time_str2dt(datetime_str: str) -> dt.datetime:
@@ -73,43 +74,84 @@ def _build_stops_df(trace_dfs_generator: Iterator[Tuple[pd.DataFrame, str]]
     # Generate the dataframe of stop-arrivals and -durations for each EV, and
         # append to trace_dfs.
 
-    print("FIXME: Increase this threshod to around 10 km/h! \n" +
-          "Don't filter out datapoints based on speed in the " +
-          "data-pre-processing step!")
+    print("FIXME: Make sure that the stop-extraction code in this script is "
+          "in sync with the code in the temporal-clustering script.")
     _ = input("Press enter to acknowledge the above warning.")
     for trace_df, ev_name in tqdm(trace_dfs_generator):
 
+        # XXX Delete the below comment-block. Old code.
+        # # First: Generate a list of stop-entry and exit times.
+        # stop_entries_and_exits: List[Tuple[pd.Series, int]] = []
+        # stop_encountered = False
+        # prev_datapoint = None
+        # entry_datapoint = None
+        # start_new_entry = True
+        # for _, datapoint in trace_df.iterrows():
+        #     # Check for consecutive points that have at least one point where
+        #     # ... the taxi was stopped.
+        #     # Continue until the taxi moved at a speed greater than or equal to
+        #     # ... 1 km/h.
+        #     # FIXME: Increase this threshod to around 10 km/h! Don't filter out
+        #     # ... datapoints based on speed in the data-pre-processing step!
+        #     if datapoint['Velocity'] >= 1:
+        #         start_new_entry = True
+        #     # If the taxi left the space cluster, or this is the first
+        #     #  iteration...
+        #     if start_new_entry:
+        #         # If a stop was encountered between the entry datapoint and the
+        #         # previous datapoint (i.e. just before the taxi left the
+        #         # spatial cluster)...
+        #         if stop_encountered:
+        #             # Record entry_datapoint and exit_datapoint
+        #             stop_entries_and_exits.append(
+        #                 (entry_datapoint, prev_datapoint))
+        #         # Reset the flags
+        #         start_new_entry = False
+        #         stop_encountered = False
+        #         # Make the datapoint after the jump, the new entry datapoint
+        #         entry_datapoint = datapoint
+        #     if datapoint['Velocity'] < 1:
+        #         stop_encountered = True
+        #     prev_datapoint = datapoint
+
         # First: Generate a list of stop-entry and exit times.
         stop_entries_and_exits: List[Tuple[pd.Series, int]] = []
-        stop_encountered = False
         prev_datapoint = None
         entry_datapoint = None
-        start_new_entry = True
+        start_new_entry = False
+        stop_encountered = False
+        stop_location = None  # Coordinates of the first datapoint in the stop.
         for _, datapoint in trace_df.iterrows():
             # Check for consecutive points that have at least one point where
             # ... the taxi was stopped.
             # Continue until the taxi moved at a speed greater than or equal to
-            # ... 1 km/h.
-            # FIXME: Increase this threshod to around 10 km/h! Don't filter out
-            # ... datapoints based on speed in the data-pre-processing step!
-            if datapoint['Velocity'] >= 1:
-                start_new_entry = True
-            # If the taxi left the space cluster, or this is the first
-            #  iteration...
+            # ... 10 km/h or the taxi drifts 25m from the stop location.
+            if stop_encountered:
+                current_location = (datapoint['Latitude'],
+                                    datapoint['Longitude'])
+                distance_drifted = haversine(current_location, stop_location,
+                                             unit='m')
+                if datapoint['Velocity'] >= 10 or distance_drifted >= 25:
+                    start_new_entry = True
+            # If the taxi stopped stopping:
             if start_new_entry:
                 # If a stop was encountered between the entry datapoint and the
                 # previous datapoint (i.e. just before the taxi left the
                 # spatial cluster)...
-                if stop_encountered:
+                if prev_datapoint is not entry_datapoint:
                     # Record entry_datapoint and exit_datapoint
                     stop_entries_and_exits.append(
                         (entry_datapoint, prev_datapoint))
                 # Reset the flags
                 start_new_entry = False
                 stop_encountered = False
-                # Make the datapoint after the jump, the new entry datapoint
-                entry_datapoint = datapoint
             if datapoint['Velocity'] < 1:
+                # if this is the first stop that was encountered, make it the
+                # "entry" datapoint of the stop event and record its location.
+                if not stop_encountered:
+                    entry_datapoint = datapoint
+                    stop_location = (datapoint['Latitude'],
+                                     datapoint['Longitude'])
                 stop_encountered = True
             prev_datapoint = datapoint
 
@@ -157,8 +199,8 @@ def _build_stops_df(trace_dfs_generator: Iterator[Tuple[pd.DataFrame, str]]
             # TODO Make these function arguments.
             max_stop_duration = 8
             min_stop_duration = 0.33
-            min_stop_arrival = 0 # XXX Revert
-            max_stop_arrival = 24  # XXX Revert
+            min_stop_arrival = 0  # TODO Revert to 6 AM.
+            max_stop_arrival = 24  # TODO Revert to 6 PM.
             # Create new column, which says whether a row is invalid or not
             stops_df['Invalid'] = False
             # Create dataframe, mask, which says whether any of the four bad

@@ -1,7 +1,3 @@
-# FIXME: Increase this threshod to around 10 km/h! Don't filter out
-# ... datapoints based on speed in the data-pre-processing step!
-# REF: ~ line 211
-
 from pathlib import Path
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
@@ -19,6 +15,7 @@ from multiprocessing import Pool
 from itertools import repeat
 import pickle
 import logging
+from haversine import haversine  # Calculates distance between geo coordinates.
 
 INPUT_TYPES = {'clustered': 'spatial_clustered_traces',
                'filtered': 'spatial_filtered_traces'}
@@ -155,7 +152,7 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
     clusters = trace_df['Cluster'].unique()
     clusters.sort()
     for cluster in clusters:
-        # Code Reuse ↓ # TODO
+        # Code Reuse ↓ # TODO  # TODO Delete this todo...
         # Create dataframe of cluster
         trace_df_cluster = trace_df[trace_df['Cluster'] == cluster]
 
@@ -199,36 +196,44 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
 
         # First: Generate a list of stop-entry and exit times.
         stop_entries_and_exits: List[Tuple[pd.Series, int]] = []
-        stop_encountered = False
         prev_datapoint = None
         entry_datapoint = None
-        start_new_entry = True
-        for _, datapoint in trace_df_cluster.iterrows():
+        start_new_entry = False
+        stop_encountered = False
+        stop_location = None  # Coordinates of the first datapoint in the stop.
+        for _, datapoint in trace_df_cluster.iterrows():  # TODO Should I really do stop-extraction on a per-cluster basis?
             # Check for consecutive points that have at least one point where
             # ... the taxi was stopped.
             # Continue until the taxi moved at a speed greater than or equal to
-            # ... 1 km/h.
-            # FIXME: Increase this threshod to around 10 km/h! Don't filter out
-            # ... datapoints based on speed in the data-pre-processing step!
-            if datapoint['Velocity'] >= 1:
-                start_new_entry = True
-            # If the taxi left the space cluster, or this is the first
-            #  iteration...
+            # ... 10 km/h or the taxi drifts 25m from the stop location.
+            if stop_encountered:
+                current_location = (datapoint['Latitude'],
+                                    datapoint['Longitude'])
+                distance_drifted = haversine(current_location, stop_location,
+                                             unit='m')
+                if datapoint['Velocity'] >= 10 or distance_drifted >= 25:
+                    start_new_entry = True
+            # If the taxi stopped stopping:
             if start_new_entry:
                 # If a stop was encountered between the entry datapoint and the
                 # previous datapoint (i.e. just before the taxi left the
                 # spatial cluster)...
-                if stop_encountered:
+                if prev_datapoint is not entry_datapoint:
                     # Record entry_datapoint and exit_datapoint
                     stop_entries_and_exits.append(
                         (entry_datapoint, prev_datapoint))
                 # Reset the flags
                 start_new_entry = False
                 stop_encountered = False
-                # Make the datapoint after the jump, the new entry datapoint
-                entry_datapoint = datapoint
             if datapoint['Velocity'] < 1:
+                # if this is the first stop that was encountered, make it the
+                # "entry" datapoint of the stop event and record its location.
+                if not stop_encountered:
+                    entry_datapoint = datapoint
+                    stop_location = (datapoint['Latitude'],
+                                     datapoint['Longitude'])
                 stop_encountered = True
+
             prev_datapoint = datapoint
 
         # If list of stop_times still empty, throw exception, and continue to
@@ -253,7 +258,7 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
                          seconds=entry_time.second).total_seconds()/3600 for
             entry_time in [_time_str2dt(stop_entry['Time']) for
                            (stop_entry, _) in stop_entries_and_exits]]
-        # Code Reuse ↑ # TODO
+        # Code Reuse ↑ # TODO  # TODO Delete this todo...
 
         # (Optics) Clustering/3D PDF of scatterplot
         #   Prepare data for model
@@ -456,12 +461,10 @@ def cluster_scenario(scenario_dir: Path, input_type: str):
     time_clustered_df: pd.DataFrame = None
     if (regenerating_clusters):
         trace_dfs_and_names = [*_gen_trace_dfs(scenario_dir, input_type)]
-        logging.warn("FIXME: Increase this threshod to around 10 km/h! \n" +
-                     "Don't filter out datapoints based on speed in the " +
-                     "data-pre-processing step!")
-        _ = input("Press enter to acknowledge the above warning.")
 
-        ### IF NOT DEBUGGING: ###  XXX
+        ### IF NOT DEBUGGING: ###  XXX I think this needs to be deleted.
+                                #  cyclometric complexity is too high for
+                                #  multi-threading apparently...
         # args = zip([trace_df for trace_df, _ in trace_dfs_and_names],
         #            [ev_name for _, ev_name in trace_dfs_and_names],
         #            repeat(scenario_dir, len(trace_dfs_and_names)))
