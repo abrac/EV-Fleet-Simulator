@@ -32,15 +32,18 @@ Ubuntu packages:
 Python Packages
 ---------------
 
-| Name          | Version | Description                                   |
-|---------------|:-------:|-----------------------------------------------|
-| *tqdm         |         | Progress bars.                                |
-| *matplotlib   |         | Plots.                                        |
-| *pandas       |         | Structuring & manipulating data.              |
-| *hdbscan      |         |                                               |
-| *numpy        |         |                                               |
-| *scipy        |         |                                               |
-| *scikit-learn |         |                                               |
-| haversine     |  2.3.1  | Calculating distance between GPS coordinates. |
+| Name            | Version | Description                                                                   |
+|-----------------|:-------:|-------------------------------------------------------------------------------|
+| *tqdm           |         | Progress bars.                                                                |
+| *matplotlib     |         | Plots.                                                                        |
+| *pandas         |         | Structuring & manipulating data.                                              |
+| *hdbscan        |         |                                                                               |
+| *numpy          |         |                                                                               |
+| *scipy          |         |                                                                               |
+| *scikit-learn   |         |                                                                               |
+| *folium         |         | Map visualisation library.                                                    |
+| *haversine      |  2.3.1  | Calculating distance between GPS coordinates.                                 |
+| *rtree          |         | Used by SUMO for finding lanes that are closest to a specified geo-coordinate |
+| memory_profiler |         |                                                                               |
 
 [^1]: Make sure that libsumo is compiled with SUMO. The Ubuntu PPA does not include it by default.

@@ -11,8 +11,9 @@ from multiprocessing import Pool
 from haversine import haversine  # Used for calculating distance between GPS
                                  # coordinates.
 import pickle
+import numpy as np
 
-MAX_VELOCITY = 2  # km/h
+MAX_VELOCITY = np.inf  # km/h
 
 
 def _generate_traces(traces_dir: Path):
@@ -216,5 +217,9 @@ def main(scenario_dir: Path):
 
 
 if __name__ == '__main__':
-    scenario_dir = Path(os.path.abspath(__file__)).parents[2]
+    # XXX Try using: XXX
+    # `scenario_dir = Path(__file__).parents[2]`
+    # since I am normally running this file as a symlink!
+
+    scenario_dir = Path(os.path.abspath(__file__)).parents[2]  # XXX
     main(scenario_dir)

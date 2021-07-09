@@ -12,7 +12,7 @@ def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
     """Run specified steps of data_analysis."""
     if 0 in steps:
         dpr.initialise_scenario(scenario_dir)
-    if 1 in steps:
+    if 1 in steps or 1.1 in steps:
         if configuring_steps:
             _ = input("Plot gps points? [y]/n")
             mapping_points = True if _.lower() != 'n' else False
@@ -28,16 +28,14 @@ def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
                 mapping_geojson = True if _.lower() != 'n' else False
             else:
                 mapping_geojson = False
-            _ = input("Animate gps points? [y]/n")
-            animating_points = True if _.lower() != 'n' else False
 
             dpr.data_visualisation.map_scenario(
                 scenario_dir, mapping_points, mapping_lines, mapping_heatmap,
                 mapping_geojson, saving=True)
-            if animating_points:
-                dpr.data_visualisation.animate_scenario(scenario_dir)
         else:
             dpr.data_visualisation.map_scenario(scenario_dir)
+    if 1 in steps or 1.2 in steps:
+        dpr.data_visualisation.animate_scenario(scenario_dir)
     if 2 in steps or 2.1 in steps:
         """Spatial clustering"""
         _ = input("Would you like to label *all* datapoints as part of " +

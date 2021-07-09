@@ -215,13 +215,21 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
                     start_new_entry = True
             # If the taxi stopped stopping:
             if start_new_entry:
-                # If a stop was encountered between the entry datapoint and the
-                # previous datapoint (i.e. just before the taxi left the
-                # spatial cluster)...
-                if prev_datapoint is not entry_datapoint:
-                    # Record entry_datapoint and exit_datapoint
-                    stop_entries_and_exits.append(
-                        (entry_datapoint, prev_datapoint))
+                # # If a stop was encountered between the entry datapoint and the
+                # # previous datapoint (i.e. just before the taxi left the
+                # # spatial cluster)...
+                # if prev_datapoint is not entry_datapoint:
+                #     # Record entry_datapoint and exit_datapoint
+                #     stop_entries_and_exits.append(
+                #         (entry_datapoint, prev_datapoint))
+
+                # Record the entry_datapoint and the current datapoint. We are
+                # considering the current datapoint's timestamp to be the *end*
+                # of the stop-event -- otherwise, single-datapoint stop-events
+                # will be lost...
+                stop_entries_and_exits.append(
+                    (entry_datapoint, datapoint))
+
                 # Reset the flags
                 start_new_entry = False
                 stop_encountered = False

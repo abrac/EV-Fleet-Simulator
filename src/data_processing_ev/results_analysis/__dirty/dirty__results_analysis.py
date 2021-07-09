@@ -154,7 +154,8 @@ class Data_Analysis:
                 Name of each EV corresponding to those in `ev_df`s. These are
                 used for creating a plot legend.
         """
-        fig = plt.figure(figsize=(800 / MY_DPI, 600 / MY_DPI), dpi=MY_DPI)
+        mm = 1 / 25.4  # millimeters in inches
+        fig = plt.figure(figsize=(210/2*mm, 297/3*mm), dpi=MY_DPI)
 
         # Create a dataframe `time` which spans the time of all ev_dfs
         #   Remove dates from the timestep_time column
@@ -201,9 +202,12 @@ class Data_Analysis:
 
             # Plot
             ax.plot(time, plt_df)
+
         if ev_names:
             ax.legend(ev_names)
         ax.axhline(color="darkgrey")
+
+        fig.tight_layout()
 
         return fig
 
@@ -250,8 +254,11 @@ class Data_Analysis:
         # ax.plot(time, power_min_df, color=color, alpha=0.6)
         # ax.plot(time, power_max_df, color=color, alpha=0.6)
         ax.fill_between(time, power_min_df, power_max_df, color=color,
-                        alpha=0.6, label="Power distribution")
-        ax.legend(ncol=2)
+                        facecolor='#00000000', label="Power\ndistribution",
+                        hatch='.....')
+        ax.legend()
+        ax.set_ylim(bottom=0)
+        # ax.legend(ncol=2)
 
     def __plot_summary_graph(self, ev_df: pd.DataFrame, plt_title: str,
                              MY_DPI: int = 96) -> plt.Figure:
@@ -265,7 +272,8 @@ class Data_Analysis:
                 Data-Frame.
         """
         # TODO Seperate each subplot into a new function.
-        plt_fig = plt.figure(figsize=(800 / MY_DPI, 600 / MY_DPI), dpi=MY_DPI)
+        mm = 1 / 25.4  # millimeters in inches
+        plt_fig = plt.figure(figsize=(210*mm, 297*mm), dpi=MY_DPI)
 
         time = ev_df['timestep_time']
 
@@ -288,7 +296,8 @@ class Data_Analysis:
         # ax_P2vT_Colour = 'tab:orange'
         # Plot instantaneous power
         ax_PvT.set_ylabel('Power (kW)')
-        ax_PvT.plot(time, power_df, label="Instantaneous Power")
+        ax_PvT.plot(time, power_df, label="Instantaneous\nPower", lw=0.5,
+                    c='0.5')
         ax_PvT.axhline(color="darkgrey")
         plt.setp(ax_PvT.get_xticklabels(), rotation=45)
         # Plot rolling average power.
@@ -297,13 +306,14 @@ class Data_Analysis:
         #                           # power_df_rolling.
         # ax_P2vT.set_ylabel('Rolling Average Power (kW)',
         #                    color=ax_P2vT_Colour)
-        ax_PvT.plot(time, power_df_rolling, label="Rolling Average Power")
+        ax_PvT.plot(time, power_df_rolling, label="Rolling Average\nPower",
+                    c='0')
         ax_PvT.legend()
         # mpl_align.yaxes(ax_PvT, 0, ax_P2vT, 0)
         ax_PvT.xaxis.set_major_formatter(
             matplotlib.dates.DateFormatter('%H:%M'))
 
-        ax_PvX = plt.subplot(325)  # XXX Change this back to 322
+        ax_PvX = plt.subplot(325)  # XXX Put this back at 322
         ax_PvX.set_title('Power vs Distance')
         ax_PvX.axhline(color="darkgrey")
         ax_PvX.set_xlabel('Distance (km)')
@@ -350,16 +360,18 @@ class Data_Analysis:
         # points = np.linspace(x.min(), x.max(), N)
         # sm.tools.eval_measures.rmse([points, m*points+b], [x, y])
 
-        plt.subplot(322)  # XXX Change this back to 325
+        plt.subplot(322)  # XXX Put this back at 325
         plt.title('Speed vs Time')
         # Note, vehicle_speed is m/s
         # ∴ x m/s = x / 1000 * 3600 km/h = x * 3.6 km/h = y km/h
-        plt.plot(time, ev_df['vehicle_speed'] * 3.6)
-        plt.ylabel(r'$ Speed\ (km \cdot h^{-1}) $')
+        plt.plot(time, ev_df['vehicle_speed'] * 3.6, lw=0.5, c='0.2')
+        # plt.ylabel(r'$ Speed\ (km \cdot h^{-1}) $')
+        plt.ylabel('Speed (km/h)')
         plt.xlabel('Time')
         plt.xticks(rotation=45)
         plt.gca().xaxis.set_major_formatter(
             matplotlib.dates.DateFormatter('%H:%M'))
+        plt.gca().set_ylim(bottom=0)
 
         plt.subplot(326)
         plt.title('Speed vs Distance')
@@ -409,8 +421,8 @@ class Data_Analysis:
         _ = input("\nWould you like to continue? y/[n]\n\t")
         if _.lower() != 'y':
             return
-        print("\nWould you like to view the plots? [y]/n")
-        view_plots = False if input().lower() == 'n' else True
+        print("\nWould you like to view the plots? y/[n]")
+        view_plots = True if input('\t').lower() == 'y' else False
         if view_plots:
             print("\nWould you like to view all plots at once " +
                   "(rather than one-by-one)? [y]/n")
@@ -427,6 +439,8 @@ class Data_Analysis:
             if view_plots and blocking:
                 plt.show(block=True)
                 plt.pause(10)
+            if not view_plots:
+                plt.close()
         if view_plots and not blocking:
             plt.show()
 
@@ -849,17 +863,17 @@ class Data_Analysis:
         plt_figs.append(self.__plot_summary_graph(
             ev_df_mean, plt_title="Simulation Output of experiment: Fleet > " +
             "Mean Plot"))
-        color = plt_figs[0].get_axes()[0].get_lines()[2].get_color()
+        # color = plt_figs[0].get_axes()[0].get_lines()[2].get_color()
         self.__fill_area_between(plt_figs[0].get_axes()[0], ev_dfs, ev_names,
-                                 color)
+                                 '0')
 
         # Create a mean plot of the fleet with ONLY Power
         plt_figs.append(self.__plot_multiple_lines(
             [ev_df_mean], plt_title="Simulation Output of experiment: Fleet " +
             "> Mean Plot", plt_type='Power'))
-        color = plt_figs[1].get_axes()[0].get_lines()[0].get_color()
+        # color = plt_figs[1].get_axes()[0].get_lines()[0].get_color()
         self.__fill_area_between(plt_figs[1].get_axes()[0], ev_dfs, ev_names,
-                                 color)
+                                 '0')
 
         # Make multiple-line power plot (mean plot of each EV in the fleet)
         plt_figs.append(self.__plot_multiple_lines(
@@ -889,6 +903,8 @@ class Data_Analysis:
             graphsdir.mkdir(parents=True, exist_ok=True)
             for idx, plt_fig in enumerate(plt_figs):
                 save_file = graphsdir.joinpath(str(idx) + '.svg')
+                plt_fig.savefig(save_file)
+                save_file = graphsdir.joinpath(str(idx) + '.pdf')
                 plt_fig.savefig(save_file)
                 # As pickle:
                 fig_file = graphsdir.joinpath(str(idx) + '.fig.pickle')

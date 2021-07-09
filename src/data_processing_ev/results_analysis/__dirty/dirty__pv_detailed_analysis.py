@@ -65,8 +65,13 @@ def _load_irradiance_data(scenario_dir: Path, year: int) -> tp.Callable:
 
 def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
     # Load irradiance data
-    # FIXME Don't hardcode this:
-    year = 2017
+    # FIXME Don't hardcode this. Don't even ask the year.
+    _ = input("For which year is the solar irradiation data? "
+              "(Leave blank for 2017.) \n\t")
+    try:
+        year = int(_)
+    except ValueError:
+        year = 2017
 
     # Directories for saving CSVs and figures.
     csv_dir = scenario_dir.joinpath('SAM_Simulation', '__dirty__csvs')
@@ -415,9 +420,9 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
         #plt.ylabel('Energy charged in a day (kWh/m2)')  # FIXME: Uncomment
         #plt.xlabel('Month of year')  # FIXME: Uncomment
         #plt.title(ev_name)  # FIXME: Uncomment
-        plt.xticks(range(1,13), range(1,13))
+        # plt.xticks(range(1,13), range(1,13))
         plt.ylim((-0.06, 1.3))
-        plt.xlim((0.5, 12.5))
+        # plt.xlim((0.5, 12.5))
         plt.tight_layout()
         if (plot_blotches):
             # Plot the stop_events which make up the box-plots.
@@ -432,6 +437,10 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
                                      size=num_pts)
                 plt.scatter(x, pv_potentials_month, alpha=0.1, color='C0')
         plt.savefig(fig_dir.joinpath(f'Charging_Potential_{ev_name}.svg'))
+        pickle.dump(
+            plt.gcf(),
+            open(fig_dir.joinpath(
+                f'Charging_Potential_{ev_name}.fig.pickle'), 'wb'))
 
     fig1 = plt.figure(figsize=figsize)
     # Seperate the `daily_pv_generated_p_month` dataframe into a list of

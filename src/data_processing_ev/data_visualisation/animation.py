@@ -12,10 +12,11 @@ from typing import Iterable, Generator
 def _reformat_time(time_old):
     # time format: "year/month/day hr12:min:sec meridiem" -->
     # "year-month-day{T}hr24:min:sec"
-    (date, time, meridiem) = time_old.split(" ")
-    (year, month, day) = date.split("/")
-    (hr12, minute, sec) = time.split(":")
-    hr24 = (int(hr12) % 12) + (12 if meridiem == "PM" else 0)
+    (date, time) = time_old.split(' ')
+    (year, month, day) = date.split("-")
+    (hr24_str, minute, sec) = time.split(":")
+    hr24 = int(hr24_str)
+    # hr24 = (int(hr12) % 12) + (12 if meridiem == "PM" else 0)
     return f"{year}-{month}-{day}T{hr24:02d}:{minute}:{sec}"
 
 
@@ -102,11 +103,17 @@ def gen_scenario_animations(scenario_dir: Path,
     traces_list = traces_dir.glob('*.csv')
     scenario_name = scenario_dir.name
 
+    # Read location from the boundary.csv file.
+    boundary_file = scenario_dir.joinpath('_Inputs', 'Map', 'Boundary',
+                                          'boundary.csv')
+    boundary = pd.read_csv(boundary_file)
+    longitude = boundary.loc[:, 'Longitude'].mean()
+    latitude = boundary.loc[:, 'Latitude'].mean()
     for trace_file in tqdm(traces_list):
         df = pd.read_csv(str(trace_file))
 
         # Initialise map around Stellenbosch
-        map_area = folium.Map(location=[-33.9331, 18.8668],
+        map_area = folium.Map(location=[latitude, longitude],
                               titles=scenario_name, zoom_start=14)
 
         animate_route(df, map_area)

@@ -41,7 +41,8 @@ SCENARIO_DIR_STRUCTURE = {
     },
     'Temporal_Clusters': {
         'Clustered_Data': None,
-        'Graphs': None
+        'Graphs': None,
+        'Stop_Labels': None
     },
     'Routes': {
         'Routes': None,

@@ -11,7 +11,7 @@ import gc
 import xml.etree.ElementTree as et
 from pathlib import Path
 from xml.dom import minidom
-from memory_profiler import profile
+# from memory_profiler import profile
 import multiprocessing as mp
 from itertools import repeat
 

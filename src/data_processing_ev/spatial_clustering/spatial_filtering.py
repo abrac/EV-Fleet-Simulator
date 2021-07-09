@@ -69,7 +69,7 @@ def generate_bad_dates(clustered_trace: pd.DataFrame, boundary: pd.DataFrame,
     prev_bad_date = None
     for _, datapoint in tqdm(clustered_trace.iterrows(),
                              desc=f"Generating bad dates {ev_name}",
-                             total=len(clustered_trace), position=pid+1):
+                             total=len(clustered_trace), position=pid + 1):
         date = datapoint['Time'].split()[0]  # Time is "<date> <time>"
         # If this date is the same as the previous bad date, skip processing.
         if date == prev_bad_date:

@@ -15,6 +15,7 @@ Author: Chris Abraham
 import os
 import sys
 import xml.etree.ElementTree as et
+import typing as t
 import logging
 from xml.dom import minidom
 from pathlib import Path
@@ -36,22 +37,25 @@ else:
 import sumolib  # noqa: Must be imported after adding tools to Path.
 # import duaIterate
 
+logger = logging.getLogger('__name__')
 
-def generate_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Path,
-                 vehicle_id: str) -> et.ElementTree:
+def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Path,
+                 vehicle_id: str, stop_labels: t.List[bool]) -> et.ElementTree:
     """
     Generate xml.
 
     Parameters:
-    df (DataFrame): List of taxi stop coordinates in order
+    net (sumolib.net.Net): The SUMO network of the location of study.
+    df (DataFrame): List of taxi geo-coordinates in order (as read from
+                    Filtered traces)
     xml_template (PosixPath): Posix path of xml template
     vehicle_id (String): ID of vehicle
     export (Bool): True if exporting xml as file
     xml_out (PosixPath): Posix path of file to export xml
     """
     # TODO Make these function arguments
-    LANE_LOC_RADIUS_WARN = 50  # unit: meters. If distance is exceeded,
-    #                            a warning will be logged.
+    LANE_LOC_RADIUS_WARN = 100  # unit: meters. If distance is exceeded,
+    #                             a warning will be logged.
 
     def seconds_since_midnight(time: str) -> int:
         """
@@ -86,7 +90,8 @@ def generate_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Path,
         # retrieve lanes near <lon, lat>
         x, y = net.convertLonLat2XY(lon, lat)
 
-        lane_loc_radius = 10  # unit: meters
+        lane_loc_radius = 10  # unit: meters. Initialising lane_loc_radius.
+            # It is automatically increased, while a lane is not found.
         closest_lane = None
         while not closest_lane:
             dists_and_lanes = net.getNeighboringLanes(x, y, lane_loc_radius)
@@ -94,8 +99,6 @@ def generate_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Path,
                 # sort the lanes by ascending distance
                 dists_and_lanes = [(dist, lane) for lane, dist in dists_and_lanes]
                 dists_and_lanes = sorted(dists_and_lanes, key=itemgetter(0))
-                # select the closest lane
-                _, closest_lane = dists_and_lanes[0]
 
                 # only keep lanes that allow the vClass
                 dists_and_lanes_of_vclass = [
@@ -107,51 +110,139 @@ def generate_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Path,
                     closest_dist = dists_and_lanes_of_vclass[0][0]
                     closest_lane = dists_and_lanes_of_vclass[0][1]
                     if closest_dist > LANE_LOC_RADIUS_WARN:
-                        logging.warn(f"""
+                        logger.warn(f"""
                             Closest lane to <{lon}, {lat}> exceeds the warning
                             threshold: {LANE_LOC_RADIUS_WARN}.")
                         """)
             lane_loc_radius *= 2
         return closest_lane
 
-    # Create an xml tree from the template in this file's path.
-    tree = et.parse(xml_template)
-    root = tree.getroot()
-    vClass = root.find('vType').get('vClass')
+    # Date
+    date = df.iloc[0]['Time'].split(' ')[0]
+
+    # Create an xml tree from the template, to get the vClass.
+    template_tree = et.parse(xml_template)
+    vClass = template_tree.getroot().find('vType').get('vClass')
+
+    # Create an xml tree for the route file.
+    root = et.Element('routes')
+    tree = et.ElementTree(root)
 
     # Read the df of taxi-stop coordinates and append stops to xml tree.
 
-    # Using a trip definition with stops
+    # Using a route definition with stops
     if len(df):  # If dataframe is not empty
         # Create a trip from the first stop to the last stop
         stop_1 = df.iloc[0]
-        stop_n = df.iloc[-1]
-        stop_1_lane = lonlat2lane(stop_1.Longitude, stop_1.Latitude,
-                                  net, vClass)
-        stop_n_lane = lonlat2lane(stop_n.Longitude, stop_n.Latitude,
-                                  net, vClass)
-        trip_node = et.Element(
-            "trip", {
+        vehicle_node = et.Element(
+            "vehicle", {
                 "id": vehicle_id,
                 "type": "e_minibus_taxi",
                 "depart": str(seconds_since_midnight(stop_1.Time)),
-                "from": stop_1_lane.getEdge().getID(),
-                "to": stop_n_lane.getEdge().getID()
             }
         )
-        for idx, row in df.iloc[1:-1].iterrows():
+
+        # A list of all the waypoints along the route.
+        route_waypoints = []
+
+        # A list of all the stop nodes along the route.
+        stop_nodes = []
+
+        for (_, row), (_, stop_label) in zip(df.iterrows(),
+                                             stop_labels.iterrows()):
+            stop_label = bool(stop_label['Stopped'])
+            # Get the closest lane.
             closest_lane = lonlat2lane(row.Longitude, row.Latitude,
                                        net, vClass)
-            stop_node = et.Element(
-                'stop', {
-                    'lane': closest_lane.getID(),
-                    'until': str(seconds_since_midnight(row.Time)),
-                    'parking': 'true',
-                    'friendlyPos': 'true'
-                }
+
+            # Check if the row is a stop or waypoint, by reading from the
+            # `stop_labels_{ev_name}.csv` file.
+
+            # If it is a stop:
+            if stop_label is True:
+
+                # Create a stop node.
+                stop_node = et.Element(
+                    'stop', {
+                        'lane': closest_lane.getID(),
+                        'until': str(seconds_since_midnight(row.Time)),
+                        'parking': 'true',
+                        'friendlyPos': 'true'
+                    }
+                )
+                stop_nodes.append(stop_node)
+
+            route_waypoints.append(closest_lane.getEdge().getID())
+
+        # Construct route waypoint pairs [(edge1, edge2), (edge2, edge3), ...]
+        waypoint_pairs = []
+        prev_waypoint = route_waypoints[0]
+        for waypoint in route_waypoints[1:]:
+            waypoint_pairs.append((prev_waypoint, waypoint))
+            prev_waypoint = waypoint
+
+        # Generate routes between each pair of waypoints and chain them
+        route = []
+        for waypoint_pair in waypoint_pairs:
+            # NOTE: I use the shortest path between waypoints. This is a
+            # simplification.
+            route_edges, cost = net.getShortestPath(
+                fromEdge=net.getEdge(waypoint_pair[0]),
+                toEdge=net.getEdge(waypoint_pair[1]),
+                vClass=vClass
             )
-            trip_node.append(stop_node)
-        root.append(trip_node)
+            # if a route was found between the stop_pair, append those edges to
+            # `route`. Else, log an error.
+            if route_edges:
+                for route_edge in route_edges[:-1]:
+                    route.append(route_edge.getID())
+            else:
+                logger.error(f"{vehicle_id}: {date}: Failed to find a route " +
+                             f"between edges {waypoint_pair[0]} and {waypoint_pair[1]}")
+
+        # TODO: Below, is an alternative method to the above. It is better,
+        # since it handles better the case when a route is not found, since it
+        # always routes against the last *successful* route edge. However, if
+        # the last route edge is in a nasty corner of the map, it can be
+        # difficult for any subsequent waypoints to find a route from there.
+        # Therefore, I am disabling for now.
+
+        # last_route_edge = route_waypoints[0]
+        # for route_waypoint in route_waypoints:
+        #     # NOTE: I use the shortest path between waypoints. This is a
+        #     # simplification.
+        #     route_edges, cost = net.getShortestPath(
+        #         fromEdge=net.getEdge(last_route_edge),
+        #         toEdge=net.getEdge(route_waypoint),
+        #         vClass=vClass
+        #     )
+        #     # if a route was found between the stop_pair, append those edges to
+        #     # `route`. Else, log an error.
+        #     if route_edges:
+        #         for route_edge in route_edges[:-1]:
+        #             route.append(route_edge.getID())
+        #         last_route_edge = route_waypoint
+        #     else:
+        #         logger.error(f"{vehicle_id}: {date}: Failed to find a route " +
+        #                      f"between edges {last_route_edge} and {route_waypoint}")
+
+        # if chained route is empty, log an error. And skip this date.
+        if len(route) < 1:
+            logger.error(f"{vehicle_id} has no edges in its route on {date}!")
+            route = []
+            for stope_node in stop_nodes:
+                route.append(stop_node.get('lane').split('_')[0])
+        else:
+            route.append(route_edges[-1].getID())
+
+        route_str = " ".join(str(edge) for edge in route)
+        route_node = et.Element('route', {'edges': route_str})
+        vehicle_node.append(route_node)
+
+        for stop_node in stop_nodes:
+            vehicle_node.append(stop_node)
+
+        root.append(vehicle_node)
 
     return tree
 
@@ -159,17 +250,14 @@ def generate_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Path,
 # find a nearby edge.
 
 
-def _do_trip_building(input_file: Path, output_dir: Path, xml_template: Path,
-                      skip_existing: bool, net: sumolib.net.Net):
+def _do_route_building(input_file: Path, output_dir: Path, xml_template: Path,
+                       skip_existing: bool, net: sumolib.net.Net,
+                       stop_labels: t.List[bool]):
     """Trip building multiprocessing function"""
     try:
         input_data = pd.read_csv(input_file)
     except pd.errors.EmptyDataError:
-        # TODO Use the logging library for the below
-        print("No data in file. Skipping...")
-        log_file = output_dir.joinpath("log.txt")
-        with open(log_file, 'a+') as f:
-            f.write("Skipped file: " + input_file.name + "\n")
+        logger.error(f"No data in file: {input_file.name}. Skipping...")
         return
 
     # Create a subpath in the output directory with the name of the current
@@ -178,13 +266,13 @@ def _do_trip_building(input_file: Path, output_dir: Path, xml_template: Path,
     #   parent directory, use some way to store metadata.
     output_subdir = output_dir.joinpath(input_file.parent.name)
     output_subdir.mkdir(parents=True, exist_ok=True)
-    export_file = output_subdir.joinpath(f"{input_file.stem}.trip.xml")
+    export_file = output_subdir.joinpath(f"{input_file.stem}.rou.xml")
     if skip_existing and export_file.exists():
-        # TODO Use logging library for the below
-        print(f"{export_file.stem}.trip.xml exists. Skipping...")
+        logger.info(f"{export_file.stem}.rou.xml exists. Skipping...")
         return
 
-    tree = generate_xml(net, input_data, xml_template, input_file.stem)
+    tree = generate_route_xml(net, input_data, xml_template, input_file.stem,
+                              stop_labels)
     # export the xml tree as a file, using minidom to create a "pretty" xml
     # from our element tree
     #   TODO Remove the random spaces. (in the generated xml file)
@@ -193,10 +281,28 @@ def _do_trip_building(input_file: Path, output_dir: Path, xml_template: Path,
     with open(export_file, 'w') as f:
         f.write(xmlstr)
 
+    # Create additionals file with vType definition, if it doesn't exist
+    # already.
+    tree = et.parse(xml_template)
+    root = tree.getroot()
+    vType_node = root.find('vType')
+    vtype_file = output_dir.joinpath('vType.add.xml')
+    if not vtype_file.exists():
+        vtype_tree_root = et.Element('additional')
+        vtype_tree_root.append(vType_node)
+        # TODO Maybe return the xml_tree and save in the outer function?
+        # (to try get multiprocessing to work.)
+        # Save the routes as a rou.xml file
+        xmlstr = minidom.parseString(
+            et.tostring(vtype_tree_root)
+        ).toprettyxml(indent="    ")
+        with open(vtype_file, 'w') as f:
+            f.write(xmlstr)
 
-# TODO TODO TODO Switch to duaiterate or duarouter
-def _do_route_building(trip_file: Path, output_dir: Path, skip_existing: bool,
-                       net: sumolib.net.Net):
+
+# XXX Deprecated: Remove this function.
+def _do_route_building_old(trip_file: Path, output_dir: Path, skip_existing: bool,
+                           net: sumolib.net.Net):
     """Route building multiprocessing function"""
     # Create a subpath in the output directory with the name of the current
     # taxi.
@@ -223,11 +329,16 @@ def _do_route_building(trip_file: Path, output_dir: Path, skip_existing: bool,
     # Import the stops from the trip.xml file as xml.etree
     trip_tree = et.parse(trip_file)
     trip_tree_root = trip_tree.getroot()
+
+    # Get the vType section of xml.
     vType_node = trip_tree_root.find('vType')
+
     # Create a list of pairs of stops [(s1, s2), (s2, s3), ...]
     trip_node = trip_tree_root.find('trip')
-    first_stop = trip_node.attrib['from']
-    last_stop = trip_node.attrib['to']
+    first_stop = trip_node.attrib['from']  # s1
+    last_stop = trip_node.attrib['to']  # sN
+
+    # Get stops inbetween the first and the last stop of the trip.
     middle_stops = [*trip_node.iter('stop')]
     middle_stop_edges = [
         middle_stop.attrib['lane'].split('_')[0] for middle_stop in
@@ -256,8 +367,8 @@ def _do_route_building(trip_file: Path, output_dir: Path, skip_existing: bool,
             for route_edge in route_edges[:-1]:
                 route.append(route_edge.getID())
         else:
-            logging.error(f"{ev_name}: {date}: Failed to find a route " +
-                          f"between edges {stop_pair[0]} and {stop_pair[1]}")
+            logger.error(f"{ev_name}: {date}: Failed to find a route " +
+                         f"between edges {stop_pair[0]} and {stop_pair[1]}")
             # Assign the last edge of the stop_pair to `route edges`, *just in-
             # case* this is the last iteration of the loop. If `route_edges` is
             # not assigned, `route_edges[-1].getID()` (see a few lines below)
@@ -265,7 +376,7 @@ def _do_route_building(trip_file: Path, output_dir: Path, skip_existing: bool,
             route_edges = [net.getEdge(stop_pair[-1])]
     # if chained route is empty, return. Don't continue saving the xml file.
     if len(route) < 1:
-        logging.error(f"{ev_name} has no edges in its route on {date}!")
+        logger.error(f"{ev_name} has no edges in its route on {date}!")
         return
     route.append(route_edges[-1].getID())
     route_str = " ".join(str(edge) for edge in route)
@@ -338,84 +449,117 @@ def _do_route_building(trip_file: Path, output_dir: Path, skip_existing: bool,
     #             ]
     #         )
     #     except SystemExit:
-    #         logging.error("DuaIterate failed at: \n\t" +
+    #         logger.error("DuaIterate failed at: \n\t" +
     #                       str(output_subdir.absolute()))
     #     # Restore current_dir
     #     os.chdir(cwd)
 
 
 def build_routes(scenario_dir: Path):
-    # Configure logging
-    loggingFile = scenario_dir.joinpath('Routes', 'generation_log.txt')
-    logging.basicConfig(filename=loggingFile,  # encoding='utf-8',
-                        level=logging.WARN)
-
     cluster_dir = scenario_dir.joinpath('Spatial_Clusters')
     input_list = sorted(
         [*cluster_dir.joinpath("Filtered_Traces").glob("*/*.csv")]
     )
-    output_dir = scenario_dir.joinpath("Routes", "Trips")
+    output_dir = scenario_dir.joinpath("Routes", "Routes")
     xml_template = scenario_dir.joinpath('_Inputs', 'Configs',
                                          'ev_template.xml')
 
-    # Ask user if s/he wants to skip existing trip.xml files
-    # TODO Ask this in main.py and only if `configuring` = True
-    _ = input("Would you like to skip existing trip.xml files? y/[n]")
-    skip_existing = True if _.lower() == 'y' else False
+    # Load stop_labels
+    stop_labels_dir = scenario_dir.joinpath('Temporal_Clusters', 'Stop_Labels')
+    stop_labels_files = sorted([*stop_labels_dir.glob('*.csv')])
+    stop_labels_all = []
+    for stop_labels_file in stop_labels_files:
+        stop_labels_ev = pd.read_csv(stop_labels_file)
+        # Convert the timecolumn to datetimes.
+        stop_labels_ev['Time'] = pd.to_datetime(stop_labels_ev['Time'])
 
-    print("Loading sumo network...")
-    network_file = [
-        *scenario_dir.joinpath('_Inputs', 'Map').glob('*.net.xml')
-    ][0]
-    net = sumolib.net.readNet(network_file)
-    print("Done loading network.\n")
+        # Make the time column the index.
+        stop_labels_ev = stop_labels_ev.set_index('Time')
+        # Take the time index.
+        time_index = stop_labels_ev.index.get_level_values('Time')
+        # Set the dates in the time index as the new index.
+        stop_labels_ev = stop_labels_ev.set_index(time_index.date)
+        # Rename the index to 'Date'
+        stop_labels_ev.index.names = ['Date']
 
-    print("Generating trip files...")
-
-    # OLD MULTITHREADED WAY:
-    # ----------------------
-    # """ Doesn't work because it has too much recursive depth. """
-    # args_trip = zip(
-    #     input_list,
-    #     repeat(output_dir, len(input_list)),
-    #     repeat(xml_template, len(input_list)),
-    #     repeat(skip_existing, len(input_list)),
-    #     repeat(net, len(input_list)))
-    # with Pool(cpu_count() - 3) as p:
-    #     p.starmap(_do_trip_building, args_trip)
-
-    # Do trip generation
-    for input_file in tqdm(input_list):
-        _do_trip_building(input_file, output_dir, xml_template,
-                          skip_existing, net)
-    print("Done generating trip files.")
+        # Seperate the dataframe by date.
+        # For each date in the index:
+        for date in sorted(set(time_index.date)):
+            # Append the stop_labels on that date to the stop_labels_all list.
+            stop_labels_all.append(stop_labels_ev.loc[[date]])
 
     # Ask user if s/he wants to skip existing rou.xml files
     # TODO Ask this in main.py and only if `configuring` = True
     _ = input("Would you like to skip existing rou.xml files? y/[n]")
     skip_existing = True if _.lower() == 'y' else False
 
+    # Configure logging
+    loggingFile = scenario_dir.joinpath('Routes', 'routing.log')
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(name)s:  ' +
+                                  '%(message)s')
+    # ch = logging.StreamHandler()
+    # ch.setLevel(logging.DEBUG)
+    # ch.setFormatter(formatter)
+    fh = logging.FileHandler(loggingFile, 'a' if skip_existing else 'w')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    # logger.addHandler(ch)
+    logger.addHandler(fh)
+
+    logger.info("Loading sumo network...")
+    network_file = [
+        *scenario_dir.joinpath('_Inputs', 'Map').glob('*.net.xml')
+    ][0]
+    net = sumolib.net.readNet(network_file)
+    print("Done loading network.\n")
+
     print("Generating route files...")
-    # Do route generation
-    trip_files = [*output_dir.glob('*/*.trip.xml')]
-    output_dir = scenario_dir.joinpath("Routes", "Routes")
 
     # OLD MULTITHREADED WAY:
     # ----------------------
     # """ Doesn't work because it has too much recursive depth. """
-    # args_route = zip(
-    #     trip_files,
+    # args_rou = zip(
+    #     input_list,
     #     repeat(output_dir, len(input_list)),
+    #     repeat(xml_template, len(input_list)),
     #     repeat(skip_existing, len(input_list)),
     #     repeat(net, len(input_list)))
     # with Pool(cpu_count() - 3) as p:
-    #     p.starmap(_do_route_building, args_route)
+    #     p.starmap(_do_route_building, args_rou)
 
-    # IF DEBUGGING
-    # ------------
-    for trip_file in tqdm(trip_files):
-        _do_route_building(trip_file, output_dir, skip_existing, net)
+    # Do route generation
+    for input_file, stop_labels_ev in tqdm(zip(input_list, stop_labels_all)):
+        _do_route_building(input_file, output_dir, xml_template,
+                           skip_existing, net, stop_labels_ev)
     print("Done generating route files.")
+
+    # # Ask user if s/he wants to skip existing rou.xml files
+    # # TODO Ask this in main.py and only if `configuring` = True
+    # _ = input("Would you like to skip existing rou.xml files? y/[n]")
+    # skip_existing = True if _.lower() == 'y' else False
+
+    # print("Generating route files...")
+    # # Do route generation
+    # rou_files = [*output_dir.glob('*/*.rou.xml')]
+    # output_dir = scenario_dir.joinpath("Routes", "Routes")
+
+    # # OLD MULTITHREADED WAY:
+    # # ----------------------
+    # # """ Doesn't work because it has too much recursive depth. """
+    # # args_route = zip(
+    # #     rou_files,
+    # #     repeat(output_dir, len(input_list)),
+    # #     repeat(skip_existing, len(input_list)),
+    # #     repeat(net, len(input_list)))
+    # # with Pool(cpu_count() - 3) as p:
+    # #     p.starmap(_do_route_building, args_route)
+
+    # # IF DEBUGGING
+    # # ------------
+    # for rou_file in tqdm(rou_files):
+    #     _do_route_building_old(rou_file, output_dir, skip_existing, net)
+    # print("Done generating route files.")
 
     # Ask user if s/he wants to skip combinding rou.xml files
     # TODO Ask this in main.py and only if `configuring` = True
