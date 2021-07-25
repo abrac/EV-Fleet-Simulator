@@ -1,3 +1,28 @@
+Licensing
+=========
+
+This software is licensed under GPLv3.
+
+If you use the software, you are required to use the following citation:
+
+> Abraham, C., Rix, A., Ndibatya, I., & Booysen, M. (2021, June 18). Ray of hope for electric paratransit: solar PV charging of sub-Saharan Africa’s urban minibus taxis. https://doi.org/10.31224/osf.io/q9cwg
+
+<details><summary>Bibtex</summary>
+
+```
+@misc{abraham_rix_ndibatya_booysen_2021,
+ title={Ray of hope for electric paratransit: solar PV charging of sub-Saharan Africa’s urban minibus taxis},
+ url={engrxiv.org/q9cwg},
+ DOI={10.31224/osf.io/q9cwg},
+ publisher={engrXiv},
+ author={Abraham, Chris and Rix, Arnold and Ndibatya, Innocent and Booysen, MJ},
+ year={2021},
+ month={Jun}
+}
+```
+
+</details>
+
 Installation
 ============
 
