@@ -1,9 +1,9 @@
 Licensing
 =========
 
-This software is licensed under GPLv3.
+This software is [licensed under GPLv3](./LICENSE)
 
-If you use the software, you are required to use the following citation:
+If you use the software, or a dertivative thereof, you are required to attribute the original authors using the following citation:
 
 > Abraham, C., Rix, A., Ndibatya, I., & Booysen, M. (2021, June 18). Ray of hope for electric paratransit: solar PV charging of sub-Saharan Africa’s urban minibus taxis. https://doi.org/10.31224/osf.io/q9cwg
 
