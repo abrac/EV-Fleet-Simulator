@@ -1,3 +1,10 @@
+Electric Public Transport Simulator
+===================================
+
+This program is used to predict the energy usage of a fleet of electric vehicles. The program receives as input GPS traces of each of the vehicles of the fleet. These GPS traces can be obtained, for example, by installing tracking devices onto the vehicles of a fleet for which you want to predict the electrical energy usage. This is especially useful for projects whereby an existing petrol/diesel fleet is to be converted to electric vehicles. The program will analyse the vehicle's driving and stopping patterns in order to predict the ammount of energy used and the ammount of time that the vehicle can be charged during the average day. In addition, the program makes provisions to calculate how much of the energy can be provided for by renewable-energy sources.
+
+For an example of how this program was used by the authors, please see the following article: https://engrxiv.org/q9cwg/
+
 Licensing
 =========
 
