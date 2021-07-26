@@ -128,12 +128,13 @@ def filter_cluster(cluster_file: Path, pid: int, boundary_file: Path,
 
 
 # %% Main #####################################################################
-def filter_scenario(scenario_dir: Path):
+def filter_scenario(scenario_dir: Path, **kwargs):
     """
     Take clustered traces and filter out clusters outside of map boundary.
 
     Export the resulting dataframe as a csv file.
     """
+    auto_run = kwargs.get('auto_run', False)
     # TODO Make the below inputs function arguments.
     # TODO Make option of discarding weekends a command-line argument.
     clustered_files = [*scenario_dir.joinpath(
@@ -143,8 +144,10 @@ def filter_scenario(scenario_dir: Path):
     output_path = scenario_dir.joinpath('Spatial_Clusters', 'Filtered_Traces')
     # Checi if files exist in output_path.
     if any(output_path.glob('T*/T*.csv')):
-        input(f"Warning: Files exist in {output_path}.\n\t"
-              + "You may want to delete them! Press any key to continue...")
+        print(f"Warning: Files exist in {output_path}.\n\t" +
+              "You may want to delete them!")
+        if not auto_run:
+            input("Press any key to continue...")
     num_jobs = len(clustered_files)
 
     # IF DEBUGGING:

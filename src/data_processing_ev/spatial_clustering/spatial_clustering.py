@@ -244,7 +244,7 @@ def copy_datapoints_unclustered(trace_file: Path, scenario_dir: Path):
     return
 
 
-def cluster_scenario(scenario_dir: Path, skip: bool = False):
+def cluster_scenario(scenario_dir: Path, skip: bool = False, **kwargs):
     """
     Create ordered clusters from the gps traces and export as csv.
 
@@ -262,6 +262,9 @@ def cluster_scenario(scenario_dir: Path, skip: bool = False):
     #                                       'Reduced_Traces').glob('*.csv')]
     # # FIXME: I've temporarily implemented this in the input-traces data pre-
     # # processing step. That's probably not the best way to do it though...
+
+    auto_run = kwargs.get('auto_run', False)
+
     trace_files = sorted(
         [*scenario_dir.joinpath('_Inputs', 'Traces',
                                 'Processed').glob('*.csv')]
@@ -279,11 +282,14 @@ def cluster_scenario(scenario_dir: Path, skip: bool = False):
         regenerate_model = True
         saved_models_exist = any(saved_model_dir.iterdir())
         if saved_models_exist:
-            _ = input("Model labels already found at: \n\t" +
-                      str(saved_model_dir.absolute()) +
-                      "\nWould you like to use these files (otherwise will " +
-                      "program will regenerate models)? [y]/n")
-            regenerate_model = True if _.lower() == 'n' else False
+            print("Model labels already found at: \n\t" +
+                  str(saved_model_dir.absolute()))
+            if not auto_run:
+                _ = input("Would you like to use these files (otherwise " +
+                          "program will regenerate models)? [y]/n")
+                regenerate_model = True if _.lower() == 'n' else False
+            else:
+                print("Using existing model labels...")
 
         # TODO: Deprecate the below code. Combined traces need to be manually
             # constructed (I think -- can't remember now).

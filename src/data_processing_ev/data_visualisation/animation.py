@@ -127,7 +127,7 @@ def gen_scenario_animations(scenario_dir: Path,
         yield map_area
 
 
-def animate_scenario(scenario_dir: Path,
-                     saving: bool = True) -> None:
+def animate_scenario(scenario_dir: Path, saving: bool = True,
+                     **kwargs) -> None:
     for _ in gen_scenario_animations(scenario_dir, saving):
         pass

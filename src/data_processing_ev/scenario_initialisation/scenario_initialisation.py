@@ -6,7 +6,7 @@ from typing import Dict
 import json
 
 
-def initialise_scenario(scenario_dir: Path):
+def initialise_scenario(scenario_dir: Path, **kwargs):
     """Initialise the scenario's folder structure."""
 
     from .. import SCENARIO_DIR_STRUCTURE

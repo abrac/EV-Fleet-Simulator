@@ -8,10 +8,11 @@ import argparse
 
 
 def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
-        configuring_steps: bool = False):
+        configuring_steps: bool = False, **kwargs):
     """Run specified steps of data_analysis."""
+    auto_run = kwargs.get('auto_run', False)
     if 0 in steps:
-        dpr.initialise_scenario(scenario_dir)
+        dpr.initialise_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.1 in steps:
         if configuring_steps:
             _ = input("Plot gps points? [y]/n")
@@ -31,20 +32,24 @@ def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
 
             dpr.data_visualisation.map_scenario(
                 scenario_dir, mapping_points, mapping_lines, mapping_heatmap,
-                mapping_geojson, saving=True)
+                mapping_geojson, saving=True, **kwargs)
         else:
-            dpr.data_visualisation.map_scenario(scenario_dir)
+            dpr.data_visualisation.map_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.2 in steps:
-        dpr.data_visualisation.animate_scenario(scenario_dir)
+        dpr.data_visualisation.animate_scenario(scenario_dir, **kwargs)
     if 2 in steps or 2.1 in steps:
         """Spatial clustering"""
-        _ = input("Would you like to label *all* datapoints as part of " +
-                  "*one* big cluster? y/[n] ")
-        skip = True if _.lower() == 'y' else False
-        dpr.spatial_clustering.cluster_scenario(scenario_dir, skip=skip)
+        if not auto_run:
+            _ = input("Would you like to label *all* datapoints as part of " +
+                      "*one* big cluster? [y]/n ")
+            skip = False if _.lower() == 'n' else True
+        else:
+            skip = True
+        dpr.spatial_clustering.cluster_scenario(scenario_dir, skip=skip,
+                                                **kwargs)
     if 2 in steps or 2.2 in steps:
         """Spatial filtering"""
-        dpr.spatial_filtering.filter_scenario(scenario_dir)
+        dpr.spatial_filtering.filter_scenario(scenario_dir, **kwargs)
     if 3 in steps:
         """Temporal clustering"""
         if configuring_steps:
@@ -54,20 +59,21 @@ def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
                                else 'spatial_filtered_traces')
         else:
             clustering_type = 'spatial_filtered_traces'
-        dpr.temporal_clustering.cluster_scenario(scenario_dir, clustering_type)
+        dpr.temporal_clustering.cluster_scenario(scenario_dir, clustering_type,
+                                                 **kwargs)
     if 4 in steps:
         """Routing"""
-        dpr.routing.build_routes(scenario_dir)
+        dpr.routing.build_routes(scenario_dir, **kwargs)
     if 5 in steps:
         """Simulation"""
         # TODO Remove below if irrelevant
         # _ = input("Would you like to skip the running of sumocfg's that " +
         #           "have already been run before? [y]/n \n\t")
         dpr.ev_simulation.simulate_all_routes(scenario_dir,
-                                              skip_existing=False)
+                                              skip_existing=False, **kwargs)
     if 6 in steps:
         """Generate Plots and Statistics from Simulation Results"""
-        dpr.results_analysis.run_results_analysis(scenario_dir)
+        dpr.results_analysis.run_results_analysis(scenario_dir, **kwargs)
 
 
 if __name__ == "__main__":
@@ -89,6 +95,11 @@ if __name__ == "__main__":
         _ = input("Specify scenario root directory: ")
         scenario_dir = Path(_)
 
+    while scenario_dir.exists() is False:
+        print("The path does not exist!")
+        _ = input("Specify scenario root directory: ")
+        scenario_dir = Path(_)
+
     if args.steps:
         steps_str = args.steps
     else:
@@ -98,10 +109,19 @@ if __name__ == "__main__":
                           "list of floats without spaces (e.g. '1,2.2,4'): ")
     steps = [float(step) for step in steps_str.split(',')]
 
-    if scenario_dir.exists() is False:
-        raise ValueError("The path does not exist!")
-    _ = input("Would you like to configure the steps of the analysis? y/[n] ")
-    conf = False if _.lower() != 'y' else True
+    _ = input("Would you like to skip all prompts and use only default " +
+              "values? y/[n] ")
+    auto_run = True if _.lower() == 'y' else False
+
+    if auto_run:
+        conf = False
+    else:
+        _ = input("Would you like to configure the steps of the " +
+                  "analysis? y/[n] ")
+        conf = True if _.lower() == 'y' else False
+
+    kwargs = {'auto_run': auto_run}
+
     # Run all the steps
-    #run(scenario_dir, steps=range(6), configuring_steps=conf)
-    run(scenario_dir, steps=steps, configuring_steps=conf)
+    # run(scenario_dir, steps=range(6), configuring_steps=conf)
+    run(scenario_dir, steps=steps, configuring_steps=conf, **kwargs)

@@ -39,6 +39,7 @@ import sumolib  # noqa: Must be imported after adding tools to Path.
 
 logger = logging.getLogger('__name__')
 
+
 def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Path,
                  vehicle_id: str, stop_labels: t.List[bool]) -> et.ElementTree:
     """
@@ -455,7 +456,10 @@ def _do_route_building_old(trip_file: Path, output_dir: Path, skip_existing: boo
     #     os.chdir(cwd)
 
 
-def build_routes(scenario_dir: Path):
+def build_routes(scenario_dir: Path, **kwargs):
+
+    auto_run = kwargs.get('auto_run', False)
+
     cluster_dir = scenario_dir.joinpath('Spatial_Clusters')
     input_list = sorted(
         [*cluster_dir.joinpath("Filtered_Traces").glob("*/*.csv")]
@@ -490,8 +494,11 @@ def build_routes(scenario_dir: Path):
 
     # Ask user if s/he wants to skip existing rou.xml files
     # TODO Ask this in main.py and only if `configuring` = True
-    _ = input("Would you like to skip existing rou.xml files? y/[n]")
-    skip_existing = True if _.lower() == 'y' else False
+    if not auto_run:
+        _ = input("Would you like to skip existing rou.xml files? y/[n]")
+        skip_existing = True if _.lower() == 'y' else False
+    else:
+        skip_existing = False
 
     # Configure logging
     loggingFile = scenario_dir.joinpath('Routes', 'routing.log')
@@ -536,8 +543,11 @@ def build_routes(scenario_dir: Path):
 
     # # Ask user if s/he wants to skip existing rou.xml files
     # # TODO Ask this in main.py and only if `configuring` = True
-    # _ = input("Would you like to skip existing rou.xml files? y/[n]")
-    # skip_existing = True if _.lower() == 'y' else False
+    # if not auto_run:
+    #     _ = input("Would you like to skip existing rou.xml files? y/[n]")
+    #     skip_existing = True if _.lower() == 'y' else False
+    # else:
+    #     skip_existing = False
 
     # print("Generating route files...")
     # # Do route generation
@@ -563,8 +573,11 @@ def build_routes(scenario_dir: Path):
 
     # Ask user if s/he wants to skip combinding rou.xml files
     # TODO Ask this in main.py and only if `configuring` = True
-    _ = input("Would you like to skip combining the routes? y/[n]")
-    skip_combining_routes = True if _.lower() == 'y' else False
+    if not auto_run:
+        _ = input("Would you like to skip combining the routes? y/[n]")
+        skip_combining_routes = True if _.lower() == 'y' else False
+    else:
+        skip_combining_routes = False
 
     # TODO Combine the routes on a per-taxi basis. Therefore, if there are 10
     # taxis, and I have 4 cpu threads, I can run 4 sumo simulations in parallel.

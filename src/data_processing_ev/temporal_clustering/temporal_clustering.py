@@ -83,11 +83,12 @@ def _gen_trace_dfs(scenario_dir: Path, input_type: str
                          INPUT_TYPES.values())
 
 
-def _gen_stop_pdfs(trace_df: pd.DataFrame, ev_name: str
-                   ) -> Iterator[Tuple[int, np.array, plt.Figure]]:
+def _gen_stop_pdfs(trace_df: pd.DataFrame, ev_name: str,
+                   **kwargs) -> Iterator[Tuple[int, np.array, plt.Figure]]:
     """Generate a probability density curve from the given trace inputs."""
     # For each spatial_cluster, create a list of stop times.
     #   List of unique clusters
+    auto_run = kwargs.get('auto_run', False)
     clusters = trace_df['Cluster'].unique()
     clusters.sort()
     for cluster in clusters:
@@ -103,7 +104,8 @@ def _gen_stop_pdfs(trace_df: pd.DataFrame, ev_name: str
         # If list of stop_times still empty, throw exception, and continue
         if stop_times == []:
             logging.warn(f"No stop times found for cluster {cluster}.")
-            input("Press any key to continue...")
+            if not auto_run:
+                input("Press any key to continue...")
             continue
         stop_time_floats = np.array([
             dt.timedelta(hours=t.hour, minutes=t.minute,
@@ -117,7 +119,8 @@ def _gen_stop_pdfs(trace_df: pd.DataFrame, ev_name: str
             grid.fit(stop_time_floats[:, None])
         except ValueError as e:
             logging.error(e)
-            input('Press any key to acknowledge...')
+            if not auto_run:
+                input('Press any key to acknowledge...')
             continue
         logging.info(f"Best bandwidth: {grid.best_params_}")
         kde = grid.best_estimator_
@@ -140,7 +143,8 @@ def _gen_stop_pdfs(trace_df: pd.DataFrame, ev_name: str
                  'day.')
         ax.set_xlabel('Time of Day (Hour)')
         ax.set_ylabel('Probability Density')
-        input("Press any key to continue...")
+        if not auto_run:
+            input("Press any key to continue...")
         yield (cluster, pdf, fig)
 
 
@@ -329,15 +333,21 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
         for time_cluster in unique_time_clusters:
             if time_cluster == -1:
                 # White/black used for noise.
-                kwargs = {'markersize': 4, 'color': mpl.rcParams['text.color'],
-                          'label': 'Outliers'}
+                kwargs = {'markersize': 4, 'color': 'black',
+                          'label': 'Outliers', 'markeredgecolor': 'white',
+                          'markeredgewidth': 0.5}
             else:
-                kwargs = {'markersize': 4, 'label': f'Time-cluster {time_cluster}'}
+                # FIXME: Making color black for now. Remove if you want
+                # different colours for each temporal-cluster.
+                kwargs = {'markersize': 4, 'color': 'black',
+                          'label': f'Time-cluster {time_cluster}',
+                          'markeredgecolor': 'white', 'markeredgewidth': 0.5}
             stops_cluster_df = stops_df[stops_df['Cluster'] == time_cluster]
             ax.plot(stops_cluster_df['Stop_Arrival'],
                     stops_cluster_df['Stop_Duration'], marker='o',
                     linestyle='None', **kwargs)
-        ax.legend()
+        # FIXME: Hiding legend for now.
+        # ax.legend()
         ax.set_title("Stop Arrivals and Durations at Spatial-Cluster " +
                      f"{cluster} for '{ev_name}'")
         ax.set_xlabel("Time of arrival (Hour of day)")
@@ -358,28 +368,34 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
         y_min, y_max = 0, 4
 
         if len(x) > 20:
+            cmap = plt.get_cmap('Greys')
             k = gaussian_kde(np.vstack([x, y]))
             xi, yi = np.mgrid[0:24:nbins*1j,
                               0:y.max()+4:nbins*1j]
             zi = k(np.vstack([xi.flatten(), yi.flatten()]))
-            ax.pcolormesh(xi, yi, zi.reshape(xi.shape), alpha=0.5,
-                          shading='auto', cmap='CMRmap_r')
-            # ax.contourf(xi, yi, zi.reshape(xi.shape), alpha=0.5)
-        ax.set_xlim(x_min,x_max)
+            # ax.pcolormesh(xi, yi, zi.reshape(xi.shape), alpha=0.5,
+            #               shading='auto', cmap=cmap)
+            # cs = ax.contour(xi, yi, zi.reshape(xi.shape), alpha=1, colors=['black'])
+            # cs = ax.contour(xi, yi, zi.reshape(xi.shape), alpha=1, cmap=cmap)
+            cs = ax.contourf(xi, yi, zi.reshape(xi.shape), alpha=1, cmap=cmap)
+            fig.colorbar(cs, ax=ax)
+
+        ax.set_xlim(x_min, x_max)
         ax.set_ylim(y_min, y_max)
 
         yield (cluster, stops_df, fig)
 
 
-def _cluster_ev(trace_df: pd.DataFrame, ev_name: str, scenario_dir: Path
-                ) -> pd.DataFrame:
+def _cluster_ev(trace_df: pd.DataFrame, ev_name: str, scenario_dir: Path,
+                **kwargs) -> pd.DataFrame:
+    auto_run = kwargs.get('auto_run', False)
     # Individual time clustering:
     logging.info(f'### Starting time-clustering of {ev_name} ###')
     output_dir = scenario_dir.joinpath('Temporal_Clusters', 'Graphs',
                                        'Stop_PDFs', ev_name)
     output_dir.mkdir(parents=True, exist_ok=True)
     # for cluster_num, pdf, fig in _gen_stop_pdfs(trace_df,
-    #                                             ev_name):
+    #                                             ev_name, **kwargs):
     #     fig.show()
     #     output_file = output_dir.joinpath(f'{cluster_num}.svg')
     #     fig.savefig(output_file)
@@ -428,12 +444,13 @@ def _cluster_ev(trace_df: pd.DataFrame, ev_name: str, scenario_dir: Path
     except ValueError as e:
         logging.error(str(e) + f"This is for vehicle {ev_name}.")
         vehicle_df = None
-        input("Press enter to accept... ")
+        if not auto_run:
+            input("Press enter to accept... ")
     logging.info(f'    *** Finished time-clustering of {ev_name} ***')
     return vehicle_df
 
 
-def cluster_scenario(scenario_dir: Path, input_type: str):
+def cluster_scenario(scenario_dir: Path, input_type: str, **kwargs):
     """cluster.
 
     :param scenario_dir Path:
@@ -448,8 +465,14 @@ def cluster_scenario(scenario_dir: Path, input_type: str):
     -------
     https://jakevdp.github.io/blog/2013/12/01/kernel-density-estimation/
     """
-    _ = input("Would you like to (re-)generate the time-clusters? y/[n]")
-    regenerating_clusters = False if _.lower() != 'y' else True
+
+    auto_run = kwargs.get('auto_run', False)
+
+    if not auto_run:
+        _ = input("Would you like to (re-)generate the time-clusters? [y]/n")
+        regenerating_clusters = False if _.lower() == 'n' else True
+    else:
+        regenerating_clusters = True
 
     # FIXME: The logging module is not saving the log...
     # Setup File handler
@@ -482,7 +505,8 @@ def cluster_scenario(scenario_dir: Path, input_type: str):
         ### IF DEBUGGING: ###
         vehicle_dfs = []
         for trace_df, ev_name in trace_dfs_and_names:
-            vehicle_dfs.append(_cluster_ev(trace_df, ev_name, scenario_dir))
+            vehicle_dfs.append(_cluster_ev(trace_df, ev_name, scenario_dir,
+                                           **kwargs))
 
         time_clustered_df = pd.concat(vehicle_dfs)
         time_clustered_df_groupby = time_clustered_df.groupby(

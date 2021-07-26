@@ -437,6 +437,7 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
                                      size=num_pts)
                 plt.scatter(x, pv_potentials_month, alpha=0.1, color='C0')
         plt.savefig(fig_dir.joinpath(f'Charging_Potential_{ev_name}.svg'))
+        plt.savefig(fig_dir.joinpath(f'Charging_Potential_{ev_name}.pdf'))
         pickle.dump(
             plt.gcf(),
             open(fig_dir.joinpath(

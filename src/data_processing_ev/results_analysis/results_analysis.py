@@ -772,7 +772,7 @@ class Data_Analysis:
 
 
 # %% Main #####################################################################
-def run_results_analysis(scenario_dir: Path):
+def run_results_analysis(scenario_dir: Path, **kwargs):
     ev_sim_dirs = [*scenario_dir.joinpath(
         'SUMO_Simulation', 'Simulation_Outputs').glob('*/*/')]
 

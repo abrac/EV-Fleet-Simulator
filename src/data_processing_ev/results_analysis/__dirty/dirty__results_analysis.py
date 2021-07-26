@@ -254,10 +254,10 @@ class Data_Analysis:
         # ax.plot(time, power_min_df, color=color, alpha=0.6)
         # ax.plot(time, power_max_df, color=color, alpha=0.6)
         ax.fill_between(time, power_min_df, power_max_df, color=color,
-                        facecolor='#00000000', label="Power\ndistribution",
+                        facecolor='#00000000', label="Power Distribution",
                         hatch='.....')
         ax.legend()
-        ax.set_ylim(bottom=0)
+        ax.set_ylim(bottom=0, top=35)
         # ax.legend(ncol=2)
 
     def __plot_summary_graph(self, ev_df: pd.DataFrame, plt_title: str,
@@ -290,13 +290,13 @@ class Data_Analysis:
         plt.suptitle(plt_title)
 
         ax_PvT = plt.subplot(321)
-        ax_PvT.set_title('Power vs Time')
+        # ax_PvT.set_title('Power vs Time')
         ax_PvT.set_xlabel('Time')
         # ax_PvT_Colour = 'tab:blue'
         # ax_P2vT_Colour = 'tab:orange'
         # Plot instantaneous power
         ax_PvT.set_ylabel('Power (kW)')
-        ax_PvT.plot(time, power_df, label="Instantaneous\nPower", lw=0.5,
+        ax_PvT.plot(time, power_df, label="Instantaneous Power", lw=0.5,
                     c='0.5')
         ax_PvT.axhline(color="darkgrey")
         plt.setp(ax_PvT.get_xticklabels(), rotation=45)
@@ -306,7 +306,7 @@ class Data_Analysis:
         #                           # power_df_rolling.
         # ax_P2vT.set_ylabel('Rolling Average Power (kW)',
         #                    color=ax_P2vT_Colour)
-        ax_PvT.plot(time, power_df_rolling, label="Rolling Average\nPower",
+        ax_PvT.plot(time, power_df_rolling, label="Rolling Average Power",
                     c='0')
         ax_PvT.legend()
         # mpl_align.yaxes(ax_PvT, 0, ax_P2vT, 0)
@@ -314,7 +314,7 @@ class Data_Analysis:
             matplotlib.dates.DateFormatter('%H:%M'))
 
         ax_PvX = plt.subplot(325)  # XXX Put this back at 322
-        ax_PvX.set_title('Power vs Distance')
+        # ax_PvX.set_title('Power vs Distance')
         ax_PvX.axhline(color="darkgrey")
         ax_PvX.set_xlabel('Distance (km)')
         # Plot instantaneous power
@@ -333,7 +333,7 @@ class Data_Analysis:
         # mpl_align.yaxes(ax_PvX, 0, ax_P2vX, 0)
 
         plt.subplot(323)
-        plt.title('Energy vs Time')
+        # plt.title('Energy vs Time')
         plt.plot(time, 1000 - ev_df['vehicle_actualBatteryCapacity'] / 1000)
         plt.ylabel('Energy (kWh)')
         plt.xlabel('Time')
@@ -342,7 +342,7 @@ class Data_Analysis:
             matplotlib.dates.DateFormatter('%H:%M'))
 
         plt.subplot(324)
-        plt.title('Energy vs Distance')
+        # plt.title('Energy vs Distance')
         plt.plot(dist, 1000 - ev_df['vehicle_actualBatteryCapacity'][1:] / 1000)
         plt.ylabel('Energy (kWh)')
         plt.xlabel('Distance (km)')
@@ -361,7 +361,7 @@ class Data_Analysis:
         # sm.tools.eval_measures.rmse([points, m*points+b], [x, y])
 
         plt.subplot(322)  # XXX Put this back at 325
-        plt.title('Speed vs Time')
+        # plt.title('Speed vs Time')
         # Note, vehicle_speed is m/s
         # ∴ x m/s = x / 1000 * 3600 km/h = x * 3.6 km/h = y km/h
         plt.plot(time, ev_df['vehicle_speed'] * 3.6, lw=0.5, c='0.2')
@@ -371,10 +371,10 @@ class Data_Analysis:
         plt.xticks(rotation=45)
         plt.gca().xaxis.set_major_formatter(
             matplotlib.dates.DateFormatter('%H:%M'))
-        plt.gca().set_ylim(bottom=0)
+        plt.gca().set_ylim(bottom=0, top=20)
 
         plt.subplot(326)
-        plt.title('Speed vs Distance')
+        # plt.title('Speed vs Distance')
         plt.plot(dist, ev_df['vehicle_speed'][1:] * 3.6)
         plt.ylabel(r'$ Speed\ (km \cdot h^{-1}) $')
         plt.xlabel('Distance (km)')
