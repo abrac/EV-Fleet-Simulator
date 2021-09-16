@@ -3,7 +3,7 @@ Electric Public Transport Simulator
 
 This program is used to predict the energy usage of a fleet of electric vehicles. The program receives as input GPS traces of each of the vehicles of the fleet. These GPS traces can be obtained, for example, by installing tracking devices onto the vehicles of a fleet for which you want to predict the electrical energy usage. This is especially useful for projects whereby an existing petrol/diesel fleet is to be converted to electric vehicles. The program will analyse the vehicle's driving and stopping patterns in order to predict the ammount of energy used and the ammount of time that the vehicle can be charged during the average day. In addition, the program makes provisions to calculate how much of the energy can be provided for by renewable-energy sources.
 
-For an example of how this program was used by the authors, please see the following article: https://engrxiv.org/q9cwg/
+Please refer to the accompanying open-access journal article pulication: [Ray of hope for sub-Saharan Africa's paratransit: Solar charging of urban electric minibus taxis in South Africa](https://doi.org/10.1016/j.esd.2021.08.003). The article shows how this program can be used to derive meaningful results.
 
 Licensing
 =========
@@ -12,19 +12,23 @@ This software is [licensed under GPLv3](./LICENSE)
 
 If you use the software, or a dertivative thereof, you are required to attribute the original authors using the following citation:
 
-> Abraham, C., Rix, A., Ndibatya, I., & Booysen, M. (2021, June 18). Ray of hope for electric paratransit: solar PV charging of sub-Saharan Africa’s urban minibus taxis. https://doi.org/10.31224/osf.io/q9cwg
+> Abraham, C. J., Rix, A. J., Ndibatya, I., & Booysen, M. J. (2021). Ray of hope for sub-Saharan Africa's paratransit: Solar charging of urban electric minibus taxis in South Africa. Energy for Sustainable Development, 64, 118-127. https://doi.org/10.1016/j.esd.2021.08.003
 
 <details><summary>Bibtex</summary>
 
 ```
-@misc{abraham_rix_ndibatya_booysen_2021,
- title={Ray of hope for electric paratransit: solar PV charging of sub-Saharan Africa’s urban minibus taxis},
- url={engrxiv.org/q9cwg},
- DOI={10.31224/osf.io/q9cwg},
- publisher={engrXiv},
- author={Abraham, Chris and Rix, Arnold and Ndibatya, Innocent and Booysen, MJ},
- year={2021},
- month={Jun}
+@article{abraham2021,
+title = {Ray of hope for sub-Saharan Africa's paratransit: Solar charging of urban electric minibus taxis in South Africa},
+journal = {Energy for Sustainable Development},
+volume = {64},
+pages = {118-127},
+year = {2021},
+issn = {0973-0826},
+doi = {https://doi.org/10.1016/j.esd.2021.08.003},
+url = {https://www.sciencedirect.com/science/article/pii/S0973082621000946},
+author = {C.J. Abraham and A.J. Rix and I. Ndibatya and M.J. Booysen},
+keywords = {Electric vehicle, Paratransit, Minibus taxi, Demand management, Renewable energy},
+abstract = {Minibus taxi public transport is a seemingly chaotic phenomenon in the developing cities of the Global South with unique mobility and operational characteristics. Eventually this ubiquitous fleet of minibus taxis is expected to transition to electric vehicles, which will result in an additional energy burden on Africa's already fragile electrical grids. This paper examines the electrical energy demands of this possible evolution, and presents a generic simulation environment to assess the grid impact and charging opportunities. We used GPS tracking and spatio-temporal data to assess the energy requirements of nine electric minibus taxis as well as the informal and formal stops at which the taxis can recharge. Given the region's abundant sunshine, we modelled a grid-connected solar photovoltaic charging system to determine how effectively PV may be used to offset the additional burden on the electrical grid. The mean energy demand of the taxis was 213kWh/d, resulting in an average efficiency of 0.93kWh/km. The stopping time across taxis, a proxy for charging opportunity, ranged from 7.7 h/d to 10.6 h/d. The energy supplied per surface area of PV to offset the charging load of a taxi while stopping, ranged from 0.38 to 0.90kWh/m2 per day. Our simulator, which is publicly available, and the results will allow traffic planners and grid operators to assess and plan for looming electric vehicle roll-outs.}
 }
 ```
 
