@@ -151,4 +151,4 @@ Getting Support
 
 For more help, please don't hesitate to contact me on my e-mail address: `chris <abraham-without-the-A's> [at] gmail [dot] com`.
 
-You can also join our matrix channel where we can chat and even do video calls: https://matrix.to/#/#ev-fleet-sim:matrix.org.
+You can also join our Matrix channel where we can chat and even do video calls: https://matrix.to/#/#ev-fleet-sim:matrix.org.
