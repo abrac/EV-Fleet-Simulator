@@ -1,4 +1,4 @@
-> Notice: Please visit https://gitlab.com/eputs/ev-fleet-sim to ensure that you are viewing the original, up-to-date repository of this softare.
+> Notice: Please visit https://gitlab.com/eputs/ev-fleet-sim to ensure that you are viewing the original, up-to-date repository.
 
 Electric-Vehicle Fleet Simulator
 ================================
