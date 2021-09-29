@@ -12,16 +12,27 @@ import numpy as np
 import pandas as pd
 from itertools import repeat
 import pickle
+import data_processing_ev as dpr
 
-if __name__ == "__main__":
-    plot_blotches = False
-    figsize = (4, 3)
+
+def plot_ev_energy_boxes(scenario_dir: Path, plot_blotches: bool = False,
+                         figsize=(4, 3), **kwargs):
+
+    _ = input("Would you like to plot the box-plots of the fleet's energy " +
+              "usage? [y]/n  ")
+    if _.lower() == 'n':
+        return
+
+    input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
+
     # Get a list of paths to the stats.json files of each taxi.
-    simulation_outputs_dir = Path(__file__).parent  # TODO Make this relative
-        # to scenario_dir.
+    simulation_outputs_dir = scenario_dir.joinpath('Results')
     ev_stats_files = sorted([
-        *simulation_outputs_dir.glob('T*/Outputs/stats_*.json')
+        *simulation_outputs_dir.glob('*/Outputs/stats_*.json')
     ])
+
+    box_plots_dir = simulation_outputs_dir.joinpath('Outputs', 'Graphs',
+                                                    'Box_Plots')
 
     # for each ev, read statistics and generate a box plot
     all_date_strs = []
@@ -44,38 +55,52 @@ if __name__ == "__main__":
 
         if plot_blotches:
             # Generate random x-values centered around the box-plot.
-            x = np.random.normal(loc=1+i, scale=0.04, size=len(energy_diffs))
+            x = np.random.normal(loc=1 + i, scale=0.04, size=len(energy_diffs))
             plt.scatter(x, energy_diffs, alpha=0.4)
 
-        ev_names.append(ev_stats_file.stem.split('_')[1])
+        ev_names.append('_'.join(ev_stats_file.stem.split('_')[1:]))
+
+    if input_data_fmt == dpr.DATA_FMTS['GTFS']:
+        # Flatten the energy diffs array, so that only one box plot is created.
+        all_energy_diffs_grouped = all_energy_diffs
+        all_energy_diffs = []
+        for energy_diffs in all_energy_diffs_grouped:
+            all_energy_diffs.append(*energy_diffs)
+        ev_names_bak = ev_names
+        ev_names = ['Fleet']
 
     # Generate a box-plot from the values in all_energy_diffs.
     plt.boxplot(all_energy_diffs,
                 medianprops={'color': 'black'},
                 flierprops={'marker': '.'})
-    #plt.title("Daily energy usage per taxi")
     plt.ylabel("Daily energy usage (kWh)")
-    plt.xticks(range(1, len(ev_names)+1), ev_names, rotation=30,
+    plt.xticks(range(1, len(ev_names) + 1), ev_names, rotation=30,
                fontsize='small')
     plt.xlabel("eMBT ID")
     plt.tight_layout()
 
     # Output box-plots.
+    box_plots_dir.mkdir(parents=True, exist_ok=True)
     # As png:
-    fig_dir = simulation_outputs_dir.joinpath("Energy_usage_box_plots.png")
+    fig_dir = box_plots_dir.joinpath("Energy_usage_box_plots.png")
     plt.savefig(fig_dir)
     # As svg:
-    fig_dir = simulation_outputs_dir.joinpath("Energy_usage_box_plots.pdf")
+    fig_dir = box_plots_dir.joinpath("Energy_usage_box_plots.pdf")
     plt.savefig(fig_dir)
     # As pickle:
-    fig_dir = simulation_outputs_dir.joinpath(
+    fig_dir = box_plots_dir.joinpath(
         "Energy_usage_box_plots.fig.pickle")
     fig = plt.gcf()
     pickle.dump(fig, open(fig_dir, 'wb'))
 
     # Convert all_energy_diffs to a dataframe and save as a csv file.
-    csv_dir = simulation_outputs_dir.joinpath("Energy_usage.csv")
-        # TODO Make this relative to scenario_dir.
+    csv_dir = box_plots_dir.joinpath("Energy_usage.csv")
+
+    if input_data_fmt == dpr.DATA_FMTS['GTFS']:
+        # Restore (or unflatten) the energy diffs array.
+        all_energy_diffs = all_energy_diffs_grouped
+        ev_names = ev_names_bak
+
     export_data_zipped = []
     for i, ev_name in enumerate(ev_names):
         ev_name_list = [*repeat(ev_name, len(all_date_strs[i]))]

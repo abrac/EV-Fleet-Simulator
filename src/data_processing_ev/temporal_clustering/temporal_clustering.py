@@ -10,6 +10,7 @@ from typing import List, Tuple, Iterator
 import datetime as dt
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.patheffects as PathEffects
 from tqdm import tqdm
 from multiprocessing import Pool
 from itertools import repeat
@@ -48,7 +49,8 @@ def _gen_trace_dfs(scenario_dir: Path, input_type: str
                    ) -> Iterator[Tuple[pd.DataFrame, str]]:
     # Check if program must read traces from the "clustered-only" dataset
     # or "clustered-and-filtered" dataset.
-    # Ignore the "clustered-only" option. It's outdated and should be removed.
+    # TODO: Ignore the "clustered-only" option. It's outdated and should be
+    #       removed.
     if input_type == INPUT_TYPES['clustered']:
         # TODO Merge changes from gen_trace_dfs() in 'filtered' input type
         trace_files = scenario_dir.joinpath(
@@ -61,7 +63,8 @@ def _gen_trace_dfs(scenario_dir: Path, input_type: str
         traces_root_dir = scenario_dir.joinpath('Spatial_Clusters',
                                                 'Filtered_Traces')
         # create an array of their directories, corresponding to each EV.
-        trace_dirs = [f for f in traces_root_dir.iterdir() if f.is_dir()]
+        trace_dirs = sorted(
+            [f for f in traces_root_dir.iterdir() if f.is_dir()])
         # If there are no traces, throw an error.
         if len(trace_dirs) < 1:
             raise ValueError('No traces found in \n\t{0}.'.format(
@@ -162,41 +165,6 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
 
         # Generate a list of stop-arrival times and stop durations.
         # ---------------------------------------------------------
-
-        # TODO: Deprecating this cluster-based approach. Please delete me.
-        # # First: Generate a list of stop-entry and exit times.
-        # stop_entries_and_exits: List[Tuple[pd.Series, int]] = []
-        # prev_row_index = float('-inf')  # Initialise to a negative value so
-        # # ... that jump in row_index detected
-        # stop_encountered = False
-        # prev_datapoint = None
-        # entry_datapoint = None
-        # for row_index, datapoint in trace_df_cluster.iterrows():
-        #     # Check for consecutive points that have at least one point where
-        #     # ... the taxi was stopped.
-        #     # Continue until jump in row_index detected (i.e. The taxi left the
-        #     # ... space cluster).
-        #     if row_index - prev_row_index > 1:
-        #         start_new_entry = True
-        #     # If the taxi left the space cluster, or this is the first
-        #     #  iteration...
-        #     if start_new_entry:
-        #         # If a stop was encountered between the entry datapoint and the
-        #         # previous datapoint (i.e. just before the taxi left the
-        #         # spatial cluster)...
-        #         if stop_encountered:
-        #             # Record entry_datapoint and exit_datapoint
-        #             stop_entries_and_exits.append(
-        #                 (entry_datapoint, prev_datapoint))
-        #         # Reset the flags
-        #         start_new_entry = False
-        #         stop_encountered = False
-        #         # Make the datapoint after the jump, the new entry datapoint
-        #         entry_datapoint = datapoint
-        #     if datapoint['Velocity'] < 1:
-        #         stop_encountered = True
-        #     prev_row_index = row_index
-        #     prev_datapoint = datapoint
 
         # First: Generate a list of stop-entry and exit times.
         stop_entries_and_exits: List[Tuple[pd.Series, int]] = []
@@ -329,7 +297,7 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
 
         # 2D Scatterplot of arrival_times and stop_durations
         unique_time_clusters = set(stops_df['Cluster'])
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(3, 2.5))
         for time_cluster in unique_time_clusters:
             if time_cluster == -1:
                 # White/black used for noise.
@@ -339,19 +307,19 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
             else:
                 # FIXME: Making color black for now. Remove if you want
                 # different colours for each temporal-cluster.
-                kwargs = {'markersize': 4, 'color': 'black',
-                          'label': f'Time-cluster {time_cluster}',
-                          'markeredgecolor': 'white', 'markeredgewidth': 0.5}
+                kwargs = {'markersize': 2, 'color': 'black',
+                          'label': f'Time-cluster {time_cluster}'
+                          # 'markeredgecolor': 'white', 'markeredgewidth': 0.5
+                          # 'alpha': 0.5
+                          }
             stops_cluster_df = stops_df[stops_df['Cluster'] == time_cluster]
             ax.plot(stops_cluster_df['Stop_Arrival'],
-                    stops_cluster_df['Stop_Duration'], marker='o',
+                    stops_cluster_df['Stop_Duration'], marker='.',
                     linestyle='None', **kwargs)
         # FIXME: Hiding legend for now.
         # ax.legend()
-        ax.set_title("Stop Arrivals and Durations at Spatial-Cluster " +
-                     f"{cluster} for '{ev_name}'")
-        ax.set_xlabel("Time of arrival (Hour of day)")
-        ax.set_ylabel("Duration of stop (Hours)")
+        # ax.set_title("Stop Arrivals and Durations at Spatial-Cluster " +
+        #              f"{cluster} for '{ev_name}'")
 
         # Plot gaussian distribution
         nbins = 100
@@ -364,24 +332,65 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
         # x_min, x_max = x.min(), x.max()
         # y_min, y_max = y.min(), y.max()
         ### XXX Uncomment above and comment below. ###
-        x_min, x_max = 6, 18
+        x_min, x_max = 5, 21
         y_min, y_max = 0, 4
 
-        if len(x) > 20:
-            cmap = plt.get_cmap('Greys')
-            k = gaussian_kde(np.vstack([x, y]))
-            xi, yi = np.mgrid[0:24:nbins*1j,
-                              0:y.max()+4:nbins*1j]
-            zi = k(np.vstack([xi.flatten(), yi.flatten()]))
-            # ax.pcolormesh(xi, yi, zi.reshape(xi.shape), alpha=0.5,
-            #               shading='auto', cmap=cmap)
-            # cs = ax.contour(xi, yi, zi.reshape(xi.shape), alpha=1, colors=['black'])
-            # cs = ax.contour(xi, yi, zi.reshape(xi.shape), alpha=1, cmap=cmap)
-            cs = ax.contourf(xi, yi, zi.reshape(xi.shape), alpha=1, cmap=cmap)
-            fig.colorbar(cs, ax=ax)
+        xi, yi = np.mgrid[0: 24: nbins * 1j,
+                          0: y.max() + 4: nbins * 1j]
 
+        # Plot box-plots
+        stops_in_hours = []
+        for hour in range(x_min, x_max):
+            stops_in_hour = []
+            for stop_arrival, stop_duration in zip(x, y):
+                if int(stop_arrival) == hour:
+                    stops_in_hour.append(stop_duration)
+            stops_in_hours.append(stops_in_hour)
+        bp0 = ax.boxplot(
+            stops_in_hours,
+            positions=[x + 0.5 for x in range(x_min, x_max)],
+            showfliers=False,
+            manage_ticks=False,
+            medianprops={'color': 'black'}
+            )
+        bp1 = ax.boxplot(
+            stops_in_hours,
+            positions=[x + 0.5 for x in range(x_min, x_max)],
+            showfliers=False,
+            manage_ticks=False,
+            medianprops={'color': 'black'},
+            )
+        # for component in ['whiskers', 'caps', 'medians', 'boxes']:
+        #     plt.setp(bp0[component], path_effects=[
+        #         PathEffects.withStroke(linewidth=3, foreground="w")
+        #         # PathEffects.SimpleLineShadow(shadow_color='w'),
+        #         # PathEffects.Normal()
+        #         ])
+        for component in ['whiskers', 'caps', 'medians', 'boxes']:
+            plt.setp(bp0[component], color='white', linewidth=4)
+            plt.setp(bp1[component], linewidth=1.5)
+        plt.setp(bp0['medians'], zorder=2)
+
+        # cmap = plt.get_cmap('Greys')
+        # k = gaussian_kde(np.vstack([x, y]))
+        # zi = k(np.vstack([xi.flatten(), yi.flatten()]))
+        # ax.pcolormesh(xi, yi, zi.reshape(xi.shape), alpha=0.5,
+        #               shading='auto', cmap=cmap)
+        # cs = ax.contour(xi, yi, zi.reshape(xi.shape), alpha=1, colors=['black'])
+        # ax.clabel(cs, cs.levels, inline=True, manual=True)
+        # cs = ax.contour(xi, yi, zi.reshape(xi.shape), alpha=1, cmap=cmap)
+        # cs = ax.contourf(xi, yi, zi.reshape(xi.shape), alpha=1, cmap=cmap)
+        # colorbar = fig.colorbar(cs, ax=ax, label='Probability Density')
+        # colorbar.ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter())
+        # colorbar.ax.yaxis.values *= 100
+
+        # ax.set_xlabel("Time of arrival (Hour of day)")
+        # ax.set_ylabel("Duration of stop (Hours)")
         ax.set_xlim(x_min, x_max)
         ax.set_ylim(y_min, y_max)
+        # ax.set_xticks([6, 8, 10, 12, 14, 16, 18])  # XXX
+
+        fig.tight_layout()
 
         yield (cluster, stops_df, fig)
 
@@ -415,8 +424,12 @@ def _cluster_ev(trace_df: pd.DataFrame, ev_name: str, scenario_dir: Path,
     clustered_dfs = []
     for cluster_num, clustered_df, fig in _gen_stop_duration_pdfs(
             scenario_dir, trace_df, ev_name):
-        output_file = graph_dir.joinpath(f'{cluster_num}.svg')
+        output_file = graph_dir.joinpath(f'{ev_name}_{cluster_num}.svg')
         fig.savefig(output_file)
+        output_file = graph_dir.joinpath(f'{ev_name}_{cluster_num}.pdf')
+        fig.savefig(output_file)
+        output_file = graph_dir.joinpath(f'{ev_name}_{cluster_num}.png')
+        fig.savefig(output_file, dpi=600)
         # Save interactive figure
         output_file = graph_dir.joinpath(f'{cluster_num}.fig.pickle')
         pickle.dump(fig, open(output_file, 'wb'))

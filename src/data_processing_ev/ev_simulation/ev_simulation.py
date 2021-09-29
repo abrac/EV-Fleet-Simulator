@@ -45,8 +45,9 @@ def _seperate_battery_xml(scenario_dir: Path):
 
 def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
     auto_run = kwargs.get('auto_run', False)
-    route_dir = scenario_dir.joinpath('Routes', 'Routes')
-    route_files = sorted([*route_dir.glob('Combined/*.rou.xml')])
+    routes_dir = scenario_dir.joinpath('Routes', 'Routes')
+    combined_route_files = sorted([*scenario_dir.joinpath(
+        'Routes', 'Combined_Routes').glob('*.rou.xml')])
 
     if not auto_run:
         _ = input("Would you like to run each simulation in sumo-gui or sumo? " +
@@ -56,12 +57,12 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
         gui = False
 
     simulation_cmds = []
-    for route_file in route_files:
+    for route_file in combined_route_files:
         ev_name = route_file.stem.split('.')[0]
-        output_sumocfg_dir = scenario_dir.joinpath('SUMO_Simulation', 'Sumocfgs', 'Combined')
+        output_sumocfg_dir = scenario_dir.joinpath('SUMO_Simulation', 'Sumocfgs_Combined')
         output_sumocfg_file = output_sumocfg_dir.joinpath(f'{ev_name}.sumocfg')
         simulation_output_dir = scenario_dir.joinpath(
-            'SUMO_Simulation', 'Simulation_Outputs', 'Combined', ev_name)
+            'SUMO_Simulation', 'Simulation_Outputs_Combined', ev_name)
         output_sumocfg_dir.mkdir(parents=True, exist_ok=True)
         simulation_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -82,7 +83,7 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
             }
         )
         et.SubElement(input_node, 'additional-files', {
-            'value': str(route_dir.joinpath('vType.add.xml').absolute())}
+            'value': str(routes_dir.joinpath('vType.add.xml').absolute())}
         )
         # Uncomment below if using multiple route files.
         # et.SubElement(input_node, 'route-files', {'value': route_str_list})
@@ -114,9 +115,9 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
             f.write(xmlstr)
         # Run the simulation
         sumo_exe = "sumo-gui" if gui else "sumo"
-        simulation_cmds.append(
-            f"{sumo_exe} -c \"{output_sumocfg_file.absolute()}\" " +
-            "--ignore-route-errors true")
+        simulation_cmds.append([sumo_exe, '-c',
+                                str(output_sumocfg_file.absolute()),
+                                '--ignore-route-errors', 'true'])
 
     print('\n' * 3)
 
@@ -135,42 +136,8 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
     for simulation_cmd in tqdm(simulation_cmds):
         subprocess.run(simulation_cmd)
 
-    # FIXME: Automatically run simulations.
     print("Simulations complete.")
 
     # Seperating combined Battery.out.xml file into serpate files, organised
     # by ev_name and date...
     print("Seperating combined Battery.out.xml file")
-
-    breakpoint()  # XXX
-    _seperate_battery_xml(scenario_dir)
-
-    # TODO Please, fix: This is giving the following error:
-
-    # Traceback (most recent call last):
-    #   File "/home/c_abraham/Documents/Git_Repositories/etaxi/Experiments/data_processing_ev/./main.py", line 86, in <module>
-    #   File "/home/c_abraham/Documents/Git_Repositories/etaxi/Experiments/data_processing_ev/./main.py", line 62, in run
-    #   File "/home/c_abraham/Documents/Git_Repositories/etaxi/Experiments/data_processing_ev/data_processing_ev/ev_simulation/ev_simulation.py", line 96, in simulate_all_routes
-    #   File "/usr/share/sumo/tools/libsumo/__init__.py", line 153, in start
-    #   File "/usr/share/sumo/tools/libsumo/libsumo.py", line 3259, in load
-    # RuntimeError: unknown exception
-
-    # libsumo.start(["sumo", "-c", str(output_sumocfg_file)])
-    # while libsumo.simulation.getMinExpectedNumber() != 0:
-    #     libsumo.simulationStep()
-    # libsumo.close()  # waits until Sumo process is finished, then closes.
-
-
-    # split the results of the simulation:
-    # TODO fix the below
-    # date = route_file.name.split('.')[0]
-    # output_subdir = output_dir.joinpath(date)
-    # if skip_existing and output_dir.joinpath('Battery.out.xml').exists():
-    #     continue
-
-    # FIXME Below is legacy stuff
-    # for sumocfg_file in tqdm(sumocfg_files):
-    #     if (skip_existing and
-    #             sumocfg_file.parent.joinpath('Battery.out.xml').exists()):
-    #         print("Skipping...")
-    #         continue

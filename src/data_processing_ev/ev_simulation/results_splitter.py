@@ -11,32 +11,35 @@ import gc
 import xml.etree.ElementTree as et
 from pathlib import Path
 from xml.dom import minidom
-from memory_profiler import profile
+# from memory_profiler import profile
+import multiprocessing as mp
+from itertools import repeat
+import data_processing_ev as dpr
 
 from tqdm import tqdm
 
 
-def main(scenario_dir: Path):
-
-    # Load xml as etree iterparse.
-    monolithic_xml = scenario_dir.joinpath('SUMO_Simulation',
-                                           'Simulation_Outputs',
-                                           'Battery.out.xml')
-    tree = et.iterparse(monolithic_xml, events=("start", "end"))
+def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
+                  input_data_fmt: int):
+    tree = et.iterparse(ev_xml_file, events=("start", "end"))
     tree = iter(tree)
     _, root = tree.__next__()
 
-    # with open(monolithic_xml) as f:
-    #     num_lines = sum(1 for line in f)
-    num_lines = 129835700  # Get this number using `wc -l Battery.out.xml`.
-    #   Only works on Linux. Uncomment the above code if on Windows.
+    # Get the length fo the file.
+    print("Getting the length of the xml file...")
+    with open(ev_xml_file) as f:
+        num_lines = sum(1 for line in f)
 
+    print("Extracting the routes...")
     first_iteration = True
     # For each  `timestep` node in the iterator:
-    route_count = 0; time_offset_secs = 48*3600
+    route_count = 0
+    time_offset_secs = 48 * 3600
     time_offset = route_count * time_offset_secs
     next_time_offset = (route_count + 1) * time_offset_secs - 1
-    for event, node in tqdm(tree, total=num_lines*6.5):
+    prev_id = None
+    tmp_root = None
+    for event, node in tqdm(tree, total=num_lines):
 
         # If the current node is a 'timestep' node, skip it. But keep a record
         #   of the time.
@@ -58,8 +61,14 @@ def main(scenario_dir: Path):
 
             if not first_iteration:
                 # Save the tmp_root as an xml_file.
-                ev_name = prev_id.split('_')[0]
-                date = '_'.join(prev_id.split('_')[1:])
+                if input_data_fmt == dpr.DATA_FMTS['GPS']:
+                    ev_name = '_'.join(prev_id.split('_')[:-3])
+                    date = '_'.join(prev_id.split('_')[-3:])
+                elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
+                    ev_name = '_'.join(prev_id.split('_')[:-1])
+                    date = '_'.join(prev_id.split('_')[-1:])
+                else:
+                    raise ValueError(dpr.DATA_FMT_ERROR_MSG)
                 output_file = scenario_dir.joinpath('SUMO_Simulation',
                                                     'Simulation_Outputs',
                                                     ev_name, date,
@@ -67,7 +76,7 @@ def main(scenario_dir: Path):
                 output_file.parent.mkdir(parents=True, exist_ok=True)
                 tmp_tree = et.ElementTree(tmp_root)
                 with open(output_file, 'wb') as f:
-                    #f.write(et.tostring(tmp_root))
+                    # f.write(et.tostring(tmp_root))
                     tmp_tree.write(f, encoding='UTF-8')
                 # Clear the temp root
                 root.clear()
@@ -95,6 +104,17 @@ def main(scenario_dir: Path):
         prev_id = id
 
 
-if __name__ == "__main__":
-    scenario_dir = Path(os.path.abspath(__file__)).parents[2]
-    main(scenario_dir)
+def split_results(scenario_dir: Path, **kwargs):
+
+    input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
+
+    # Load xml as etree iterparse.
+    ev_xmls = [*scenario_dir.joinpath(
+        'SUMO_Simulation', 'Simulation_Outputs_Combined').glob(
+        '*/Battery.out.xml')]
+
+    args = zip(ev_xmls, repeat(scenario_dir, len(ev_xmls)),
+               repeat(input_data_fmt, len(ev_xmls)))
+
+    with mp.Pool(mp.cpu_count() - 1) as p:
+        p.starmap(_split_ev_xml, args)

@@ -24,6 +24,7 @@ from tqdm import tqdm
 from operator import itemgetter
 from itertools import repeat
 from multiprocessing import Pool, cpu_count
+import data_processing_ev as dpr
 
 # Import sumolib for locating nearby lanes from geo-coordinates
 # Import duaiterate for routing between spatial clusters
@@ -459,11 +460,11 @@ def _do_route_building_old(trip_file: Path, output_dir: Path, skip_existing: boo
 def build_routes(scenario_dir: Path, **kwargs):
 
     auto_run = kwargs.get('auto_run', False)
+    input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
 
     cluster_dir = scenario_dir.joinpath('Spatial_Clusters')
     input_list = sorted(
-        [*cluster_dir.joinpath("Filtered_Traces").glob("*/*.csv")]
-    )
+        [*cluster_dir.joinpath("Filtered_Traces").glob("*/*.csv")])
     output_dir = scenario_dir.joinpath("Routes", "Routes")
     xml_template = scenario_dir.joinpath('_Inputs', 'Configs',
                                          'ev_template.xml')
@@ -474,23 +475,37 @@ def build_routes(scenario_dir: Path, **kwargs):
     stop_labels_all = []
     for stop_labels_file in stop_labels_files:
         stop_labels_ev = pd.read_csv(stop_labels_file)
-        # Convert the timecolumn to datetimes.
-        stop_labels_ev['Time'] = pd.to_datetime(stop_labels_ev['Time'])
+        # Convert the timecolumn to datetimes or timedeltas.
+        if input_data_fmt == dpr.DATA_FMTS['GPS']:
+            stop_labels_ev['Time'] = pd.to_datetime(stop_labels_ev['Time'])
+        elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
+            stop_labels_ev['Time'] = pd.to_timedelta(stop_labels_ev['Time'])
+        else: raise ValueError(dpr.DATA_FMT_ERROR_MSG)
 
         # Make the time column the index.
         stop_labels_ev = stop_labels_ev.set_index('Time')
         # Take the time index.
         time_index = stop_labels_ev.index.get_level_values('Time')
         # Set the dates in the time index as the new index.
-        stop_labels_ev = stop_labels_ev.set_index(time_index.date)
+        if input_data_fmt == dpr.DATA_FMTS['GPS']:
+            stop_labels_ev = stop_labels_ev.set_index(time_index.date)
+        elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
+            stop_labels_ev = stop_labels_ev.set_index(time_index.days)
+        else: raise ValueError(dpr.DATA_FMT_ERROR_MSG)
         # Rename the index to 'Date'
         stop_labels_ev.index.names = ['Date']
 
         # Seperate the dataframe by date.
         # For each date in the index:
-        for date in sorted(set(time_index.date)):
-            # Append the stop_labels on that date to the stop_labels_all list.
-            stop_labels_all.append(stop_labels_ev.loc[[date]])
+        if input_data_fmt == dpr.DATA_FMTS['GPS']:
+            for date in sorted(set(time_index.date)):
+                # Append the stop_labels on that date to the stop_labels_all list.
+                stop_labels_all.append(stop_labels_ev.loc[[date]])
+        elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
+            for date in sorted(set(time_index.days)):
+                # Append the stop_labels on that date to the stop_labels_all list.
+                stop_labels_all.append(stop_labels_ev.loc[[date]])
+        else: raise ValueError(dpr.DATA_FMT_ERROR_MSG)
 
     # Ask user if s/he wants to skip existing rou.xml files
     # TODO Ask this in main.py and only if `configuring` = True
@@ -572,20 +587,41 @@ def build_routes(scenario_dir: Path, **kwargs):
     # print("Done generating route files.")
 
     # Ask user if s/he wants to skip combinding rou.xml files
-    # TODO Ask this in main.py and only if `configuring` = True
+    #   TODO TODO Allow for combining according to an arbitrary number of
+    # files. For example, I have 12 cpu threads, so I would like to group them
+    # into 11 files so that I can simulate each of them and split each of their
+    # results simultaneously. (Although, a lot of ram would be required to
+    # simulate them simultaneously...)
+    #   TODO Ask this in main.py and only if `configuring` = True
+    COMBINING_METHODS = {'per_ev': 1, 'all_evs': 2, 'skip': 3}
+
     if not auto_run:
-        _ = input("Would you like to skip combining the routes? y/[n]")
-        skip_combining_routes = True if _.lower() == 'y' else False
+        _ = input("""
+How would you like to combine the routes for this simulation scenario?
+
+[1]. Create one SUMO simulation which combines the routes for each EV.
+ 2 . Create one SUMO for which combines *all* the routes across *all* EVs.
+ 3 . Skip combining the routes entirely.
+
+Enter a number: """)
+        if _ == '1':
+            combining_method = COMBINING_METHODS['per_ev']
+        elif _ == '2':
+            combining_method = COMBINING_METHODS['all_evs']
+        elif _ == '3':
+            combining_method = COMBINING_METHODS['skip']
+        else:
+            combining_method = COMBINING_METHODS['per_ev']
     else:
-        skip_combining_routes = False
+        combining_method = COMBINING_METHODS['per_ev']
 
     # TODO Combine the routes on a per-taxi basis. Therefore, if there are 10
     # taxis, and I have 4 cpu threads, I can run 4 sumo simulations in parallel.
-    if not skip_combining_routes:
+    if combining_method == COMBINING_METHODS['per_ev']:
         print("Combining routes into one file per EV.")
         # Combine all routes into one file per EV!
-        ev_dirs = scenario_dir.joinpath("Routes", "Routes").glob('T*/')
-        output_dir = scenario_dir.joinpath("Routes", "Routes", "Combined")
+        ev_dirs = scenario_dir.joinpath("Routes", "Routes").glob('*/')
+        output_dir = scenario_dir.joinpath("Routes", "Combined_Routes")
         output_dir.mkdir(parents=True, exist_ok=True)
         for ev_dir in tqdm(ev_dirs):
             route_files = [*ev_dir.glob('*.rou.xml')]
@@ -625,3 +661,54 @@ def build_routes(scenario_dir: Path, **kwargs):
             with open(combined_rou_xml_file, 'wb') as f:
                 f.write(xml_bytestream)
             print(f"Done combining routes for {ev_dir.stem}.")
+
+    elif combining_method == COMBINING_METHODS['all_evs']:
+        print("Combining routes into one for all EVs.")
+        # Combine all routes into one file for all EVs
+        route_files = [*scenario_dir.joinpath("Routes",
+                                              "Routes").glob('*/*.rou.xml')]
+        output_dir = scenario_dir.joinpath("Routes", "Combined_Routes")
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        route_files.sort()
+        combined_rou_xml_file = output_dir.joinpath(
+            'monolithic.rou.xml')
+        combined_rou_xml_root = et.Element('routes')
+        for idx, route_file in tqdm(enumerate(route_files)):
+            # Time offset to space out the beginning of each route by 48 hours.
+            time_offset_hrs = 48
+            time_offset = idx * time_offset_hrs * 3600
+            route_xml_tree = et.parse(route_file)
+            route_xml_root = route_xml_tree.getroot()
+
+            #  Apply the time offset to the route `depart` time and `stop` `until`
+            # times.
+
+            vehicle_node = route_xml_root.find('vehicle')
+            old_depart = int(vehicle_node.get('depart'))
+            vehicle_node.set('depart', str(old_depart + time_offset))
+
+            # For each `stop` in vehicle_node, add the time_offset to its `until`:
+            stop_nodes = vehicle_node.findall('stop')
+            for stop_node in stop_nodes:
+                old_until = int(stop_node.get('until'))
+                stop_node.set('until', str(old_until + time_offset))
+
+            combined_rou_xml_root.append(vehicle_node)
+
+        # Sort results by departure time. # FIXME Delete below
+        # combined_rou_xml_root[:] = sorted(
+        #     combined_rou_xml_root, key=lambda element: int((element.get('depart')))
+        # )
+
+        # Export the xml tree as a file, in a way that looks pretty.
+        xml_bytestream = et.tostring(combined_rou_xml_root)
+        with open(combined_rou_xml_file, 'wb') as f:
+            f.write(xml_bytestream)
+        print("Done combining routes for all the EVs.")
+
+    elif combining_method == COMBINING_METHODS['skip']:
+        print("Skpping route combining.")
+
+    else:
+        raise ValueError("Invalid combining method...")

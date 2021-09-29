@@ -15,10 +15,13 @@ import logging
 import numpy as np
 import matplotlib as mpl
 import json
+import data_processing_ev as dpr
+
 
 class NumpyEncoder(json.JSONEncoder):
-    """ Special json encoder for numpy types """
+
     def default(self, obj):
+        """ Special json encoder for numpy types """
         if isinstance(obj, (np.int_, np.intc, np.intp, np.int8,
                             np.int16, np.int32, np.int64, np.uint8,
                             np.uint16, np.uint32, np.uint64)):
@@ -29,6 +32,7 @@ class NumpyEncoder(json.JSONEncoder):
         elif isinstance(obj, (np.ndarray,)):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
+
 
 def _load_irradiance_data(scenario_dir: Path, year: int) -> tp.Callable:
     # Load irradiance data as dataframe
@@ -42,9 +46,8 @@ def _load_irradiance_data(scenario_dir: Path, year: int) -> tp.Callable:
 
     # Convert first column to datetime objects.
     pv_output_df['DateTime'] = (
-            pd.Timestamp(year=year, month=1, day=1, hour=0, minute=0) +
-            pd.to_timedelta(pv_output_df['DateTime'], unit='H')
-    )
+        pd.Timestamp(year=year, month=1, day=1, hour=0, minute=0) +
+        pd.to_timedelta(pv_output_df['DateTime'], unit='H'))
     pv_output_df = pv_output_df.set_index('DateTime')
 
     # Apply efficiency constant to irradiance output.
@@ -55,15 +58,16 @@ def _load_irradiance_data(scenario_dir: Path, year: int) -> tp.Callable:
     # will be used for integration.
     f_pv_out = interpolate.interp1d(
         x=pd.Series(pv_output_df.index).apply(
-            lambda datetime: time.mktime(datetime.timetuple())
-        ),
+            lambda datetime: time.mktime(datetime.timetuple())),
         y=pv_output_df['P_Out'],
-        fill_value='extrapolate'
-    )
+        fill_value='extrapolate')
 
     return f_pv_out
 
-def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
+
+def run_pv_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
+                            figsize=(4, 3), **kwargs):
+    input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
     # Load irradiance data
     # FIXME Don't hardcode this. Don't even ask the year.
     _ = input("For which year is the solar irradiation data? "
@@ -74,17 +78,17 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
         year = 2017
 
     # Directories for saving CSVs and figures.
-    csv_dir = scenario_dir.joinpath('SAM_Simulation', '__dirty__csvs')
+    csv_dir = scenario_dir.joinpath('SAM_Simulation', 'csvs')
     csv_dir.mkdir(parents=True, exist_ok=True)
-    fig_dir = scenario_dir.joinpath('SAM_Simulation', '__dirty__graphs')
+    fig_dir = scenario_dir.joinpath('SAM_Simulation', 'graphs')
     fig_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load the PV irradiance fundtion.
+    # Load the PV irradiance function.
     f_pv_out = _load_irradiance_data(scenario_dir, year)
 
     # Load list of stop-arrivals and -durations as DataFrame.
     stops_file = scenario_dir.joinpath('Temporal_Clusters', 'Clustered_Data',
-                                       'dirty__time_clusters_with_dates.csv')
+                                       'time_clusters_with_dates.csv')
     stops_df = pd.read_csv(stops_file).set_index(['EV_Name', 'Date'])
 
     # Check if pv_potentials has been calculated already.
@@ -115,17 +119,17 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
             # Get the date.
             # FIXME: Handle case of leap year (i.e. Feb 29 in date components)
             date = dt.date(year,
-                    *[int(dc) for dc in stop.name[1].split('-')[1:]])
+                           *[int(dc) for dc in stop.name[1].split('-')[1:]])
 
             # Get the beginning of the stop.
             stop_beg_float = stop['Stop_Arrival']
-            stop_beg = [int(stop_beg_float), int((stop_beg_float % 1)*60)]
+            stop_beg = [int(stop_beg_float), int((stop_beg_float % 1) * 60)]
             stop_beg = dt.datetime(date.year, date.month, date.day, *stop_beg)
             stop_beg = time.mktime(stop_beg.timetuple())
 
             # Get the end of the stop.
             stop_end_float = stop_beg_float + stop['Stop_Duration']
-            stop_end = [int(stop_end_float), int((stop_end_float % 1)*60)]
+            stop_end = [int(stop_end_float), int((stop_end_float % 1) * 60)]
             # Handle case where stop extends to the next day:
             while stop_end[0] >= 24:
                 stop_end[0] -= 24
@@ -184,7 +188,6 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
         filtered_dates[~filtered_dates.index.isin(pv_potentials_per_day.index)]
     ]).sort_index()
 
-
     # TODO Remove the below. We are no longer going to fill all missing dates.
     """
     ev_names = sorted(set(
@@ -237,18 +240,16 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
             days_in_month = calendar.monthrange(curr_year, curr_month)[1]
             # Divide total energy by number of days in that month.
             average_potential = \
-                pv_potential_month['PV_Charge_Pot_Per_m2']/days_in_month
+                pv_potential_month['PV_Charge_Pot_Per_m2'] / days_in_month
             average_stop = \
-                pv_potential_month['Stop_Duration']/days_in_month
+                pv_potential_month['Stop_Duration'] / days_in_month
             # Create a Series (row of DataFrame) with the value, and append to
             # list.
             row = pd.Series(
                 {
                     'Stop_Duration': average_stop,
-                    'PV_Charge_Pot_Per_m2': average_potential
-                },
-                name=pv_potential_month.name
-            )
+                    'PV_Charge_Pot_Per_m2': average_potential},
+                name=pv_potential_month.name)
             pv_potentials_month_list.append(row)
         # Convert the list to a DataFrame.
         pv_potentials_month_avg = pd.DataFrame(
@@ -289,18 +290,15 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
             # pv_charging_potential. Do a reverse search of "days_in_month" to
             # find the section that I am talking about.
         start = time.mktime(dt.datetime(year, month, 1, 0).timetuple())
-        end = time.mktime(dt.datetime(
-                              year, month, days_in_month, 23, 59, 59
-                          ).timetuple())
+        end = time.mktime(dt.datetime(year, month, days_in_month, 23, 59, 59
+                                      ).timetuple())
         month_pv_generated, error = integrate.quad(f_pv_out, start, end)
-        daily_pv_generated_p_month.append(month_pv_generated/days_in_month)
-        integration_errors.append(error/days_in_month)
+        daily_pv_generated_p_month.append(month_pv_generated / days_in_month)
+        integration_errors.append(error / days_in_month)
     daily_pv_generated_p_month = pd.DataFrame(
-        daily_pv_generated_p_month, index=range(1,13),
-        columns=['Avg Daily PV Generation']
-    )
+        daily_pv_generated_p_month, index=range(1, 13),
+        columns=['Avg Daily PV Generation'])
     daily_pv_generated_p_month.index.names = ['Month']
-
 
     # Check if pv_potentials has been calculated already.
     pv_generated_file = csv_dir.joinpath('daily_pv_generated.csv')
@@ -329,12 +327,11 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
             start = time.mktime(start_date.timetuple())
             end = time.mktime(
                 dt.datetime(start_date.year, start_date.month, start_date.day,
-                            23, 59, 59).timetuple()
-            )
+                            23, 59, 59).timetuple())
             day_pv_generated, error = integrate.quad(f_pv_out, start, end)
-            day_pv_generated = pd.Series(day_pv_generated,
-                index=['Daily_PV_Generation'], name=start_date.date()
-            )
+            day_pv_generated = pd.Series(
+                day_pv_generated, index=['Daily_PV_Generation'],
+                name=start_date.date())
             daily_pv_generated.append(day_pv_generated)
             integration_errors.append(error)
 
@@ -347,30 +344,25 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
 
     # Save csv files of the dataframes for future reference.
     pv_potentials_per_day.to_csv(
-        csv_dir.joinpath('pv_potentials_per_day.csv')
-    )
+        csv_dir.joinpath('pv_potentials_per_day.csv'))
     pv_potentials_month_avg.to_csv(
-        csv_dir.joinpath('pv_potentials_month_avg.csv')
-    )
+        csv_dir.joinpath('pv_potentials_month_avg.csv'))
     pv_potentials_avg_of_month_avgs.to_csv(
-        csv_dir.joinpath('pv_potentials_avg_of_month_avgs.csv')
-    )
+        csv_dir.joinpath('pv_potentials_avg_of_month_avgs.csv'))
     pv_potentials_avg_of_month_avgs_per_taxi.to_csv(
-        csv_dir.joinpath('pv_potentials_avg_of_month_avgs_per_taxi.csv')
-    )
+        csv_dir.joinpath('pv_potentials_avg_of_month_avgs_per_taxi.csv'))
     daily_pv_generated_p_month.to_csv(
-        csv_dir.joinpath('daily_pv_generated_p_month.csv')
-    )
+        csv_dir.joinpath('daily_pv_generated_p_month.csv'))
 
     # Generate bar plots of the charging potential per m2.
     # Average energy charging potential for various months of the year.
     fig_bar_chart = plt.figure(figsize=figsize)
     width = 0.3
-    plt.bar(pv_potentials_avg_of_month_avgs.index - width/2,
-            pv_potentials_avg_of_month_avgs['PV_Charge_Pot_Per_m2']/3600000,
+    plt.bar(pv_potentials_avg_of_month_avgs.index - width / 2,
+            pv_potentials_avg_of_month_avgs['PV_Charge_Pot_Per_m2'] / 3600000,
             width=width)
-    plt.bar(daily_pv_generated_p_month.index + width/2,
-            daily_pv_generated_p_month['Avg Daily PV Generation']/3600000,
+    plt.bar(daily_pv_generated_p_month.index + width / 2,
+            daily_pv_generated_p_month['Avg Daily PV Generation'] / 3600000,
             width=width)
     plt.ylabel('Average energy in a day (kWh/m2)')
     plt.xlabel('Month of year')
@@ -381,26 +373,24 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
     # Plot box-plot version of the above figure.
     ev_names = sorted(set(
         pv_potentials_avg_of_month_avgs_per_taxi.index.\
-            get_level_values('EV_Name')
-    ))
+        get_level_values('EV_Name')))
     for i, ev_name in enumerate(ev_names):
-        #plt.subplot(3, 3, i+1)  # FIXME: Uncomment me!
-        plt.figure(figsize=(3,2))  # FIXME: Remove me!
+        # plt.subplot(3, 3, i+1)  # FIXME: Uncomment me!
+        plt.figure(figsize=(3, 2))  # FIXME: Remove me!
         # Separate the `pv_potentials_avg_of_month_avgs` dataframe into a list
         # of 12 dataframes, each representing a month of the year.
         date_index = pv_potentials_per_day.loc[ev_name].index.get_level_values('Date')
         pv_potentials_all_months = [
             pv_potentials_per_day.loc[ev_name].set_index([date_index.month]).\
-            loc[j] for j in set(date_index.month)
-        ]
+            loc[j] for j in set(date_index.month)]
 
         pv_potentials_all_months_ev = []
         for pv_potentials_ev in pv_potentials_all_months:
             if type(pv_potentials_ev) is pd.DataFrame:
-                pv_potential = pv_potentials_ev['PV_Charge_Pot_Per_m2']/3600000
+                pv_potential = pv_potentials_ev['PV_Charge_Pot_Per_m2'] / 3600000
             else:
                 pv_potentials_ev = pv_potentials_ev.to_frame().T
-                pv_potential = pv_potentials_ev['PV_Charge_Pot_Per_m2']/3600000
+                pv_potential = pv_potentials_ev['PV_Charge_Pot_Per_m2'] / 3600000
             pv_potentials_all_months_ev.append(pv_potential)
 
         plt.boxplot(pv_potentials_all_months_ev,
@@ -410,16 +400,14 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
         box_stats = {
             'box stats': [
                 mpl.cbook.boxplot_stats(pv_potentials_ev.values)[0] for
-                pv_potentials_ev in pv_potentials_all_months_ev
-            ]
-        }
+                pv_potentials_ev in pv_potentials_all_months_ev]}
         with open(csv_dir.joinpath(f'box_pv_potential_{ev_name}.json'),
-                'w') as f:
+                  'w') as f:
             json.dump(box_stats, f, cls=NumpyEncoder, indent=4)
 
-        #plt.ylabel('Energy charged in a day (kWh/m2)')  # FIXME: Uncomment
-        #plt.xlabel('Month of year')  # FIXME: Uncomment
-        #plt.title(ev_name)  # FIXME: Uncomment
+        # plt.ylabel('Energy charged in a day (kWh/m2)')  # FIXME: Uncomment
+        # plt.xlabel('Month of year')  # FIXME: Uncomment
+        # plt.title(ev_name)  # FIXME: Uncomment
         # plt.xticks(range(1,13), range(1,13))
         plt.ylim((-0.06, 1.3))
         # plt.xlim((0.5, 12.5))
@@ -433,7 +421,7 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
                     num_pts = len(pv_potentials_month)
                 else:
                     num_pts = 1
-                x = np.random.normal(loc=1+i, scale=0.04,
+                x = np.random.normal(loc=1 + i, scale=0.04,
                                      size=num_pts)
                 plt.scatter(x, pv_potentials_month, alpha=0.1, color='C0')
         plt.savefig(fig_dir.joinpath(f'Charging_Potential_{ev_name}.svg'))
@@ -449,12 +437,10 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
     date_index = pv_potentials_per_day.index.get_level_values('Date')
     pv_potentials_all_months = [
         pv_potentials_per_day.set_index([date_index.month]).\
-        loc[j] for j in set(date_index.month)
-    ]
+        loc[j] for j in set(date_index.month)]
     pv_potentials_all_months = [
-        pv_potentials_ev['PV_Charge_Pot_Per_m2']/3600000 for
-        pv_potentials_ev in pv_potentials_all_months
-    ]
+        pv_potentials_ev['PV_Charge_Pot_Per_m2'] / 3600000 for
+        pv_potentials_ev in pv_potentials_all_months]
     plt.boxplot(pv_potentials_all_months,
                 medianprops={'color': 'black'},
                 flierprops={'marker': '.'},
@@ -479,7 +465,7 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
                 num_pts = len(pv_potentials_month)
             else:
                 num_pts = 1
-            x = np.random.normal(loc=1+i, scale=0.04,
+            x = np.random.normal(loc=1 + i, scale=0.04,
                                  size=num_pts)
             plt.scatter(x, pv_potentials_month, alpha=0.1, color='C0')
     plt.tight_layout()
@@ -490,12 +476,10 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
     date_index = daily_pv_generated.index.get_level_values('Date')
     daily_pv_generated_all_months = [
         daily_pv_generated.set_index(date_index.month).loc[i] for i in
-            range(1,13)
-    ]
+        range(1, 13)]
     daily_pv_generated_all_months = [
-        daily_pv_generated['Daily_PV_Generation']/3600000 for
-        daily_pv_generated in daily_pv_generated_all_months
-    ]
+        daily_pv_generated['Daily_PV_Generation'] / 3600000 for
+        daily_pv_generated in daily_pv_generated_all_months]
     plt.boxplot(daily_pv_generated_all_months,
                 medianprops={'color': 'black'},
                 flierprops={'marker': '.'},
@@ -503,11 +487,8 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
     box_stats = {
         'box stats': [
             mpl.cbook.boxplot_stats(daily_pv_generated_month.values)[0] for
-            daily_pv_generated_month in daily_pv_generated_all_months
-        ]
-    }
-    with open(csv_dir.joinpath(f'box_pv_generated.json'),
-            'w') as f:
+            daily_pv_generated_month in daily_pv_generated_all_months]}
+    with open(csv_dir.joinpath('box_pv_generated.json'), 'w') as f:
         json.dump(box_stats, f, cls=NumpyEncoder, indent=4)
     plt.ylabel('PV energy generated per day (kWh/m2)', fontsize='small')
     plt.xlabel('Month of year')
@@ -515,7 +496,7 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
         # Plot the stop_events which make up the box-plots.
         for i, daily_pv_generated in enumerate(daily_pv_generated_all_months):
             # Generate random x-values centered around the box-plot.
-            x = np.random.normal(loc=1+i, scale=0.04,
+            x = np.random.normal(loc=1 + i, scale=0.04,
                                  size=len(daily_pv_generated))
             plt.scatter(x, daily_pv_generated, alpha=0.1, color='C0')
     plt.tight_layout()
@@ -525,49 +506,46 @@ def main(scenario_dir: Path, plot_blotches: bool = False, figsize=(4,3)):
     width = 0.08
     for i, ev_name in enumerate(ev_names):
         df = pv_potentials_avg_of_month_avgs_per_taxi.loc[ev_name]
-        plt.bar(df.index + (i - len(ev_names)/2 - 0.5) * width,
-                df['PV_Charge_Pot_Per_m2']/3600000, width=width)
+        plt.bar(df.index + (i - len(ev_names) / 2 - 0.5) * width,
+                df['PV_Charge_Pot_Per_m2'] / 3600000, width=width)
     plt.legend(ev_names)
     plt.ylabel('Average energy in a day (kWh/m2)')
     plt.xlabel('Month of year')
     plt.tight_layout()
 
     # Save the plots
-    fig_bar_chart.savefig(fig_dir.joinpath('dirty__monthly_charging_potential.png'))
-    pickle.dump(fig_bar_chart,
+    fig_bar_chart.savefig(
+        fig_dir.joinpath('dirty__monthly_charging_potential.png'))
+    pickle.dump(
+        fig_bar_chart,
         open(fig_dir.joinpath('dirty__monthly_charging_potential.fig.pickle'),
-             'wb')
-    )
+             'wb'))
     fig1.savefig(fig_dir.joinpath('dirty__monthly_charging_potential_box.png'))
     fig1.savefig(fig_dir.joinpath('dirty__monthly_charging_potential_box.pdf'))
-    pickle.dump(fig1,
+    pickle.dump(
+        fig1,
         open(fig_dir.joinpath(
-                 'dirty__monthly_charging_potential_box.fig.pickle'), 'wb')
-    )
+             'dirty__monthly_charging_potential_box.fig.pickle'), 'wb'))
     fig2.savefig(fig_dir.joinpath('dirty__pv_energy_generated_box.png'))
     fig2.savefig(fig_dir.joinpath('dirty__pv_energy_generated_box.pdf'))
-    pickle.dump(fig2,
+    pickle.dump(
+        fig2,
         open(fig_dir.joinpath('dirty__pv_energy_generated_box.fig.pickle'),
-             'wb')
-    )
+             'wb'))
     fig3.savefig(
-        fig_dir.joinpath('dirty__monthly_charging_potential_per_taxi.png')
-    )
+        fig_dir.joinpath('dirty__monthly_charging_potential_per_taxi.png'))
     fig3.savefig(
-        fig_dir.joinpath('dirty__monthly_charging_potential_per_taxi.pdf')
-    )
-    pickle.dump(fig3,
+        fig_dir.joinpath('dirty__monthly_charging_potential_per_taxi.pdf'))
+    pickle.dump(
+        fig3,
         open(
             fig_dir.joinpath(
-                'dirty__monthly_charging_potential_per_taxi.fig.pickle'
-            ),
-            'wb'
-        )
-    )
+                'dirty__monthly_charging_potential_per_taxi.fig.pickle'),
+            'wb'))
 
     plt.show()
 
 
 if __name__ == "__main__":
     scenario_dir = Path(os.path.abspath(__file__)).parents[1]
-    main(scenario_dir)
+    run_pv_results_analysis(scenario_dir)

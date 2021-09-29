@@ -1,17 +1,23 @@
-> Note: Version numbers are just the ones that I tested the program with. Other versions may also work.
-> But many packages and software introduce breaking changes between releases. So be aweare of that.
+> Note: Version numbers are just the ones that I tested the program with. Other 
+> versions may also work. But many packages and software introduce breaking 
+> changes between releases. So be aweare of that.
 
-> Note: Packages marked with a `*` are mandatory. The other packages are recommended, but the software may work without them.
+> Note: Packages marked with a `*` are mandatory. The other packages are 
+> recommended, but the software may work without them. Packages marked with a
+> `+` are conditionally required. I.e., they are only required if performing 
+> specific tasks. However, they are highly recommended.
 
 
 Software
 --------
 
-| Name       | Version | Description                 |
-|------------|:-------:|-----------------------------|
-| *SUMO [^1] |  1.8.0  | Traffic mobility simulator. |
-| *Python    |   3.8   | A dangerous snake.          |
-| *Bash      |    5    | The Linux terminal.         |
+| Name       |   Version  | Description                                                                   |
+|------------|:----------:|-------------------------------------------------------------------------------|
+| *SUMO [^1] |    1.8.0   | Traffic mobility simulator.                                                   |
+| *Python    |     3.8    | A dangerous snake.                                                            |
+| *Bash      |      5     | The terminal used in Linux and MacOS. Windows can run Bash through WSL.       |
+| *SAM       | 2020.11.29 | Simulator of Renewable-Energy Generators (Solar panels, wind-turbines, etc.). |
+| *R         |    4.0.4   | R programming language.                                                       |
 
 
 SUMO Dependencies
@@ -46,4 +52,16 @@ Python Packages
 | *rtree          |         | Used by SUMO for finding lanes that are closest to a specified geo-coordinate |
 | memory_profiler |         |                                                                               |
 
-[^1]: Make sure that libsumo is compiled with SUMO. The Ubuntu PPA does not include it by default. Libsumo is required by *Step 4 (Routing)*. The other steps will work without libsumo.
+
+R packages
+----------
+
+| Name      | Version | Description                                        |
+|-----------|:-------:|----------------------------------------------------|
+| +gtfs2gps |  1.5.4  | Converts GTFS public transport data to GPS traces. |
+
+
+[^1]: Make sure that libsumo is compiled with SUMO. The Ubuntu PPA does not 
+      include it by default. Libsumo is required by *Step 4 (Routing)*. The 
+      other steps will work without libsumo. I think the Windows binaries 
+      released by sumo are compiled together with libsumo.

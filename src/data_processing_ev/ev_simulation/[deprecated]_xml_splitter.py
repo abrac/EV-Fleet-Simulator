@@ -11,33 +11,32 @@ import gc
 import xml.etree.ElementTree as et
 from pathlib import Path
 from xml.dom import minidom
-# from memory_profiler import profile
-import multiprocessing as mp
-from itertools import repeat
+from memory_profiler import profile
 
 from tqdm import tqdm
 
 
-def split_ev_xml(ev_xml_file: Path, scenario_dir: Path):
-    tree = et.iterparse(ev_xml_file, events=("start", "end"))
+def main(scenario_dir: Path, **kwargs):
+
+    # Load xml as etree iterparse.
+    monolithic_xml = scenario_dir.joinpath('SUMO_Simulation',
+                                           'Simulation_Outputs',
+                                           'Battery.out.xml')
+    tree = et.iterparse(monolithic_xml, events=("start", "end"))
     tree = iter(tree)
     _, root = tree.__next__()
 
-    # Get the length fo the file.
-    print("Getting the length of the xml file...")
-    with open(ev_xml_file) as f:
-        num_lines = sum(1 for line in f)
+    # with open(monolithic_xml) as f:
+    #     num_lines = sum(1 for line in f)
+    num_lines = 129835700  # Get this number using `wc -l Battery.out.xml`.
+    #   Only works on Linux. Uncomment the above code if on Windows.
 
-    print("Extracting the routes...")
     first_iteration = True
     # For each  `timestep` node in the iterator:
-    route_count = 0
-    time_offset_secs = 48 * 3600
+    route_count = 0; time_offset_secs = 48*3600
     time_offset = route_count * time_offset_secs
     next_time_offset = (route_count + 1) * time_offset_secs - 1
-    prev_id = None
-    tmp_root = None
-    for event, node in tqdm(tree, total=num_lines):
+    for event, node in tqdm(tree, total=num_lines*6.5):
 
         # If the current node is a 'timestep' node, skip it. But keep a record
         #   of the time.
@@ -68,7 +67,7 @@ def split_ev_xml(ev_xml_file: Path, scenario_dir: Path):
                 output_file.parent.mkdir(parents=True, exist_ok=True)
                 tmp_tree = et.ElementTree(tmp_root)
                 with open(output_file, 'wb') as f:
-                    # f.write(et.tostring(tmp_root))
+                    #f.write(et.tostring(tmp_root))
                     tmp_tree.write(f, encoding='UTF-8')
                 # Clear the temp root
                 root.clear()
@@ -94,18 +93,6 @@ def split_ev_xml(ev_xml_file: Path, scenario_dir: Path):
 
         # Append nodes to tmp_root, until we find a node with a different id.
         prev_id = id
-
-
-def main(scenario_dir: Path):
-
-    # Load xml as etree iterparse.
-    ev_xmls = [*scenario_dir.joinpath(
-        'SUMO_Simulation', 'Simulation_Outputs', 'Combined').glob(
-        'T*/Battery.out.xml')]
-    args = zip(ev_xmls, repeat(scenario_dir, len(ev_xmls)))
-
-    with mp.Pool(mp.cpu_count() - 1) as p:
-        p.starmap(split_ev_xml, args)
 
 
 if __name__ == "__main__":
