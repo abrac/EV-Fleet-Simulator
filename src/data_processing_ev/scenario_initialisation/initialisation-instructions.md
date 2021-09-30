@@ -15,7 +15,7 @@ Instructions
 
 3. Download an `osm.pbf` file which represents the country. Currently, they are 
    available from [geofabrik.de](
-   https://www.geofabrik.de/data/download.html). 
+   https://download.geofabrik.de/). 
    [Other sources](
    https://wiki.openstreetmap.org/wiki/Planet.osm#Country_and_area_extracts) 
    are available and [more information about pbf files](
@@ -65,7 +65,7 @@ Instructions
        unable to proceed, try to repeat these steps with a one edge type at a time.
     1. Append "passenger" and "taxi" to the "allowed" field.
     1. Save the `.net.xml` file.
-6. Create a symlink/shortuct of the `net.xml` file in `$Scenario_Dir/_Inputs/
+6. Move the resulting `net.xml` file in `$Scenario_Dir/_Inputs/
    Map`
 6. Copy raw vehicle data to `$Scenario_Dir/_Inputs/Traces/Original`.
     1. If the raw data is floating car data (FCD), i.e. GPS traces, proceed to 
