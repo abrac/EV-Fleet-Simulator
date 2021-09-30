@@ -86,18 +86,17 @@ def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
     if 3 in steps or 3.3 in steps:
         """Temporal clustering"""
         #   TODO: Disable this step by default (similar to how we disable
-        # spatial_clustering.
-        #   FIXME XXX: I am skipping this step for now. Please fix it to
-        # accommodate GTFS data.
-        if configuring_steps:
-            _ = input("For temporal clustering, use geographically filtered " +
-                      "traces? [y]/n\n\t")
-            clustering_type = ('spatial_clustered_traces' if _.lower() != 'n'
-                               else 'spatial_filtered_traces')
-        else:
+        # spatial_clustering).
+        if kwargs['input_data_fmt'] == dpr.DATA_FMTS['GPS']:
             clustering_type = 'spatial_filtered_traces'
-        dpr.temporal_clustering.cluster_scenario(scenario_dir, clustering_type,
-                                                 **kwargs)
+            dpr.temporal_clustering.cluster_scenario(scenario_dir, clustering_type,
+                                                     **kwargs)
+        elif kwargs['input_data_fmt'] == dpr.DATA_FMTS['GTFS']:
+            print("Warning: Temporal clustering is not implemented for GTFS " +
+                  "scenarios yet.")
+        else:
+            raise ValueError(dpr.DATA_FMT_ERROR_MSG)
+
     if 4 in steps:
         """Routing"""
         dpr.routing.build_routes(scenario_dir, **kwargs)
