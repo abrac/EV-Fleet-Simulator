@@ -187,11 +187,18 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
                 stop_id = datapoint['StopID']
 
                 # But first do a bit of error checking.
-                if stop_id != next_stop['stop_id']:
-                    raise ValueError("The stops fell out of sequence! There " +
-                                     "was an error in the preceding steps " +
-                                     "of the software! Please file a bug on " +
-                                     "this software's issue tracker.")
+                while stop_id != next_stop['stop_id']:
+                    # TODO Use logging.warn() instead of print().
+                    input("\n\nWarning: A stop in the sequence in " +
+                          "stop_times.txt is missing from the gps trace. " +
+                          "Press enter to skip this stop, and check the if "
+                          "the next stop in the sequence is in the gps trace.")
+                    try:
+                        _, next_stop = next(stops)
+                    # If there are no more stop pairs:
+                    except StopIteration:
+                        break
+
 
                 arrival = reformat_time2timetuple_str(
                     next_stop['arrival_time'])
@@ -204,7 +211,6 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
 
                 try:
                     _, next_stop = next(stops)
-
                 # If there are no more stop pairs:
                 except StopIteration:
                     continue
@@ -494,7 +500,6 @@ def extract_stops(scenario_dir: Path, **kwargs):
             skipinitialspace=True)
 
         kwargs['GTFS_stop_times_df'] = stop_times_df
-
 
     # Calculate the stop arrival-times and the stop-durations for each EV:
 
