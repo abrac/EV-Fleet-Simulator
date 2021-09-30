@@ -530,9 +530,15 @@ def build_routes(scenario_dir: Path, **kwargs):
     logger.addHandler(fh)
 
     logger.info("Loading sumo network...")
-    network_file = [
-        *scenario_dir.joinpath('_Inputs', 'Map').glob('*.net.xml')
-    ][0]
+    try:
+        network_file = [
+            *scenario_dir.joinpath('_Inputs', 'Map').glob('*.net.xml')
+        ][0]
+    except IndexError:
+        logger.error("You have not created a SUMO network in: \n\t" +
+                     str(scenario_dir.joinpath('_Inputs', 'Map')))
+        sys.exit(1)
+
     net = sumolib.net.readNet(network_file)
     print("Done loading network.\n")
 
