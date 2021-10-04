@@ -474,6 +474,9 @@ class Data_Analysis:
                 '_Inputs', 'Traces', 'Original', 'GTFS', 'stop_times.txt'))
 
             def _get_departure_delay(trip_id: str) -> dt.timedelta:
+                """Calculates the time taken from the beginning of the trip,
+                   until the vehicle leaves the first stop. Based on the raw
+                   GTFS data."""
                 stop_times = stop_times_df[stop_times_df['trip_id'] == trip_id]
                 hour, minute, second = [int(x) for x in
                     stop_times.iloc[0]['departure_time'].split(':')]
@@ -491,28 +494,25 @@ class Data_Analysis:
 
                 # Find the times that the trip applies.
                 trip_df = self.__ev_csv_to_df(trip_csv, secs_to_dts=True)
-                frequency_definition = frequencies_df[
+                frequency_definitions = frequencies_df[
                     frequencies_df['trip_id'] == trip_id]
-                if len(frequency_definition) == 1:
-                    frequency_definition = frequency_definition.iloc[0]
-                else:
-                    raise ValueError("More than one frequency definition " +
-                                     "for trip_id: " + trip_id)
-                    # FIXME: Accommodate this case. It is certainly a valid
-                    # possibility.
-                service_start_time = dt.datetime(
-                    2000, 1, 1, *[int(x) for x in frequency_definition[
-                        'start_time'].split(':')])
-                service_end_time = dt.datetime(
-                    2000, 1, 1, *[int(x) for x in frequency_definition[
-                        'end_time'].split(':')])
-                headway_time = dt.timedelta(
-                    seconds=int(frequency_definition['headway_secs']))
-                num_trips = int(
-                    (service_end_time - service_start_time).total_seconds() /
-                    headway_time.total_seconds()) + 1
-                times = [service_start_time + headway_time * k for
-                         k in range(num_trips)]
+
+                times = []
+                for _, frequency_definition in frequency_definitions.iterrows():
+                    service_start_time = dt.datetime(
+                        2000, 1, 1, *[int(x) for x in frequency_definition[
+                            'start_time'].split(':')])
+                    service_end_time = dt.datetime(
+                        2000, 1, 1, *[int(x) for x in frequency_definition[
+                            'end_time'].split(':')])
+                    headway_time = dt.timedelta(
+                        seconds=int(frequency_definition['headway_secs']))
+                    num_trips = int(
+                        (service_end_time - service_start_time).total_seconds() /
+                        headway_time.total_seconds()) + 1
+                    times.extend([service_start_time + headway_time * k for
+                                  k in range(num_trips)])
+
                 departure_delay = _get_departure_delay(trip_id)
 
                 # Plot the trip itinary.
@@ -525,9 +525,9 @@ class Data_Analysis:
                 save_path = graphsdir.joinpath('trip_itinary.svg')
                 plt_fig.savefig(save_path)
                 # Save interactive figure
-                output_file = graphsdir.joinpath(
-                    'trip_itinary.fig.pickle')
-                pickle.dump(plt_fig, open(output_file, 'wb'))
+                # output_file = graphsdir.joinpath(
+                #     'trip_itinary.fig.pickle')
+                # pickle.dump(plt_fig, open(output_file, 'wb'))
                 plt.close('all')
 
                 trip_instances = []
@@ -555,8 +555,8 @@ class Data_Analysis:
                     plt_fig.savefig(save_path)
 
                     # Save interactive figure
-                    output_file = graphsdir.joinpath('trip_instances.fig.pickle')
-                    pickle.dump(plt_fig, open(output_file, 'wb'))
+                    # output_file = graphsdir.joinpath('trip_instances.fig.pickle')
+                    # pickle.dump(plt_fig, open(output_file, 'wb'))
                     plt.close('all')
 
                 # Compute aggregated trip_instances
@@ -629,9 +629,9 @@ class Data_Analysis:
                         'trip_instances_aggregated.svg')
                     plt_fig.savefig(save_path)
 
-                    output_file = graphsdir.joinpath(
-                        'trip_instances_aggregated.fig.pickle')
-                    pickle.dump(plt_fig, open(output_file, 'wb'))
+                    # output_file = graphsdir.joinpath(
+                    #     'trip_instances_aggregated.fig.pickle')
+                    # pickle.dump(plt_fig, open(output_file, 'wb'))
                     plt.close('all')
 
                 # TODO Read calendar.txt and find the days of the week that the
@@ -1144,27 +1144,21 @@ class Data_Analysis:
             print("Calculating the total number of trips in the system...")
             total_trip_instances = 0
             for trip_id in tqdm(ev_names):
-                frequency_definition = frequencies_df[
+                frequency_definitions = frequencies_df[
                     frequencies_df['trip_id'] == trip_id]
-                if len(frequency_definition) == 1:
-                    frequency_definition = frequency_definition.iloc[0]
-                else:
-                    raise ValueError("More than one frequency definition " +
-                                     "for trip_id: " + trip_id)
-                    # FIXME: Accommodate this case. It is certainly a valid
-                    # possibility.
-                service_start_time = dt.datetime(
-                    2000, 1, 1, *[int(x) for x in frequency_definition[
-                        'start_time'].split(':')])
-                service_end_time = dt.datetime(
-                    2000, 1, 1, *[int(x) for x in frequency_definition[
-                        'end_time'].split(':')])
-                headway_time = dt.timedelta(
-                    seconds=int(frequency_definition['headway_secs']))
-                num_trips = int(
-                    (service_end_time - service_start_time).total_seconds() /
-                    headway_time.total_seconds()) + 1
-                total_trip_instances += num_trips
+                for _, frequency_definition in frequency_definitions.iterrows():
+                    service_start_time = dt.datetime(
+                        2000, 1, 1, *[int(x) for x in frequency_definition[
+                            'start_time'].split(':')])
+                    service_end_time = dt.datetime(
+                        2000, 1, 1, *[int(x) for x in frequency_definition[
+                            'end_time'].split(':')])
+                    headway_time = dt.timedelta(
+                        seconds=int(frequency_definition['headway_secs']))
+                    num_trips = int(
+                        (service_end_time - service_start_time).total_seconds() /
+                        headway_time.total_seconds()) + 1
+                    total_trip_instances += num_trips
 
         # Create a summary mean plot of the fleet
         plt_figs = {}
