@@ -80,7 +80,7 @@ def main(scenario_dir: Path):
             new_row.append('')  # Heading
             new_row.append('')  # Satellites
             new_row.append('')  # HDOP
-            new_row.append(str(int(float(row['time']) * 3600)))  # AgeOfReading
+            new_row.append('')  # AgeOfReading
             new_row.append(row['dist'])  # DistanceSinceReading
             new_row.append(row['speed'])  # Velocity
             new_row.append(row['stop_id'])  # StopID
