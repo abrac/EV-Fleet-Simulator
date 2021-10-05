@@ -9,16 +9,21 @@ Instructions
 
 1. Run the scenario initialisation to create the folder structure in your 
    scenario directory.
+
 1. Go to `$Scenario_Dir/_Inputs/Map/Boundary` and create `boundary.csv`.
 
-   It must be in the following format: 
+   It must be a csv file with the following format: 
 
-   | Longitude | Latitude |
-   |-----------|----------|
-   | 18.6      | -34.3    |
-   | 19.0      | -34.3    |
-   | 19.0      | -33.7    |
-   | 18.6      | -33.7    |
+   ```
+   +-----------+-----------+
+   | Longitude | Latitude  |
+   |-----------|-----------|
+   | <min_lon> | <min_lat> |
+   | <max_lon> | <min_lat> |
+   | <max_lon> | <max_lat> |
+   | <min_lon> | <max_lat> |
+   +-----------+-----------+
+   ```
 
 1. Download an `osm.pbf` file which represents the country. Currently, they are 
    available from [geofabrik.de](
@@ -63,7 +68,11 @@ Instructions
     In the text-box type each of the following, pressing "Apply selection" each
     time.
 
-    <!--
+    1. highway.track
+    1. highway.services
+    1. highway.service
+
+    <!-- <COMMENT> LIST OF EDGE TYPES:
     1. highway.motorway
     1. highway.motorway_link
     1. highway.trunk
@@ -81,9 +90,6 @@ Instructions
     1. highway.services
     1. highway.track
     -->
-    1. highway.track
-    1. highway.services
-    1. highway.service
 
     Note that each time you press the "Apply selection button", *Edges* (i.e. 
     roads) on the map are being highlighted in blue. This indicates that the
@@ -101,31 +107,70 @@ Instructions
 
 1. Move the resulting `net.xml` file in `$Scenario_Dir/_Inputs/
    Map`
+
 1. Copy raw vehicle data to `$Scenario_Dir/_Inputs/Traces/Original`.
-    1. If the raw data is floating car data (FCD), i.e. GPS traces, proceed to 
-       the next step.
-    1. If the raw data is of the General Transit Feed Specification (GTFS),
-       unzip the GTFS archive into: `$Scenario_Dir/_Inputs/Traces/Original/
-       GTFS`.
-    1. Make sure that GTFS data complies to the following caveats:
-        1. Arrival times *and* departure times must be defined in 
-           `stop_times.csv`. They should not be equal to the same value.
-        1. `frequencies.txt` must be defined for each and every trip.
-1. Create a script in `$Src_Dir/data_processing_ev/scenario_initialisation/
-   Data_Pre-Processing` to transform the gps-traces to be in the format of the 
-   original Stellenbosch data.
-    1. Specifically, the data must be in CSV format with the below format.
-    1. The headings in marked with `*` are required. 
-    1. Headings marked with `+` are conditionally required.
-        1. StopID only required for GTFS data.
 
-   |          | GPSID | Time *                    | Latitude *  | Longitude * | Altitude  | Heading   | Satellites | HDOP[^1] | AgeOfReading | DistanceSinceReading | Velocity * | StopID + |
-   |----------|-------|---------------------------|-------------|-------------|-----------|-----------|------------|----------|--------------|----------------------|------------|----------|
-   | Datatype | str   | str                       | float       | float       | int/float | int/float | int        | float    | int          | int                  | int        | str      |
-   | units    | -     | 'yyyy/mm/dd HH:MM:ss APM' | [-]11.11111 | [-]11.11111 | meters    | degrees   | -          | meters   | minutes?     | meters               | km/h       | -        |
+    If the raw data is floating car data (FCD), i.e. GPS traces, proceed to the 
+    next step.
 
-1. Copy the script to the `$Scenario_Dir/_Inputs/Traces/` directory and run it.
+    If the raw data is of the General Transit Feed Specification (GTFS), unzip
+    the GTFS archive into: `$Scenario_Dir/_Inputs/Traces/Original/ GTFS`.
+
+    Make sure that GTFS data complies to the following caveats:
+
+    1. Arrival times *and* departure times must be defined in `stop_times.csv`.
+       They should not be equal to the same value.
+
+    1. `frequencies.txt` must be defined for each and every trip.
+
+1. If your input data is *floating car data*, you will need to create a script to 
+   transform the gps-traces to a CSV file in the format that is compatible with 
+   EV-Fleet-Sim. Please see the table below which outlines the columns that 
+   are required in the CSV file, and the format that their values need to 
+   conform to.
+
+   There are some template scripts in `$Src_Dir/data_processing_ev/
+   scenario_initialisation/Data_Pre-Processing/` to help you create your 
+   script.
+
+   However, if your input data is of the *GTFS* data format, you can use the 
+   `GTFS_Convert.r` and `GTFS_Splitter.py` scripts which are in the 
+   `Data_Pre-Processing` folder. You can use them as-is. No changes necessary.
+
+   ```
+   +----------+-------+---------------------------+-------------+--
+   |          | GPSID | Time *                    | Latitude *  |   ...
+   |----------|-------|---------------------------|-------------|--
+   | Datatype | str   | str                       | float       |   ...
+   | units    | -     | 'yyyy/mm/dd HH:MM:ss APM' | [-]11.11111 |
+   +----------+-------+---------------------------+-------------+--
+
+        -------------+-----------+-----------+------------+----------+--
+    ...  Longitude * | Altitude  | Heading   | Satellites | HDOP[^1] |   ...
+        -------------|-----------|-----------|------------|----------|--
+    ...  float       | int/float | int/float | int        | float    |   ...
+         [-]11.11111 | meters    | degrees   | -          | meters   |
+        -------------+-----------+-----------+------------+----------+--
+
+        --------------+----------------------+------------+--------------+
+    ...  AgeOfReading | DistanceSinceReading | Velocity * | StopID[^2] + |
+        --------------|----------------------|------------|--------------|
+    ...  int          | int                  | int        | str          |
+         minutes?     | meters               | km/h       | -            |
+        --------------+----------------------+------------+--------------+
+
+   Notes:
+   ------
+
+   The headings marked with `*` are required. 
+   Headings marked with `+` are conditionally required.
+
+   [^1]: Horizontal Dilution of Precision. Lower is better.
+   [^2]: StopID column only required for GTFS input data.
+   ```
+
+1. Copy the scripts to the `$Scenario_Dir/_Inputs/Traces/` directory and run 
+   them.
+
 1. Make sure the processed traces are in `$Scenario_Dir/_Inputs/Traces/
    Processed`.
-
-[^1]: Horizontal Dilution of Precision. Lower is better.
