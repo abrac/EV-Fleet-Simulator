@@ -11,14 +11,31 @@
 Software
 --------
 
-| Name       |   Version  | Description                                                                   |
-|------------|:----------:|-------------------------------------------------------------------------------|
-| *SUMO [^1] |    1.8.0   | Traffic mobility simulator.                                                   |
-| *Python    |     3.8    | A dangerous snake.                                                            |
-| *Bash      |      5     | The terminal used in Linux and MacOS. Windows can run Bash through WSL.       |
-| *SAM       | 2020.11.29 | Simulator of Renewable-Energy Generators (Solar panels, wind-turbines, etc.). |
-| *R         |    4.0.4   | R programming language.                                                       |
+    |-------------|------------|---------------------------------------------|
+    | Name        |   Version  | Description                                 |
+    |=============|:==========:|=============================================|
+    | *SUMO [^1]  |    1.8.0   | Traffic mobility simulator.                 |
+    |-------------|------------|---------------------------------------------|
+    | *Python     |     3.8    | An awesome programming language named after |
+    |             |            | a dangerous snake.                          |
+    |-------------|------------|---------------------------------------------|
+    | *Bash       |      5     | The terminal used in Linux and MacOS.       |
+    |             |            | Windows can run Bash through WSL.           |
+    |-------------|------------|---------------------------------------------|
+    | *SAM        | 2020.11.29 | Simulator of Renewable-Energy Generators    |
+    |             |            | (Solar panels, wind-turbines, etc.).        |
+    |-------------|------------|---------------------------------------------|
+    | *R          |    4.0.4   | R programming language.                     |
+    |-------------|------------|---------------------------------------------|
+    | *OSMConvert |   0.8.10   | Software for cropping OpenStreetMap files.  |
+    |             |            | Not available on Mac. For Mac, use Osmosis  |
+    |             |            | or Osmium-Tool.                             |
+    |-------------|------------|---------------------------------------------|
 
+    [^1]: Make sure that libsumo is compiled with SUMO. The Ubuntu PPA does not 
+          include it by default. Libsumo is required by *Step 4 (Routing)*. The 
+          other steps will work without libsumo. I think the Windows binaries 
+          released by sumo are compiled together with libsumo.
 
 SUMO Dependencies
 -----------------
@@ -38,30 +55,45 @@ Ubuntu packages:
 Python Packages
 ---------------
 
-| Name            | Version | Description                                                                   |
-|-----------------|:-------:|-------------------------------------------------------------------------------|
-| *tqdm           |         | Progress bars.                                                                |
-| *matplotlib     |         | Plots.                                                                        |
-| *pandas         |         | Structuring & manipulating data.                                              |
-| *hdbscan        |         |                                                                               |
-| *numpy          |         |                                                                               |
-| *scipy          |         |                                                                               |
-| *scikit-learn   |         |                                                                               |
-| *folium         |         | Map visualisation library.                                                    |
-| *haversine      |  2.3.1  | Calculating distance between GPS coordinates.                                 |
-| *rtree          |         | Used by SUMO for finding lanes that are closest to a specified geo-coordinate |
-| memory_profiler |         |                                                                               |
+    |-----------------|---------|-----------------------------------------|
+    | Name            | Version | Description                             |
+    |=================|:=======:|=========================================|
+    | *tqdm           |         | Progress bars.                          |
+    |-----------------|---------|-----------------------------------------|
+    | *matplotlib     |         | Plots.                                  |
+    |-----------------|---------|-----------------------------------------|
+    | *pandas         |         | Structuring & manipulating data.        |
+    |-----------------|---------|-----------------------------------------|
+    | *hdbscan        |         |                                         |
+    |-----------------|---------|-----------------------------------------|
+    | *numpy          |         |                                         |
+    |-----------------|---------|-----------------------------------------|
+    | *scipy          |         |                                         |
+    |-----------------|---------|-----------------------------------------|
+    | *scikit-learn   |         |                                         |
+    |-----------------|---------|-----------------------------------------|
+    | *folium         |         | Map visualisation library.              |
+    |-----------------|---------|-----------------------------------------|
+    | *haversine      |  2.3.1  | Calculating distance between GPS        |
+    |                 |         | coordinates.                            |
+    |-----------------|---------|-----------------------------------------|
+    | *rtree          |         | Used by SUMO for finding lanes that are |
+    |                 |         | closest to a specified geo-coordinate   |
+    |-----------------|---------|-----------------------------------------|
+    | memory_profiler |         |                                         |
+    |-----------------|---------|-----------------------------------------|
 
 
 R packages
 ----------
 
-| Name      | Version | Description                                        |
-|-----------|:-------:|----------------------------------------------------|
-| +gtfs2gps |  1.5.4  | Converts GTFS public transport data to GPS traces. |
+    |----------------|---------|--------------------------------------------|
+    | Name           | Version | Description                                |
+    |================|:=======:|============================================|
+    | +gtfs2gps [^1] |  1.5.4  | Converts GTFS public transport data to GPS |
+    |                |         | traces.                                    |
+    |----------------|---------|--------------------------------------------|
+
+    [^1]: Required if using GTFS data inputs.
 
 
-[^1]: Make sure that libsumo is compiled with SUMO. The Ubuntu PPA does not 
-      include it by default. Libsumo is required by *Step 4 (Routing)*. The 
-      other steps will work without libsumo. I think the Windows binaries 
-      released by sumo are compiled together with libsumo.
