@@ -34,76 +34,79 @@ Instructions
    https://wiki.openstreetmap.org/wiki/PBF_Format) can be found at the OSM 
    wiki.
 
-1. Copy the `.osm.pbf` file and `./Map_Construction/pbf_to_osm.sh` to
-   `$Scenario_Dir/_Inputs/Map/Construction`. 
+1. Copy the `.osm.pbf` file to `$Scenario_Dir/_Inputs/Map/Construction`. 
 
-   Open the copy of the `.sh` file in a text editor, and modify the
+   You will find a bash script called `pbf_to_osm.sh` in the `Construction`
+   directory. Open it in a text editor, and modify the
    `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>` to correspond with the values
    added to `boundary.csv`. 
 
    > E.g. `-b=18.6,-34.3,19.0,-33.7`
 
-   Run the modified `.sh` file to convert the `.osm.pbf` file to an `osm` file,
+   Run the modified `.sh` file to convert the `.osm.pbf` file to a `.osm` file,
    while cropping to the specified boundary.
 
-1. Copy `./Map_Contruction/net_convert.sh` to the `Construction` directory.
-   Run the script to convert the `.osm` file to `.net.xml`. 
+1. You will also find a `net_convert.sh` file in the `Construction` directory.
+   Run the script to convert the `.osm` file to `.net.xml` (the file-format 
+   compatible with SUMO).
 
    Sometimes this step will throw many warnings due to badly formed data. If
    you have time, try and fix the warnings by editing the `.net.xml` file. (I
    almost always ignore the warnings though...)
 
-1. Give permission for taxis to drive on almost any road.
+1. Give permission for taxis (or whatever [vehicle type](
+   https://sumo.dlr.de/docs/Definition_of_Vehicles,_Vehicle_Types,_and_Routes.html#vehicle_types
+   ) you want to use) to drive on almost any road.
 
-    Open the generated `.net.xml` file in the `Netedit` software which comes
-    with SUMO. 
+   Open the generated `.net.xml` file in the `Netedit` software which comes
+   with SUMO. 
 
-    Change to "Selection" mode. (`Menu Bar > Edit > Select mode`)
+   Change to "Selection" mode. (`Menu Bar > Edit > Select mode`)
 
-    In the left side-panel,  make sure "Modification Mode" is "add", and that
-    there *0 items* currently selected. Scroll down to the "Match Attribute"
-    section. 
+   In the left side-panel,  make sure "Modification Mode" is "add", and that
+   there *0 items* currently selected. Scroll down to the "Match Attribute"
+   section. 
 
-    Select "edge" in the first combo-box, and "type" in the second combo-box.
-    In the text-box type each of the following, pressing "Apply selection" each
-    time.
+   Select "edge" in the first combo-box, and "type" in the second combo-box.
+   In the text-box type each of the following, pressing "Apply selection" each
+   time.
 
-    1. highway.track
-    1. highway.services
-    1. highway.service
+   1. highway.track
+   1. highway.services
+   1. highway.service
 
-    <!-- <COMMENT> LIST OF EDGE TYPES:
-    1. highway.motorway
-    1. highway.motorway_link
-    1. highway.trunk
-    1. highway.trunk_link
-    1. highway.primary
-    1. highway.primary_link
-    1. highway.secondary
-    1. highway.secondary_link *
-    1. highway.tertiary
-    1. highway.tertiary_link
-    1. highway.unclassified
-    1. highway.residential *
-    1. highway.living_street
-    1. highway.service
-    1. highway.services
-    1. highway.track
-    -->
+   <!-- <COMMENT> LIST OF EDGE TYPES:
+   1. highway.motorway
+   1. highway.motorway_link
+   1. highway.trunk
+   1. highway.trunk_link
+   1. highway.primary
+   1. highway.primary_link
+   1. highway.secondary
+   1. highway.secondary_link *
+   1. highway.tertiary
+   1. highway.tertiary_link
+   1. highway.unclassified
+   1. highway.residential *
+   1. highway.living_street
+   1. highway.service
+   1. highway.services
+   1. highway.track
+   -->
 
-    Note that each time you press the "Apply selection button", *Edges* (i.e. 
-    roads) on the map are being highlighted in blue. This indicates that the
-    edges are selected.
+   Note that each time you press the "Apply selection button", *Edges* (i.e. 
+   roads) on the map are being highlighted in blue. This indicates that the
+   edges are selected.
 
-    Switch to "Inspect" mode. (`Menu Bar > Edit > Inspect mode`)
+   Switch to "Inspect" mode. (`Menu Bar > Edit > Inspect mode`)
 
-    Click on any of the selected edges to inspect the entire selection.  Note:
-    Netedit may hang if your selection is very large. If you are unable to
-    proceed, try to repeat these steps with a one edge type at a time.
+   Click on any of the selected edges to inspect the entire selection.  Note:
+   Netedit may hang if your selection is very large. If you are unable to
+   proceed, try to repeat these steps with a one edge type at a time.
 
-    Append "passenger" and "taxi" to the "allowed" field.
+   Append "passenger" and "taxi" to the "allowed" field.
 
-    Save the `.net.xml` file.
+   Save the `.net.xml` file.
 
 1. Move the resulting `net.xml` file in `$Scenario_Dir/_Inputs/
    Map`

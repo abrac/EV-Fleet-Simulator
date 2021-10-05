@@ -30,7 +30,8 @@ SCENARIO_DIR_STRUCTURE = {
             'Processed': None
         },
         'Map': {
-            'Boundary': None
+            'Boundary': None,
+            'Construction': None
         },
         'Configs': None,
         'Weather': None

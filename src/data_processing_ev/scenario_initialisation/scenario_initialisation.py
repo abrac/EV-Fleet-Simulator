@@ -44,6 +44,19 @@ def initialise_scenario(scenario_dir: Path, **kwargs):
             '_Inputs', 'Map', 'Boundary', 'boundary.csv')
         shutil.copy(from_file, to_file)
 
+        # copy ./Initialisation_Files/Map_Construction/netconvert.sh
+        from_file = Path(__file__).parent.joinpath(
+            'Initialisation_Files', 'Map_Construction', 'netconvert.sh')
+        to_file = scenario_dir.joinpath(
+            '_Inputs', 'Map', 'Construction', 'netconvert.sh')
+        shutil.copy(from_file, to_file)
+
+        # copy ./Initialisation_Files/Map_Construction/pbf_to_osm.sh
+        from_file = Path(__file__).parent.joinpath(
+            'Initialisation_Files', 'Map_Construction', 'pbf_to_osm.sh')
+        to_file = scenario_dir.joinpath(
+            '_Inputs', 'Map', 'Construction', 'pbf_to_osm.sh')
+        shutil.copy(from_file, to_file)
 
     def create_readme():
         with open(str(scenario_dir.joinpath('readme.json')), 'w') as f:
