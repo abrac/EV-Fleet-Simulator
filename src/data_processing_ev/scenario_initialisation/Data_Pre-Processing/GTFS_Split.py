@@ -49,12 +49,13 @@ def main(scenario_dir: Path):
           "\nPress enter to continue...")
 
     for (_, trip_id, _), gps_df in gps_dfs:
+
+        trip_id = '#'.join(trip_id.split('#')[:-1])  # Remove the trip number
+                                                     # from the trip ID.
+
         output_file = processed_traces_dir.joinpath(f"{trip_id}.csv")
 
         if output_file.exists():
-            continue
-
-        if trip_id.split('_')[0] == 'bus':
             continue
 
         gps_df = gps_df.fillna('')
@@ -72,7 +73,7 @@ def main(scenario_dir: Path):
         for _, row in gps_df.iterrows():
             new_row = []
             new_row.append(row['id'])  # GPSID
-            new_row.append(_reformat_time(int(float(row['cumtime_new']))))  # Time
+            new_row.append(_reformat_time(int(float(row['cumtime']))))  # Time
             new_row.append(row['shape_pt_lat'])  # Latitude
             new_row.append(row['shape_pt_lon'])  # Longitude
             new_row.append('')  # Altitude

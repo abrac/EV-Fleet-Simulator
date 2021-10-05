@@ -90,7 +90,7 @@ R packages
     |----------------|---------|--------------------------------------------|
     | Name           | Version | Description                                |
     |================|:=======:|============================================|
-    | +gtfs2gps [^1] |  1.5.4  | Converts GTFS public transport data to GPS |
+    | +gtfs2gps [^1] |  1.6.0  | Converts GTFS public transport data to GPS |
     |                |         | traces.                                    |
     |----------------|---------|--------------------------------------------|
 
