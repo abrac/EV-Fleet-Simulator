@@ -1,6 +1,6 @@
 > Note: Version numbers are just the ones that I tested the program with. Other 
 > versions may also work. But many packages and software introduce breaking 
-> changes between releases. So be aweare of that.
+> changes between releases. So be aware of that.
 
 > Note: Packages marked with a `*` are mandatory. The other packages are 
 > recommended, but the software may work without them. Packages marked with a
@@ -11,26 +11,31 @@
 Software
 --------
 
-    |-------------|------------|---------------------------------------------|
-    | Name        |   Version  | Description                                 |
-    |=============|:==========:|=============================================|
-    | *SUMO [^1]  |    1.8.0   | Traffic mobility simulator.                 |
-    |-------------|------------|---------------------------------------------|
-    | *Python     |     3.8    | An awesome programming language named after |
-    |             |            | a dangerous snake.                          |
-    |-------------|------------|---------------------------------------------|
-    | *Bash       |      5     | The terminal used in Linux and MacOS.       |
-    |             |            | Windows can run Bash through WSL.           |
-    |-------------|------------|---------------------------------------------|
-    | *SAM        | 2020.11.29 | Simulator of Renewable-Energy Generators    |
-    |             |            | (Solar panels, wind-turbines, etc.).        |
-    |-------------|------------|---------------------------------------------|
-    | *R          |    4.0.4   | R programming language.                     |
-    |-------------|------------|---------------------------------------------|
-    | *OSMConvert |   0.8.10   | Software for cropping OpenStreetMap files.  |
-    |             |            | Not available on Mac. For Mac, use Osmosis  |
-    |             |            | or Osmium-Tool.                             |
-    |-------------|------------|---------------------------------------------|
+    +-------------+--------------+--------------------------------------------+
+    | Name        |    Version   | Description                                |
+    |=============|:============:|============================================|
+    | *SUMO [^1]  |     1.8.0    | Traffic mobility simulator.                |
+    |-------------|--------------|--------------------------------------------|
+    | *Python     |     > 3.8    | An awesome, easy-to-learn programming      |
+    |             |              | language named after a dangerous snake.    |
+    |-------------|--------------|--------------------------------------------|
+    | *Git        |      Any     | A tool to collaborate on coding projects   |
+    |             |              | and track changes that we make.            |
+    |-------------|--------------|--------------------------------------------|
+    | *Bash       |      Any     | The terminal used in Linux and MacOS.      |
+    |             |              | Windows can emulate Bash using *Git Bash*. |
+    |             |              | It will be automatically installed when    |
+    |             |              | you install Git.                           |
+    |-------------|--------------|--------------------------------------------|
+    | *SAM        | > 2020.11.29 | Simulator of Renewable-Energy Generators   |
+    |             |              | (Solar panels, wind-turbines, etc.).       |
+    |-------------|--------------|--------------------------------------------|
+    | *R          |    > 4.0.4   | R programming language.                    |
+    |-------------|--------------|--------------------------------------------|
+    | *OSMConvert |   > 0.8.10   | Software for cropping OpenStreetMap files. |
+    |             |              | Not available on Mac. For Mac, use Osmosis |
+    |             |              | or Osmium-Tool.                            |
+    +-------------+--------------+--------------------------------------------+
 
     [^1]: Make sure that libsumo is compiled with SUMO. The Ubuntu PPA does not 
           include it by default. Libsumo is required by *Step 4 (Routing)*. The 

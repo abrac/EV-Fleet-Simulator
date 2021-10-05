@@ -64,7 +64,7 @@ Installation
 1. Clone the project to your local PC, into a folder of your choice. 
 
    ```sh
-   # Note: Commands shown in this file are for Linux.
+   # Note: Commands shown in this file work in Bash.
    mkdir -p ~/Applications  # Make a folder called "Applications" in your home directory.
    cd ~/Applications  # Change your terminal's directory to the folder you created.
    git clone https://gitlab.com/eputs/ev-fleet-sim.git  # Clone the git repository into the new folder.
