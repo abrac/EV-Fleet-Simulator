@@ -4,12 +4,11 @@ from pathlib import Path
 import shutil
 from typing import Dict
 import json
+import data_processing_ev as dpr
 
 
 def initialise_scenario(scenario_dir: Path, **kwargs):
     """Initialise the scenario's folder structure."""
-
-    from .. import SCENARIO_DIR_STRUCTURE
 
     def create_dir(scenario_dir: Path, sub_dirs: Dict):
             """Make scenario sub-directories if they don't exist."""
@@ -30,12 +29,21 @@ def initialise_scenario(scenario_dir: Path, **kwargs):
         to_file = scenario_dir.joinpath('_Inputs', 'Configs',
                                         'ev_template.xml')
         shutil.copy(from_file, to_file)
+
         # copy custom_osm_test.template.sumocfg
         from_file = Path(__file__).parent.joinpath(
             'Initialisation_Files', 'custom_osm_test.template.sumocfg')
         to_file = scenario_dir.joinpath(
             '_Inputs', 'Configs', 'custom_osm_test.template.sumocfg')
         shutil.copy(from_file, to_file)
+
+        # copy boundary.csv
+        from_file = Path(__file__).parent.joinpath(
+            'Initialisation_Files', 'boundary.csv')
+        to_file = scenario_dir.joinpath(
+            '_Inputs', 'Map', 'Boundary', 'boundary.csv')
+        shutil.copy(from_file, to_file)
+
 
     def create_readme():
         with open(str(scenario_dir.joinpath('readme.json')), 'w') as f:
