@@ -68,9 +68,6 @@ SCENARIO_DIR_STRUCTURE = {
         'SAM_Scenario_File': None
     },
     'Results': {
-        'EV_Energy_Usage': None,
-        'EV_Stop_Durations': None,
-        'PV_Charging_Potential': None
     }
 }
 
