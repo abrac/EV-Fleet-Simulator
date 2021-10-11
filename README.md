@@ -1,3 +1,7 @@
+<!-- Note: This is a markdown file. Use a markdown editor to easily edit and
+     view this file. Just search the web for a nice markdown editor (like
+     Ghostwriter). -->
+
 > Notice: Please visit https://gitlab.com/eputs/ev-fleet-sim to ensure that you
 > are viewing the official, up-to-date version of this repository.
 

@@ -1,3 +1,7 @@
+<!-- Note: This is a markdown file. Use a markdown editor to easily edit and
+     view this file. Just search the web for a nice markdown editor (like
+     Ghostwriter). -->
+
 - [ ] Automatically compress results with
       ```sh
       tar -c -I 'xz -9 -T10' -f 'Battery.out.csv.tar.xz' ./T*/*/Battery.out.csv

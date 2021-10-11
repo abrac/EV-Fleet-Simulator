@@ -1,3 +1,7 @@
+<!-- Note: This is a markdown file. Use a markdown editor to easily edit and
+     view this file. Just search the web for a nice markdown editor (like
+     Ghostwriter). -->
+
 > Note: Version numbers are just the ones that I tested the program with. Other 
 > versions may also work. But many packages and software introduce breaking 
 > changes between releases. So be aware of that.
