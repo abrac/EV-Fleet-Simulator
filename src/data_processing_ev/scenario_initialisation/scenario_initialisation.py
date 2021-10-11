@@ -58,12 +58,31 @@ def initialise_scenario(scenario_dir: Path, **kwargs):
             '_Inputs', 'Map', 'Construction', 'pbf_to_osm.sh')
         shutil.copy(from_file, to_file)
 
+        # copy `./Initialisation_Files/Map_Construction/
+        # osmNetconvert_Africa.typ.xml`
+        from_file = Path(__file__).parent.joinpath(
+            'Initialisation_Files', 'Map_Construction',
+            'osmNetconvert_Africa.typ.xml')
+        to_file = scenario_dir.joinpath(
+            '_Inputs', 'Map', 'Construction', 'osmNetconvert_Africa.typ.xml')
+        shutil.copy(from_file, to_file)
+
+        # Copy `./initialisation-instructions.md`
+        from_file = Path(__file__).parent.joinpath(
+            'initialisation-instructions.md')
+        to_file = scenario_dir.joinpath(
+            'initialisation-instructions.md')
+        shutil.copy(from_file, to_file)
+
     def create_readme():
-        with open(str(scenario_dir.joinpath('readme.json')), 'w') as f:
-            json.dump(SCENARIO_DIR_STRUCTURE, f, indent=4)
+        with open(str(scenario_dir.joinpath('directory_structure.json')), 'w') as f:
+            json.dump(dpr.SCENARIO_DIR_STRUCTURE, f, indent=4)
         return
 
-    create_dir(scenario_dir, SCENARIO_DIR_STRUCTURE)
+    create_dir(scenario_dir, dpr.SCENARIO_DIR_STRUCTURE)
     # Add files from ./Default_Files into the scenario
     copy_default_files()
     create_readme()
+    print("Follow the initialisation instructions in: \n\t" +
+          scenario_dir.joinpath("initialisation-instructions.md") +
+          "\n\tbefore preoceeding with the remaining simulation steps.")
