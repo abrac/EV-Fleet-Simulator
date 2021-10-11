@@ -1,3 +1,7 @@
+<!-- Note: This is a markdown file. Use a markdown editor to easily edit and
+     view this file. Just search the web for a nice markdown editor (like
+     Ghostwriter). -->
+
 Instructions
 ============
 
@@ -7,138 +11,66 @@ Instructions
 > 
 > `$Src_Dir/` refers to the "src" directory in the EV-Fleet-Sim repository.
 
-1. Run the scenario initialisation to create the folder structure in your 
-   scenario directory.
+Firstly, run the scenario-initialisation step of EV-Fleet-Sim to create the
+folder structure in your scenario directory (`$Scenario_Dir`).
 
-1. Go to `$Scenario_Dir/_Inputs/Map/Boundary` and create `boundary.csv`.
+Initialising Trace Data
+-----------------------
 
-   It must be a csv file with the following format: 
+1. Copy your fleet's raw vehicle data to 
+   `$Scenario_Dir/_Inputs/Traces/Original`.
 
-   ```
-   +-----------+-----------+
-   | Longitude | Latitude  |
-   |-----------|-----------|
-   | <min_lon> | <min_lat> |
-   | <max_lon> | <min_lat> |
-   | <max_lon> | <max_lat> |
-   | <min_lon> | <max_lat> |
-   +-----------+-----------+
-   ```
+   EV-Fleet-Sim supports two data formats: [floating car data (FCD)](
+   https://en.wikipedia.org/wiki/Floating_car_data) (also commonly referred to 
+   as "GPS traces"), and [General Transit Feed Specification (GTFS)](
+   https://gtfs.org/). (GTFS is a way of digitally representing 
+   public-transport schedules.)
 
-1. Download an `osm.pbf` file which represents the country. Currently, they are 
-   available from [geofabrik.de](
-   https://download.geofabrik.de/). 
-   [Other sources](
-   https://wiki.openstreetmap.org/wiki/Planet.osm#Country_and_area_extracts) 
-   are available and [more information about pbf files](
-   https://wiki.openstreetmap.org/wiki/PBF_Format) can be found at the OSM 
-   wiki.
+   If the raw data is FCD, proceed to the next step.
 
-1. Copy the `.osm.pbf` file to `$Scenario_Dir/_Inputs/Map/Construction`. 
+   If the raw data is GTFS data, it should be a zipped archive. Rename the
+   archive to "GTFS.zip". Unzip the GTFS archive into: 
+   `$Scenario_Dir/_Inputs/Traces/Original/GTFS`.
 
-   You will find a bash script called `pbf_to_osm.sh` in the `Construction`
-   directory. Open it in a text editor, and modify the
-   `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>` to correspond with the values
-   added to `boundary.csv`. 
+   Make sure that GTFS data complies to the following caveats:
 
-   > E.g. `-b=18.6,-34.3,19.0,-33.7`
+   1. Arrival times *and* departure times must be defined in `stop_times.csv`.
+      They should not be equal to the same value.
 
-   Run the modified `.sh` file to convert the `.osm.pbf` file to a `.osm` file,
-   while cropping to the specified boundary.
+   1. `frequencies.txt` must be defined for each and every trip.
 
-1. You will also find a `net_convert.sh` file in the `Construction` directory.
-   Run the script to convert the `.osm` file to `.net.xml` (the file-format 
-   compatible with SUMO).
+1. As mentioned previously, your input data may be FCD or GTFS data. We need to
+   convert the input data fromat to *CSV files* that can be read by
+   EV-Fleet-Sim. Please see the [table
+   below](#table%3A-csv-input-format-for-ev-fleet-sim) which outlines the
+   columns that are required in each CSV file, and the format that their values
+   need to conform to.
 
-   Sometimes this step will throw many warnings due to badly formed data. If
-   you have time, try and fix the warnings by editing the `.net.xml` file. (I
-   almost always ignore the warnings though...)
+   ##### FCD Conversion
 
-1. Give permission for taxis (or whatever [vehicle type](
-   https://sumo.dlr.de/docs/Definition_of_Vehicles,_Vehicle_Types,_and_Routes.html#vehicle_types
-   ) you want to use) to drive on almost any road.
+   If your input data is floating car data, you will need to create a
+   script to transform the gps-traces to CSV files. You must generate one CSV 
+   file per vehicle in the fleet.
 
-   Open the generated `.net.xml` file in the `Netedit` software which comes
-   with SUMO. 
+   There are some template scripts in 
+   `$Src_Dir/data_processing_ev/scenario_initialisation/Data_Pre-Processing/` 
+   to help you create your script.
 
-   Change to "Selection" mode. (`Menu Bar > Edit > Select mode`)
+   ##### GTFS Conversion
 
-   In the left side-panel,  make sure "Modification Mode" is "add", and that
-   there *0 items* currently selected. Scroll down to the "Match Attribute"
-   section. 
+   If your input data is of the GTFS data format, you can use the 
+   `GTFS_Convert.r` and `GTFS_Splitter.py` scripts which are also in the 
+   `$Src_Dir/data_processing_ev/scenario_initialisation/Data_Pre-Processing/` 
+   directory. You can use them as-is. No changes should be necessary. The
+   scripts will generate one csv file per [trip](
+   https://gtfs.org/reference/static#dataset-files) defined in the GTFS
+   data.
 
-   Select "edge" in the first combo-box, and "type" in the second combo-box.
-   In the text-box type each of the following, pressing "Apply selection" each
-   time.
+   The `GTFS_Splitter.py` script will tell you the maximum and minimum GPS
+   coorindates encountered. Hold onto these values. They will be useful when
+   [generating the road-network](#initialising-road-network).
 
-   1. highway.track
-   1. highway.services
-   1. highway.service
-
-   <!-- <COMMENT> LIST OF EDGE TYPES:
-   1. highway.motorway
-   1. highway.motorway_link
-   1. highway.trunk
-   1. highway.trunk_link
-   1. highway.primary
-   1. highway.primary_link
-   1. highway.secondary
-   1. highway.secondary_link *
-   1. highway.tertiary
-   1. highway.tertiary_link
-   1. highway.unclassified
-   1. highway.residential *
-   1. highway.living_street
-   1. highway.service
-   1. highway.services
-   1. highway.track
-   -->
-
-   Note that each time you press the "Apply selection button", *Edges* (i.e. 
-   roads) on the map are being highlighted in blue. This indicates that the
-   edges are selected.
-
-   Switch to "Inspect" mode. (`Menu Bar > Edit > Inspect mode`)
-
-   Click on any of the selected edges to inspect the entire selection.  Note:
-   Netedit may hang if your selection is very large. If you are unable to
-   proceed, try to repeat these steps with a one edge type at a time.
-
-   Append "passenger" and "taxi" to the "allowed" field.
-
-   Save the `.net.xml` file.
-
-1. Move the resulting `net.xml` file in `$Scenario_Dir/_Inputs/
-   Map`
-
-1. Copy raw vehicle data to `$Scenario_Dir/_Inputs/Traces/Original`.
-
-    If the raw data is floating car data (FCD), i.e. GPS traces, proceed to the 
-    next step.
-
-    If the raw data is of the General Transit Feed Specification (GTFS), unzip
-    the GTFS archive into: `$Scenario_Dir/_Inputs/Traces/Original/ GTFS`.
-
-    Make sure that GTFS data complies to the following caveats:
-
-    1. Arrival times *and* departure times must be defined in `stop_times.csv`.
-       They should not be equal to the same value.
-
-    1. `frequencies.txt` must be defined for each and every trip.
-
-1. If your input data is *floating car data*, you will need to create a script to 
-   transform the gps-traces to a CSV file in the format that is compatible with 
-   EV-Fleet-Sim. Please see the table below which outlines the columns that 
-   are required in the CSV file, and the format that their values need to 
-   conform to.
-
-   There are some template scripts in `$Src_Dir/data_processing_ev/
-   scenario_initialisation/Data_Pre-Processing/` to help you create your 
-   script.
-
-   However, if your input data is of the *GTFS* data format, you can use the 
-   `GTFS_Convert.r` and `GTFS_Splitter.py` scripts which are in the 
-   `Data_Pre-Processing` folder. You can use them as-is. No changes necessary.
+   ##### Table: CSV input format for EV-Fleet-Sim
 
    ```
    +----------+-------+---------------------------+-------------+--
@@ -162,8 +94,9 @@ Instructions
          minutes?     | meters               | km/h       | -            |
         --------------+----------------------+------------+--------------+
 
+
    Notes:
-   ------
+   ======
 
    The headings marked with `*` are required. 
    Headings marked with `+` are conditionally required.
@@ -172,8 +105,167 @@ Instructions
    [^2]: StopID column only required for GTFS input data.
    ```
 
-1. Copy the scripts to the `$Scenario_Dir/_Inputs/Traces/` directory and run 
+1. Copy the script(s) to the `$Scenario_Dir/_Inputs/Traces/` directory and run 
    them.
 
-1. Make sure the processed traces are in `$Scenario_Dir/_Inputs/Traces/
-   Processed`.
+1. Make sure the processed traces are in 
+   `$Scenario_Dir/_Inputs/Traces/Processed`.
+
+Vehicle Definition
+------------------
+
+1. Open the `$Scenario_Dir/_Inputs/Configs/ev_template.xml` file in your
+   favourite text editor.
+
+1. Choose a [vehicle class](
+   https://sumo.dlr.de/docs/Definition_of_Vehicles,_Vehicle_Types,_and_Routes.html#abstract_vehicle_class
+   ) that will represent your fleet in SUMO. Try to choose the class that most
+   closely represents the type of vehicle you are trying to simulate. If you 
+   don't know which one to choose, choose the "passenger" vehicle type.
+
+   (List of available vehicle classes: [SUMO Documentation](
+    https://sumo.dlr.de/docs/Definition_of_Vehicles,_Vehicle_Types,_and_Routes.html#abstract_vehicle_class))  
+   (Default parameters of the various vehicle classes: [SUMO Documentation](
+    https://sumo.dlr.de/docs/Vehicle_Type_Parameter_Defaults.html))
+
+1. In this file, find the `vType` *element*: 
+   ```xml
+   <vType ... >
+
+       ⋮
+
+   </vType>
+   ```
+
+   In the `vType` element, find the `vClass` *attribute*:
+   ```xml
+   <vType ... vClass="value" ... >
+   ```
+
+   Change this attribute's value to the desired vehicle class. Change the other
+   attributes of the `vType` element if desired. (To read more about the
+   attributes and what their values mean, refer: [SUMO
+   documentation](
+   https://sumo.dlr.de/docs/Definition_of_Vehicles,_Vehicle_Types,_and_Routes.html#available_vtype_attributes).)
+
+   Find the `param` elements:
+   ```xml
+   <param  key="..."  value="..." >
+   ```
+
+   If desired, you can change the values of the various parameters to modify
+   the electric-vehicle model.
+
+   (Reference to electric vehicle parameters: [SUMO Documentation](
+    https://sumo.dlr.de/docs/Models/Electric.html#defining_electric_vehicles))
+
+Initialising Road Network
+-------------------------
+
+1. Go to `$Scenario_Dir/_Inputs/Map/Boundary`. You will find a file called
+   `boundary.csv`. It is a csv file with two columns. Each row represents the
+   coordinates of each of the four points in the boundary box that you would
+   like to create.
+
+   | Longitude |  Latitude |
+   |----------:|----------:|
+   | <min_lon> | <min_lat> |
+   | <max_lon> | <min_lat> |
+   | <max_lon> | <max_lat> |
+   | <min_lon> | <max_lat> |
+
+   This bounding box will be used during the simulation. For FCD, if a vehicle
+   leaves this bounding box on a particular day, that day's data will be
+   discarded. For GTFS data, it is recommended to create a bounding box
+   corresponding to the values given by `GTFS_Splitter.py` as [explained
+   previously](#gtfs-conversion).
+
+1. Download an `osm.pbf` file which represents the country. Currently, they are
+   available from [geofabrik.de](https://download.geofabrik.de/). [Other
+   sources](
+   https://wiki.openstreetmap.org/wiki/Planet.osm#Country_and_area_extracts)
+   are available and more information about pbf files can be found at the [OSM
+   wiki](https://wiki.openstreetmap.org/wiki/PBF_Format).
+
+1. Copy the `.osm.pbf` file to `$Scenario_Dir/_Inputs/Map/Construction`. 
+
+   You will find a bash script called `pbf_to_osm.sh` in the `Construction`
+   directory. Open it in a text editor, and modify the
+   `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>` to correspond with the values
+   added to `boundary.csv`. 
+
+   > E.g. `-b=18.6,-34.3,19.0,-33.7`
+
+   Run the modified `.sh` file to convert the `.osm.pbf` file to a `.osm` file,
+   while cropping to the specified boundary.
+
+1. You will also find a `net_convert.sh` file in the `Construction` directory.
+   We will run this script to convert the `.osm` file to a `.net.xml` file (the
+   file-format compatible with SUMO). But before we do that, take note of the
+   `.typ.xml` file that is present in the `Construction` directory. This is a
+   *SUMO edge-type file*.
+
+   The `.typ.xml` file defines which vehicle classes are allowed to access the
+   various road types. It needs to be modified to suit the context of the
+   scenario.
+
+   For example, gravel roads (`highway.track`) are common in developing
+   countries, and hence it would be expected that vehicles have access to those
+   roads in the simulation (since they have no choice). In cities of developed 
+   countries, where gravel roads are less common, it may be appropriate to
+   restrict vehicles from accessing them.
+
+   (Information on SUMO edge-type files: [SUMO Documentation](
+    https://sumo.dlr.de/docs/SUMO_edge_type_file.html))
+
+1. ##### Setting road access permissions:
+
+   Remember that [previously](#vehicle-definition) we
+   chose a vehicle class to represent our fleet? Now we need to choose which
+   road-types allow our vehicle class.
+
+   Open the `.typ.xml` file in your favourite text editor. For each road-type
+   listed, change the `disallow` and `allow` attributes to allow/disallow your
+   vehicle class. You can also change the other attributes, such as the speed
+   limits on the various road types.
+
+   (Description of the various road types: [OpenStreetMap Wiki](
+    https://wiki.openstreetmap.org/wiki/Map_features#Highway))
+
+
+1. Now we can proceed to run the `net_convert.sh` script. Sometimes this step
+   will throw many warnings due to badly formed data. If you have time, try and
+   fix the warnings by editing the `.net.xml` file in NETEDIT. (I usually
+   ignore the errors, because most can be safely ignored.)
+
+   There is one warning that requires special mention: If you get the following
+   warning: `Warning: Discarding unusable type ...`, it means that netconvert
+   encountered a road type which is not defined in the `typ.xml` file.
+   In such cases, netconvert will ignore roads which have not been defined.
+   (I.e. It will pretend as if they didn't exist.) If the road type is
+   important to you, add it to the `.typ.xml` file, and [set it's access
+   permissions](#setting-road-access-permissions%3A).
+
+   Once the scrpt is done running, the `.net.xml` file can be found in: 
+   `$Scenario_Dir/_Inputs/Map/`, and a log of the warnings will be saved as a
+   text file in the `Construction` directory.
+
+   (Description of netconvert warnings and the recommended actions: [SUMO
+   Documentation](
+   https://sumo.dlr.de/docs/Networks/Import/OpenStreetMap.html#warnings_during_import))
+
+1. We have now initialised the road network. However, if you want to make small
+   changes, or view the generated road network graphically, you can open the 
+   `.net.xml` file with the `Netedit` software which comes with SUMO. 
+
+   (Netedit usage instructions: [SUMO Documentation](https://sumo.dlr.de/docs/Netedit/index.html))
+
+Initialising Weather Data
+-------------------------
+
+Because EV-Fleet-Sim also does renewable energy calculations, you may also put
+weather data files in the `$Scenario_Dir/_Inputs/Weather` directory. If you are
+not interested in doing renewable energy calculations, you may leave the
+directory empty.
+
+<!-- TODO Add more information -->
