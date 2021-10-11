@@ -35,7 +35,8 @@ def gen_map_traces(scenario_dir: Path, mapping_points: bool = True,
     # Read location from the boundary.csv file.
     boundary_file = scenario_dir.joinpath('_Inputs', 'Map', 'Boundary',
                                           'boundary.csv')
-    boundary = pd.read_csv(boundary_file)
+    boundary = pd.read_csv(boundary_file, skipinitialspace=True,
+                           sep='\\s*,\\s*', engine='python')
     longitude = boundary.loc[:, 'Longitude'].mean()
     latitude = boundary.loc[:, 'Latitude'].mean()
     for trace_file in tqdm(traces_list):

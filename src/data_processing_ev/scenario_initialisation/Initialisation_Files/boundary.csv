@@ -1,5 +1,5 @@
-Longitude , Latitude
-<min_lon> , <min_lat>
-<max_lon> , <min_lat>
-<max_lon> , <max_lat>
-<min_lon> , <max_lat>
+Longitude, Latitude
+<min_lon>,<min_lat>
+<max_lon>,<min_lat>
+<max_lon>,<max_lat>
+<min_lon>,<max_lat>

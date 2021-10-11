@@ -103,7 +103,8 @@ def filter_cluster(cluster_file: Path, pid: int, boundary_file: Path,
     clustered_trace = pd.read_csv(cluster_file)
     # Remove outliers from data.
     clustered_trace = clustered_trace[clustered_trace['Cluster'] != -1]
-    boundary = pd.read_csv(boundary_file)
+    boundary = pd.read_csv(boundary_file, skipinitialspace=True,
+                           sep='\\s*,\\s*', engine='python')
     bad_dates = [*generate_bad_dates(clustered_trace, boundary, ev_name, pid,
                                      incl_weekends=False, **kwargs)]
 
