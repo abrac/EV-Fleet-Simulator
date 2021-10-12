@@ -84,5 +84,5 @@ def initialise_scenario(scenario_dir: Path, **kwargs):
     copy_default_files()
     create_readme()
     print("Follow the initialisation instructions in: \n\t" +
-          scenario_dir.joinpath("initialisation-instructions.md") +
+          str(scenario_dir.joinpath("initialisation-instructions.md")) +
           "\n\tbefore preoceeding with the remaining simulation steps.")
