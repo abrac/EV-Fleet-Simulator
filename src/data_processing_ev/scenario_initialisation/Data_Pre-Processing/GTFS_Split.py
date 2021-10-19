@@ -53,6 +53,10 @@ def main(scenario_dir: Path):
         trip_id = '#'.join(trip_id.split('#')[:-1])  # Remove the trip number
                                                      # from the trip ID.
 
+        # Remove special characters from trip_id.
+        trip_id = trip_id.replace(' ', '_').replace('-', '_').\
+            replace('(', '').replace(')', '')
+
         output_file = processed_traces_dir.joinpath(f"{trip_id}.csv")
 
         if output_file.exists():
