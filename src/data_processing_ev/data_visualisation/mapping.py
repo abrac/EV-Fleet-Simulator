@@ -7,6 +7,8 @@ from pathlib import Path
 from tqdm import tqdm
 import json
 from typing import Iterable, Tuple
+import branca.colormap
+from collections import defaultdict
 
 
 def gen_map_traces(scenario_dir: Path, mapping_points: bool = True,
@@ -68,9 +70,21 @@ def gen_map_traces(scenario_dir: Path, mapping_points: bool = True,
             #     folium.CircleMarker([row['Latitude'],
             #                          row['Longitude']]).add_to(map_area)
         if mapping_heatmap:
+            # Plot legend.
+            steps = 20
+            colormap = branca.colormap.LinearColormap(
+                ['#00007f', '#0000f0', '#0049ff', '#00b0ff', '#25ffd0', '#7bff7a', '#cdff29', '#ffc800', '#ff6400', '#f10700', '#7f0000'],
+                index=[0, 0.25, 0.45, 0.60, 0.70, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
+                vmin=0, vmax=1).to_step(steps)
+            gradient_map = defaultdict(dict)
+            for i in range(steps):
+                gradient_map[1 / steps * i] = colormap.rgb_hex_str(
+                    1 / steps * i)
+            colormap.add_to(map_area)
             # Add heatmap
             map_area.add_child(plugins.HeatMap(
-                data=df[['Latitude', 'Longitude']].values, radius=10, blur=7))
+                data=df[['Latitude', 'Longitude']].values, radius=10, blur=7,
+                gradient=gradient_map))
         yield (trace_file.stem, map_area)
 
 
