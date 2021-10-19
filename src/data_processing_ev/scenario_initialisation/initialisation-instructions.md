@@ -29,7 +29,7 @@ Initialising Trace Data
    If the raw data is FCD, proceed to the next step.
 
    If the raw data is GTFS data, it should be a zipped archive. Rename the
-   archive to "GTFS.zip". Unzip the GTFS archive into: 
+   archive to "GTFS_Orig.zip". Unzip the GTFS archive into: 
    `$Scenario_Dir/_Inputs/Traces/Original/GTFS`.
 
    Make sure that GTFS data complies to the following caveats:
@@ -58,7 +58,7 @@ Initialising Trace Data
 
    ##### GTFS Conversion
 
-   If your input data is of the GTFS data format, you can use the 
+   If your input data is of the GTFS data format, you should use the 
    `GTFS_Convert.r` and `GTFS_Splitter.py` scripts which are also in the 
    `$Src_Dir/data_processing_ev/scenario_initialisation/Data_Pre-Processing/` 
    directory. You can use them as-is. No changes should be necessary. The
@@ -66,9 +66,13 @@ Initialising Trace Data
    https://gtfs.org/reference/static#dataset-files) defined in the GTFS
    data.
 
-   The `GTFS_Splitter.py` script will tell you the maximum and minimum GPS
-   coorindates encountered. Hold onto these values. They will be useful when
-   [generating the road-network](#initialising-road-network).
+   First run `GTFS_Convert.r`. After running it, extract the new file:
+   `$Scenario_Dir/_Inputs/Traces/Original/GTFS.zip` to 
+   `$Scenario_Dir/_Inputs/Traces/Original/GTFS/`.
+
+   After this, run the `GTFS_Splitter.py` script. It will tell you the maximum
+   and minimum GPS coorindates encountered. Hold onto these values. They will
+   be useful when [generating the road-network](#initialising-road-network).
 
    ##### Table: CSV input format for EV-Fleet-Sim
 
