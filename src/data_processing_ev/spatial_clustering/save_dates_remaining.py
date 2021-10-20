@@ -28,7 +28,7 @@ def save_dates_remaining(scenario_dir: Path, **kwargs):
 
         if input_data_fmt == dpr.DATA_FMTS['GPS']:
             for filtered_file in filtered_files:
-                year, month, day = filtered_file.stem.split('_')[1].split('-')
+                year, month, day = filtered_file.stem.split('_')[-1].split('-')
                 date = dt.date(int(year), int(month), int(day))
                 dates.append((ev_name, date))
         elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
