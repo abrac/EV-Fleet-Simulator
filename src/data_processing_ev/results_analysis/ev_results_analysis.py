@@ -54,10 +54,18 @@ class Data_Analysis:
         {Scenario_Dir}/Results/
         """
 
-        # TODO Put this in main.py
-        _ = input("Would you like to (re)convert all " +
-                  "battery.out.xml files to csv? y/[n] \n\t")
-        convert = (True if _.lower() == 'y' else False)
+        # TODO Implement auto_run mode.
+        battery_csvs = [*self.__scenario_dir.joinpath(
+                        'Results').glob('*/*/Battery.out.csv')]
+        if len(battery_csvs) == 0:
+            _ = input("Would you like to convert all " +
+                      "battery.out.xml files to csv? [y]/n \n\t")
+            convert = (True if _.lower() != 'n' else False)
+        else:
+            _ = input("Would you like to re-convert all " +
+                      "battery.out.xml files to csv? y/[n] \n\t")
+            convert = (False if _.lower() != 'y' else True)
+
         if convert:
             _ = input("Would you like to skip existing csv files? y/[n] \n\t")
             skipping = (True if _.lower() == 'y' else False)
@@ -462,16 +470,23 @@ class Data_Analysis:
 
             _ = input("\n Would you like to plot the results? If not, I will " +
                       "just compute the values/statistics. y/[n]")
-            plotting = True if _.lower() == 'y' else False
+            plotting = False if _.lower() != 'y' else True
             print(f"\nGenerating statistics{' and plots' if plotting else ''}...")
 
             # Read frequencies.txt
-            frequencies_df = pd.read_csv(self.__scenario_dir.joinpath(
-                '_Inputs', 'Traces', 'Original', 'GTFS', 'frequencies.txt'))
+            frequencies_file = self.__scenario_dir.joinpath(
+                '_Inputs', 'Traces', 'Original', 'GTFS', 'frequencies.txt')
+            if frequencies_file.exists():
+                frequencies_defined = True
+                frequencies_df = pd.read_csv(frequencies_file,
+                                             dtype={'trip_id': str})
+            else:
+                frequencies_defined = False
 
             # Read stop_times.txt
             stop_times_df = pd.read_csv(self.__scenario_dir.joinpath(
-                '_Inputs', 'Traces', 'Original', 'GTFS', 'stop_times.txt'))
+                '_Inputs', 'Traces', 'Original', 'GTFS', 'stop_times.txt'),
+                dtype={'trip_id': str})
 
             def _get_departure_delay(trip_id: str) -> dt.timedelta:
                 """Calculates the time taken from the beginning of the trip,
@@ -494,24 +509,32 @@ class Data_Analysis:
 
                 # Find the times that the trip applies.
                 trip_df = self.__ev_csv_to_df(trip_csv, secs_to_dts=True)
-                frequency_definitions = frequencies_df[
-                    frequencies_df['trip_id'] == trip_id]
 
-                times = []
-                for _, frequency_definition in frequency_definitions.iterrows():
-                    service_start_time = dt.datetime(
-                        2000, 1, 1, *[int(x) for x in frequency_definition[
-                            'start_time'].split(':')])
-                    service_end_time = dt.datetime(
-                        2000, 1, 1, *[int(x) for x in frequency_definition[
-                            'end_time'].split(':')])
-                    headway_time = dt.timedelta(
-                        seconds=int(frequency_definition['headway_secs']))
-                    num_trips = int(
-                        (service_end_time - service_start_time).total_seconds() /
-                        headway_time.total_seconds()) + 1
-                    times.extend([service_start_time + headway_time * k for
-                                  k in range(num_trips)])
+                if frequencies_defined:
+                    frequency_definitions = frequencies_df[
+                        frequencies_df['trip_id'] == trip_id]
+                    times = []
+                    for _, frequency_definition in frequency_definitions.iterrows():
+                        service_start_time = dt.datetime(
+                            2000, 1, 1, *[int(x) for x in frequency_definition[
+                                'start_time'].split(':')])
+                        service_end_time = dt.datetime(
+                            2000, 1, 1, *[int(x) for x in frequency_definition[
+                                'end_time'].split(':')])
+                        headway_time = dt.timedelta(
+                            seconds=int(frequency_definition['headway_secs']))
+                        num_trips = int(
+                            (service_end_time - service_start_time).total_seconds() /
+                            headway_time.total_seconds()) + 1
+                        times.extend([service_start_time + headway_time * k for
+                                      k in range(num_trips)])
+                else:
+                    stop_times = stop_times_df[
+                        stop_times_df['trip_id'] == trip_id]
+                    hour, minute, second = [
+                        int(x) for x in
+                        stop_times.iloc[0]['arrival_time'].split(':')]
+                    times = [dt.datetime(2000, 1, 1, hour, minute, second)]
 
                 departure_delay = _get_departure_delay(trip_id)
 
@@ -622,7 +645,7 @@ class Data_Analysis:
                     plt_fig = self.__plot_summary_graph(
                         trip_mean_profile, plt_title="Simulation Output of " +
                         f"experiment: {trip_id} > {trip_csv.parent.name}" +
-                        f"Mean plot of {num_trips} instances")
+                        f"Mean plot of {len(times)} instances")
 
                     # Save plot
                     save_path = graphsdir.joinpath(
@@ -675,7 +698,7 @@ class Data_Analysis:
                 """Generate dataframes of days that taxi has valid data."""
                 ev_dfs = []
                 for battery_csv in self.__battery_csv_paths:
-                    # XXX If the input data format is GPS, use battery.out.csv.
+                    # If the input data format is GPS, use battery.out.csv.
                     # However, if the format is GTFS, use
                     # battery.out.aggregated.csv. This file incorporates the
                     # various trip_instances caused by frequencies.txt.
@@ -1125,7 +1148,7 @@ class Data_Analysis:
             ev_df_mean = ev_dfs.groupby(['timestep_time']).mean()
 
             # Save the dataframe
-            ev_df_mean.to_csv(fleet_mean_file, index=False)
+            ev_df_mean.to_csv(fleet_mean_file, index=True)
             ev_df_mean.reset_index(level='timestep_time', inplace=True)
 
         del ev_dfs
@@ -1134,31 +1157,42 @@ class Data_Analysis:
         if self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
             num_vehicles = int(input("How many vehicles are in the study? " +
                                      "(Enter an integer)  "))
-            # XXX: TODO: Calculate the total number of trip instances. Multiply
+            # Calculate the total number of trip instances. Multiply
             # ev_df_mean by that number to get the *total* energy profile of the
             # eMBT system. Divide that profile by the number of taxis in the city
-            # to get the average energy profile per taxi (rather than per trip, as
-            # it is currently).
-            frequencies_df = pd.read_csv(self.__scenario_dir.joinpath(
-                '_Inputs', 'Traces', 'Original', 'GTFS', 'frequencies.txt'))
+            # to get the average energy profile per taxi.
+            frequencies_file = self.__scenario_dir.joinpath(
+                '_Inputs', 'Traces', 'Original', 'GTFS', 'frequencies.txt')
+            if frequencies_file.exists():
+                frequencies_defined = True
+                frequencies_df = pd.read_csv(frequencies_file,
+                                             dtype={'trip_id': str})
+            else:
+                frequencies_defined = False
+
             print("Calculating the total number of trips in the system...")
             total_trip_instances = 0
             for trip_id in tqdm(ev_names):
-                frequency_definitions = frequencies_df[
-                    frequencies_df['trip_id'] == trip_id]
-                for _, frequency_definition in frequency_definitions.iterrows():
-                    service_start_time = dt.datetime(
-                        2000, 1, 1, *[int(x) for x in frequency_definition[
-                            'start_time'].split(':')])
-                    service_end_time = dt.datetime(
-                        2000, 1, 1, *[int(x) for x in frequency_definition[
-                            'end_time'].split(':')])
-                    headway_time = dt.timedelta(
-                        seconds=int(frequency_definition['headway_secs']))
-                    num_trips = int(
-                        (service_end_time - service_start_time).total_seconds() /
-                        headway_time.total_seconds()) + 1
-                    total_trip_instances += num_trips
+                if frequencies_defined:
+                    frequency_definitions = frequencies_df[
+                        frequencies_df['trip_id'] == trip_id]
+                    for _, frequency_definition in frequency_definitions.iterrows():
+                        service_start_time = dt.datetime(
+                            2000, 1, 1, *[int(x) for x in frequency_definition[
+                                'start_time'].split(':')])
+                        service_end_time = dt.datetime(
+                            2000, 1, 1, *[int(x) for x in frequency_definition[
+                                'end_time'].split(':')])
+                        headway_time = dt.timedelta(
+                            seconds=int(frequency_definition['headway_secs']))
+                        num_trips = int(
+                            (service_end_time - service_start_time).total_seconds() /
+                            headway_time.total_seconds()) + 1
+                        total_trip_instances += num_trips
+                else:
+                    total_trip_instances += 1
+            input(f"Total trip instances: {total_trip_instances}.\n" +
+                  "Press any key to continue...")
 
         # Create a summary mean plot of the fleet
         plt_figs = {}
