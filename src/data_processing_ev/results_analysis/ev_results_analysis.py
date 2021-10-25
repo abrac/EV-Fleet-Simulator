@@ -75,9 +75,6 @@ class Data_Analysis:
                 # Try create ev_csv if it doesn't exist
                 ev_name = ev_sim_dir.parents[0].name
                 date = ev_sim_dir.name
-                # TODO: Make sure the replacing the below line with the above
-                # one was the right decision...
-                # date = '_'.join(ev_sim_dir.name.split('_'))
                 battery_csv = self.__scenario_dir.joinpath(
                     'Results', ev_name, date, 'Battery.out.csv')
                 battery_xml = ev_sim_dir.joinpath("Battery.out.xml")

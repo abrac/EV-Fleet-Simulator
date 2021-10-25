@@ -61,14 +61,8 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
 
             if not first_iteration:
                 # Save the tmp_root as an xml_file.
-                if input_data_fmt == dpr.DATA_FMTS['GPS']:
-                    ev_name = '_'.join(prev_id.split('_')[:-3])
-                    date = '_'.join(prev_id.split('_')[-3:])
-                elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
-                    ev_name = '_'.join(prev_id.split('_')[:-1])
-                    date = '_'.join(prev_id.split('_')[-1:])
-                else:
-                    raise ValueError(dpr.DATA_FMT_ERROR_MSG)
+                ev_name = '_'.join(prev_id.split('_')[:-1])
+                date = prev_id.split('_')[-1]
                 output_file = scenario_dir.joinpath('SUMO_Simulation',
                                                     'Simulation_Outputs',
                                                     ev_name, date,
