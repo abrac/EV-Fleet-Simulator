@@ -62,6 +62,8 @@ abstract = {Minibus taxi public transport is a seemingly chaotic phenomenon in t
 Installation
 ============
 
+[![PyPI Version](https://img.shields.io/pypi/v/ev-fleet-sim)](https://pypi.org/project/ev-fleet-sim/)
+
 1. Make sure that you have installed the dependencies listed in [depencies.md](
    ./dependencies.md)
 
