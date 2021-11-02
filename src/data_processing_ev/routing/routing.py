@@ -602,14 +602,23 @@ def build_routes(scenario_dir: Path, **kwargs):
     COMBINING_METHODS = {'per_ev': 1, 'all_evs': 2, 'skip': 3}
 
     if not auto_run:
-        _ = input("""
-How would you like to combine the routes for this simulation scenario?
-
+        print("How would you like to combine the routes for this simulation " +
+              "scenario?\n")
+        if input_data_fmt == dpr.DATA_FMTS['GPS']:
+            print("""
 [1]. Create one SUMO simulation which combines the routes for each EV.
  2 . Create one SUMO for which combines *all* the routes across *all* EVs.
- 3 . Skip combining the routes entirely.
+ 3 . Skip combining the routes entirely.\n""")
+        elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
+            print("""
+ 1 . Create one SUMO simulation which combines the routes for each EV.
+[2]. Create one SUMO for which combines *all* the routes across *all* EVs.
+ 3 . Skip combining the routes entirely.\n""")
+        else:
+            raise ValueError(dpr.DATA_FMT_ERROR_MSG)
 
-Enter a number: """)
+        _ = input("Enter a number:  ")
+
         if _ == '1':
             combining_method = COMBINING_METHODS['per_ev']
         elif _ == '2':
@@ -617,9 +626,19 @@ Enter a number: """)
         elif _ == '3':
             combining_method = COMBINING_METHODS['skip']
         else:
-            combining_method = COMBINING_METHODS['per_ev']
+            if input_data_fmt == dpr.DATA_FMTS['GPS']:
+                combining_method = COMBINING_METHODS['per_ev']
+            elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
+                combining_method = COMBINING_METHODS['all_evs']
+            else:
+                raise ValueError(dpr.DATA_FMT_ERROR_MSG)
     else:
-        combining_method = COMBINING_METHODS['per_ev']
+        if input_data_fmt == dpr.DATA_FMTS['GPS']:
+            combining_method = COMBINING_METHODS['per_ev']
+        elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
+            combining_method = COMBINING_METHODS['all_evs']
+        else:
+            raise ValueError(dpr.DATA_FMT_ERROR_MSG)
 
     # TODO Combine the routes on a per-taxi basis. Therefore, if there are 10
     # taxis, and I have 4 cpu threads, I can run 4 sumo simulations in parallel.
