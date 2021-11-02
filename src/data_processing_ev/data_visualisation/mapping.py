@@ -93,7 +93,7 @@ def map_scenario(scenario_dir: Path, mapping_points: bool = False,
                  mapping_geojson: bool = False, saving: bool = True,
                  **kwargs) -> None:
     """Map traces and save them to the scenario directory."""
-    scenario_name = scenario_dir.name
+    scenario_name = scenario_dir.absolute().name
     for trace_name, map_trace in gen_map_traces(scenario_dir, mapping_points,
                                                 mapping_lines, mapping_heatmap,
                                                 mapping_geojson):
