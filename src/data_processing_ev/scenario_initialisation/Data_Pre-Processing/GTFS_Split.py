@@ -50,8 +50,12 @@ def main(scenario_dir: Path):
 
     for (_, trip_id, _), gps_df in gps_dfs:
 
-        trip_id = '#'.join(trip_id.split('#')[:-1])  # Remove the trip number
-                                                     # from the trip ID.
+        if trip_id.find('#') == -1:
+            trip_id = trip_id
+        else:
+            trip_id = '#'.join(trip_id.split('#')[:-1])  # Remove the trip
+                                                         # number from the trip
+                                                         # ID.
 
         # Remove special characters from trip_id.
         trip_id = trip_id.replace(' ', '_').replace('-', '_').\
