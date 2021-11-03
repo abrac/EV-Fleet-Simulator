@@ -252,7 +252,7 @@ class Data_Analysis:
 
         if ev_names:
             ax.legend(ev_names)
-        ax.axhline(color="darkgrey")
+        ax.axhline(color="0", lw=0.8)
 
         fig.tight_layout()
 
@@ -360,7 +360,7 @@ class Data_Analysis:
         if new_fig:
             ax_PvT.plot(time, power_df, label="Instantaneous Power", lw=0.5,
                         c='0.5')
-            ax_PvT.axhline(color="darkgrey")
+            ax_PvT.axhline(color="0", lw=0.8)
             plt.setp(ax_PvT.get_xticklabels(), rotation=45)
         if new_fig:
             ax_PvT.plot(time, power_df_rolling, label="Rolling Average Power",
@@ -375,12 +375,12 @@ class Data_Analysis:
 
         if new_fig:
             # ax_PvX.set_title('Power vs Distance')
-            ax_PvX.axhline(color="darkgrey")
+            ax_PvX.axhline(color="0", lw=0.8)
             ax_PvX.set_xlabel('Distance (km)')
             # Plot instantaneous power
             ax_PvX.set_ylabel('Instantaneous Power (W)')
             ax_PvX.plot(dist, power_df[1:])
-            ax_PvX.axhline(color="darkgrey")
+            ax_PvX.axhline(color="0", lw=0.8)
             plt.setp(ax_PvX.get_xticklabels(), rotation=45)
             # # Plot rolling average power
             # #   TODO Make a dataframe that has rolling average of power with
@@ -1302,24 +1302,6 @@ class Data_Analysis:
                 # As pickle:
                 fig_file = graphsdir.joinpath(key + '.fig.pickle')
                 pickle.dump(plt_fig, open(fig_file, 'wb'))
-
-            # Save power and energy profiles as seperate files
-            if self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
-                extent = plt_figs['total_plot'].get_axes()[0].\
-                    get_window_extent().transformed(
-                        plt_figs['total_plot'].dpi_scale_trans.inverted())
-                save_file = graphsdir.joinpath('total_power_profile.pdf')
-                plt_figs['total_plot'].savefig(
-                    save_file, bbox_inches=extent.expanded(1.26, 1.26).\
-                    translated(-0.35, -0.32))
-
-                extent = plt_figs['total_plot'].get_axes()[2].\
-                    get_window_extent().transformed(
-                        plt_figs['total_plot'].dpi_scale_trans.inverted())
-                save_file = graphsdir.joinpath('total_energy_profile.pdf')
-                plt_figs['total_plot'].savefig(
-                    save_file, bbox_inches=extent.expanded(1.26, 1.26).\
-                    translated(-0.35, -0.32))
 
         plt.show()
         input("Press Enter to close plots and " +
