@@ -77,6 +77,7 @@ MODULES = """
 1. data_visualisation
     1. mapping
     2. route_animation
+    3. map_size_calculation
 2. spatial_analysis
     1. spatial_clustering
     2. date_filtering_and_separation

@@ -60,6 +60,8 @@ def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
             dpr.data_visualisation.map_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.2 in steps:
         dpr.data_visualisation.animate_scenario(scenario_dir, **kwargs)
+    if 1 in steps or 1.3 in steps:
+        dpr.data_visualisation.get_map_size(scenario_dir, **kwargs)
     if 2 in steps or 2.1 in steps:
         """Spatial clustering"""
         if not auto_run:
