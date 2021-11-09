@@ -124,6 +124,16 @@ def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
                   "scenarios yet.")
         else:
             raise ValueError(dpr.DATA_FMT_ERROR_MSG)
+    if 6 in steps or 6.3 in steps:
+        """Generate Plots and Statistics from Wind Simulation Results"""
+        #dpr.wind_results_analysis.run_wind_results_analysis(scenario_dir, **kwargs)
+        if kwargs['input_data_fmt'] == dpr.DATA_FMTS['GPS']:
+            dpr.wind_results_analysis.run_wind_results_analysis(scenario_dir, **kwargs)
+        elif kwargs['input_data_fmt'] == dpr.DATA_FMTS['GTFS']:
+            print("Warning: Wind Results Analysis is not implemented for GTFS" +
+                  "scenarios yet.")
+        else:
+            raise ValueError(dpr.DATA_FMT_ERROR_MSG)          
 
 
 if __name__ == "__main__":

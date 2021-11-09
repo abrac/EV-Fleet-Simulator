@@ -17,6 +17,7 @@ from .ev_simulation import results_splitter
 from .results_analysis import ev_results_analysis
 from .results_analysis import ev_box_plots
 from .results_analysis import pv_results_analysis
+from .results_analysis import wind_results_analysis
 
 DATA_FMTS = {'GPS': 1, 'GTFS': 2}
 
@@ -65,7 +66,8 @@ SCENARIO_DIR_STRUCTURE = {
         'Sumocfgs': None
     },
     'SAM_Simulation': {
-        'Results': None,
+        'Solar_results': None,
+        'Wind_results': None,
         'SAM_Scenario_File': None
     },
     'Results': {
@@ -92,4 +94,5 @@ MODULES = """
 6. results_analysis
     6.1. ev_results_analysis
     6.2. pv_results_analysis
+    6.3. wind_results_analysis
 """
