@@ -71,6 +71,9 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
 
         configuration_node = et.Element('configuration')
 
+        # TODO: Make these relative paths rather than absolute paths. See how I
+        # did it for the `<output-prefix ... />` element for example.
+
         # inputs
         input_node = et.SubElement(configuration_node, 'input')
         et.SubElement(
@@ -78,7 +81,8 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
             'net-file',
             {
                 'value': str(
-                    [*scenario_dir.joinpath('_Inputs', 'Map').glob('*.net.xml')][0]
+                    [*scenario_dir.joinpath('_Inputs', 'Map').glob('*.net.xml')
+                     ][0].absolute()
                 )
             }
         )

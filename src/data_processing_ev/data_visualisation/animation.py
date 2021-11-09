@@ -112,7 +112,7 @@ def gen_scenario_animations(scenario_dir: Path,
     save_dir = scenario_dir.joinpath('Data_Visualisations',
                                      'Route_Animations')
     traces_list = traces_dir.glob('*.csv')
-    scenario_name = scenario_dir.name
+    scenario_name = scenario_dir.absolute().name
 
     # Read location from the boundary.csv file.
     boundary_file = scenario_dir.joinpath('_Inputs', 'Map', 'Boundary',

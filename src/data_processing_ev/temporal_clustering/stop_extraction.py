@@ -492,6 +492,7 @@ def extract_stops(scenario_dir: Path, **kwargs):
         stop_times_df = pd.read_csv(
             scenario_dir.joinpath(
                 '_Inputs', 'Traces', 'Original', 'GTFS', 'stop_times.txt'),
+            dtype={'trip_id': str},
             # dtype={'trip_id': str, 'arrival_time': str, 'departure_time': str,
             #        'stop_id': str, 'stop_sequence': int, 'stop_headsign': str,
             #        'pickup_type': int, 'drop_off_type': int,

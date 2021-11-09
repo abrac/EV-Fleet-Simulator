@@ -4,34 +4,39 @@ library("gtfs2gps")
 library("here")
 library("magrittr")
 
-cat('Looking for "./Original/GTFS_Orig.zip"...\n')
+cat("Would you like to filter the GTFS data by agencies? [y]/n\n")
+filtering <- readline(prompt="    ")
 
-gtfs = read_gtfs(here("Original", "GTFS_Orig.zip"))
+if (tolower(filtering) != 'n'){
+    cat('Looking for "./Original/GTFS_Orig.zip"...\n')
 
-agencies <- c()
+    gtfs = read_gtfs(here("Original", "GTFS_Orig.zip"))
 
-cat(
-"Type the IDs of agencies you want to keep,
-pressing Enter each time. When you want
-to stop entering agencies, enter a blank line. 
-If you want to keep all the agencies, don't 
-enter any IDs.\n")
+    agencies <- c()
 
-repeat{
-    agency <- readline(prompt="    ")
-    if (agency == ""){
-        break
+    cat(
+    "Type the IDs of agencies you want to keep,
+    pressing Enter each time. When you want
+    to stop entering agencies, enter a blank line. 
+    If you want to keep all the agencies, don't 
+    enter any IDs.\n")
+
+    repeat{
+        agency <- readline(prompt="    ")
+        if (agency == ""){
+            break
+        }
+        agencies <- append(agencies, agency)
     }
-    agencies <- append(agencies, agency)
-}
 
-if (length(agencies) != 0) {
-    gtfs_small <- filter_by_agency_id(gtfs, agencies)
-} else {
-    gtfs_small <- gtfs
-}
+    if (length(agencies) != 0) {
+        gtfs_small <- filter_by_agency_id(gtfs, agencies)
+    } else {
+        gtfs_small <- gtfs
+    }
 
-write_gtfs(gtfs_small, here("Original", "GTFS.zip"))
+    write_gtfs(gtfs_small, here("Original", "GTFS.zip"))
+}
 
 kampala_gps <- gtfs2gps(here("Original", "GTFS.zip"), parallel=TRUE, 
                         spatial_resolution=50)

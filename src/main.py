@@ -5,6 +5,7 @@ import data_processing_ev as dpr
 from pathlib import Path
 from typing import Iterable, SupportsFloat
 import argparse
+import time
 
 
 def get_input_data_fmt(scenario_dir: Path):
@@ -59,6 +60,8 @@ def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
             dpr.data_visualisation.map_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.2 in steps:
         dpr.data_visualisation.animate_scenario(scenario_dir, **kwargs)
+    if 1 in steps or 1.3 in steps:
+        dpr.data_visualisation.get_map_size(scenario_dir, **kwargs)
     if 2 in steps or 2.1 in steps:
         """Spatial clustering"""
         if not auto_run:
@@ -147,7 +150,13 @@ if __name__ == "__main__":
         '--steps', default=None, metavar='List[float]',
         help="The steps to be run on the scenario as a comma-seperated list " +
              " of floats without spaces (e.g. '1,2.2,4').")
+    parser.add_argument(
+        '--debug', action='store_true')
     args = parser.parse_args()
+
+    if args.debug:
+        import pdb
+        pdb.set_trace()
 
     if args.scenario_dir:
         scenario_dir = Path(args.scenario_dir)
@@ -160,14 +169,21 @@ if __name__ == "__main__":
         _ = input("Specify scenario root directory: ")
         scenario_dir = Path(_)
 
-    if args.steps:
-        steps_str = args.steps
-    else:
-        print("Available steps: ")
-        print(dpr.MODULES)
-        steps_str = input("Specify steps to be run as a comma-seperated " +
-                          "list of floats without spaces (e.g. '1,2.2,4'): ")
-    steps = [float(step) for step in steps_str.split(',')]
+    while True:
+        if args.steps:
+            steps_str = args.steps
+        else:
+            print("Available steps: ")
+            print(dpr.MODULES)
+            steps_str = input("Specify steps to be run as a comma-seperated " +
+                              "list of floats without spaces (e.g. '1,2.2,4'): ")
+        try:
+            steps = [float(step) for step in steps_str.split(',')]
+        except ValueError:
+            print("Error: That is not a valid selection! Try again...")
+            time.sleep(1)
+            continue
+        break
 
     _ = input("Would you like to skip all prompts and use only default " +
               "values? y/[n] ")

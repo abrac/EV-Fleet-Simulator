@@ -32,6 +32,7 @@ import pickle
 import gc
 import statsmodels.api as sm
 import data_processing_ev as dpr
+from matplotlib.ticker import FuncFormatter
 
 if "SUMO_HOME" in os.environ:
     xml2csv = Path(os.environ["SUMO_HOME"], "tools", "xml", "xml2csv.py")
@@ -44,8 +45,30 @@ plt.style.use('default')
 MY_DPI = 96
 mm = 1 / 25.4  # millimeters in inches
 
-# %% Analysis Class ###########################################################
 
+def _y_fmt(y, pos):
+    decades = [1e9, 1e6, 1e3, 1e0, 1e-3, 1e-6, 1e-9]
+    suffix  = ['G', 'M', 'k', '', 'm', 'u', 'n']
+    if y == 0:
+        return str(0)
+    for i, d in enumerate(decades):
+        if np.abs(y) >= d:
+            val = y / float(d)
+            signf = len(str(val).split('.')[1])
+            if signf == 0:
+                return '{val:d} {suffix}'.format(val=int(val), suffix=suffix[i])
+            else:
+                if signf == 1:
+                    # print(val, signf)
+                    if str(val).split(".")[1] == "0":
+                        return '{val:d} {suffix}'.format(val=int(round(val)), suffix=suffix[i])
+                tx = "{" + "val:.{signf}f".format(signf=signf) + "} {suffix}"
+                return tx.format(val=val, suffix=suffix[i])
+                # return y
+    return y
+
+
+# %% Analysis Class ###########################################################
 class Data_Analysis:
     def __create_csvs(self, ev_sim_dirs: typ.Sequence[Path]) -> None:
         """Convert all battery.out.xml files to csv files and save them
@@ -229,7 +252,7 @@ class Data_Analysis:
 
         if ev_names:
             ax.legend(ev_names)
-        ax.axhline(color="darkgrey")
+        ax.axhline(color="0", lw=0.8)
 
         fig.tight_layout()
 
@@ -303,6 +326,7 @@ class Data_Analysis:
                 new figure and the dpi can be defined through optional
                 arguments, `plt_title` and `MY_DPI`.
         """
+
         # TODO Separate each subplot into a new function.
         if plt_fig is None:
             new_fig = True
@@ -326,17 +350,17 @@ class Data_Analysis:
         # TODO: Make `rolling_window` function argument
         rolling_window = 3600  # seconds
 
-        power_df = ev_df['vehicle_energyConsumed'] * 3.6  # 3.6 Wh/s in 1 kW
+        power_df = ev_df['vehicle_energyConsumed'] * 3.6 * 1000  # 3.6 Wh/s in 1 kW
         power_df_rolling = ev_df['vehicle_energyConsumed'].rolling(
-            rolling_window, center=True).mean() * 3.6
+            rolling_window, center=True).mean() * 3.6 * 1000
 
         # ax_PvT.set_title('Power vs Time')
         ax_PvT.set_xlabel('Time')
-        ax_PvT.set_ylabel('Power (kW)')
+        ax_PvT.set_ylabel('Power (W)')
         if new_fig:
             ax_PvT.plot(time, power_df, label="Instantaneous Power", lw=0.5,
                         c='0.5')
-            ax_PvT.axhline(color="darkgrey")
+            ax_PvT.axhline(color="0", lw=0.8)
             plt.setp(ax_PvT.get_xticklabels(), rotation=45)
         if new_fig:
             ax_PvT.plot(time, power_df_rolling, label="Rolling Average Power",
@@ -347,15 +371,16 @@ class Data_Analysis:
         # mpl_align.yaxes(ax_PvT, 0, ax_P2vT, 0)
         ax_PvT.xaxis.set_major_formatter(
             matplotlib.dates.DateFormatter('%H:%M'))
+        ax_PvT.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
 
         if new_fig:
             # ax_PvX.set_title('Power vs Distance')
-            ax_PvX.axhline(color="darkgrey")
+            ax_PvX.axhline(color="0", lw=0.8)
             ax_PvX.set_xlabel('Distance (km)')
             # Plot instantaneous power
-            ax_PvX.set_ylabel('Instantaneous Power (kW)')
+            ax_PvX.set_ylabel('Instantaneous Power (W)')
             ax_PvX.plot(dist, power_df[1:])
-            ax_PvX.axhline(color="darkgrey")
+            ax_PvX.axhline(color="0", lw=0.8)
             plt.setp(ax_PvX.get_xticklabels(), rotation=45)
             # # Plot rolling average power
             # #   TODO Make a dataframe that has rolling average of power with
@@ -369,20 +394,22 @@ class Data_Analysis:
 
         # plt.title('Energy vs Time')
         ax_EvT.plot(time, (ev_df['vehicle_actualBatteryCapacity'].iloc[0] -
-                           ev_df['vehicle_actualBatteryCapacity']) / 1000)
-        ax_EvT.set_ylabel('Energy (kWh)')
+                           ev_df['vehicle_actualBatteryCapacity']))
+        ax_EvT.set_ylabel('Energy (Wh)')
         ax_EvT.set_xlabel('Time')
         plt.setp(ax_EvT.get_xticklabels(), rotation=45)
         ax_EvT.xaxis.set_major_formatter(
             matplotlib.dates.DateFormatter('%H:%M'))
+        ax_EvT.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
 
         if new_fig:
             # plt.title('Energy vs Distance')
             ax_EvX.plot(dist,
-                (ev_df['vehicle_actualBatteryCapacity'].iloc[1] -
-                 ev_df['vehicle_actualBatteryCapacity'][1:]) / 1000)
-            ax_EvX.set_ylabel('Energy (kWh)')
+                        (ev_df['vehicle_actualBatteryCapacity'].iloc[1] -
+                         ev_df['vehicle_actualBatteryCapacity'][1:]))
+            ax_EvX.set_ylabel('Energy (Wh)')
             ax_EvX.set_xlabel('Distance (km)')
+            ax_EvX.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
 
             # If wanting to plot a line of best fit of the energy vs dist profile:
             # def fit_line2(x, y):
@@ -409,12 +436,14 @@ class Data_Analysis:
             ax_VvT.xaxis.set_major_formatter(
                 matplotlib.dates.DateFormatter('%H:%M'))
             ax_VvT.set_ylim(bottom=0, top=20)
+            ax_VvT.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
 
         if new_fig:
             # plt.title('Speed vs Distance')
             ax_VvX.plot(dist, ev_df['vehicle_speed'][1:] * 3.6)
             ax_VvX.set_ylabel(r'$ Speed\ (km \cdot h^{-1}) $')
             ax_VvX.set_xlabel('Distance (km)')
+            ax_VvX.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
 
         if new_fig:
             plt_fig.tight_layout()
@@ -535,20 +564,21 @@ class Data_Analysis:
 
                 departure_delay = _get_departure_delay(trip_id)
 
-                # Plot the trip itinary.
-                plt_fig = self.__plot_summary_graph(
-                    trip_df, plt_title="Simulation output of experiment: "
-                    + f"{trip_id} > {trip_csv.parent.name} -- itinary")
-                # Create Graphs folder and save plot
-                graphsdir = trip_csv.parent.joinpath('Graphs')
-                graphsdir.mkdir(parents=True, exist_ok=True)
-                save_path = graphsdir.joinpath('trip_itinary.svg')
-                plt_fig.savefig(save_path)
-                # Save interactive figure
-                # output_file = graphsdir.joinpath(
-                #     'trip_itinary.fig.pickle')
-                # pickle.dump(plt_fig, open(output_file, 'wb'))
-                plt.close('all')
+                if plotting:
+                    # Plot the trip itinary.
+                    plt_fig = self.__plot_summary_graph(
+                        trip_df, plt_title="Simulation output of experiment: "
+                        + f"{trip_id} > {trip_csv.parent.name} -- itinary")
+                    # Create Graphs folder and save plot
+                    graphsdir = trip_csv.parent.joinpath('Graphs')
+                    graphsdir.mkdir(parents=True, exist_ok=True)
+                    save_path = graphsdir.joinpath('trip_itinary.svg')
+                    plt_fig.savefig(save_path)
+                    # Save interactive figure
+                    # output_file = graphsdir.joinpath(
+                    #     'trip_itinary.fig.pickle')
+                    # pickle.dump(plt_fig, open(output_file, 'wb'))
+                    plt.close('all')
 
                 trip_instances = []
                 first_time = True
@@ -605,24 +635,28 @@ class Data_Analysis:
 
                     trip_instance = trip_instance.reindex(
                         pd.date_range(earliest_time, latest_time, freq='s'))
-                    # fill nan values
-                    trip_instance['vehicle_acceleration'] = \
-                        trip_instance['vehicle_acceleration'].fillna(0)
-                    trip_instance['vehicle_energyCharged'] = \
-                        trip_instance['vehicle_energyCharged'].fillna(0)
-                    trip_instance['vehicle_energyChargedInTransit'] = \
-                        trip_instance['vehicle_energyChargedInTransit'].fillna(0)
-                    trip_instance['vehicle_energyChargedStopped'] = \
-                        trip_instance['vehicle_energyChargedStopped'].fillna(0)
+                    # Fill nan values
+                    # trip_instance['vehicle_acceleration'] = \
+                    #     trip_instance['vehicle_acceleration'].fillna(0)
+                    # trip_instance['vehicle_energyCharged'] = \
+                    #     trip_instance['vehicle_energyCharged'].fillna(0)
+                    # trip_instance['vehicle_energyChargedInTransit'] = \
+                    #     trip_instance['vehicle_energyChargedInTransit'].fillna(0)
+                    # trip_instance['vehicle_energyChargedStopped'] = \
+                    #     trip_instance['vehicle_energyChargedStopped'].fillna(0)
+                    trip_instance['vehicle_actualBatteryCapacity'] = \
+                        trip_instance['vehicle_actualBatteryCapacity'].\
+                        ffill().bfill().astype('int32')
                     trip_instance['vehicle_energyConsumed'] = \
-                        trip_instance['vehicle_energyConsumed'].fillna(0)
+                        trip_instance['vehicle_energyConsumed'].fillna(0).\
+                        astype('int16')
                     trip_instance['vehicle_speed'] = \
-                        trip_instance['vehicle_speed'].fillna(0)
+                        trip_instance['vehicle_speed'].fillna(0).astype('int8')
                     # Modify the prepended rows so that their energy usage is
                     # equal to their first energy level.
                     trip_instance = trip_instance.ffill().bfill()
-                    trip_instance = trip_instance.rename_axis('timestep_time')\
-                        .reset_index()
+                    trip_instance = trip_instance.\
+                        rename_axis('timestep_time').reset_index()
                     trip_instances[idx] = trip_instance
 
                 # Create the mean data frame
@@ -892,18 +926,21 @@ class Data_Analysis:
                                                     freq='s'))
                 # fill nan values
                 # XXX I am commenting out ones that I don't need.
-                #ev_df['vehicle_acceleration'] = \
+                # ev_df['vehicle_acceleration'] = \
                 #    ev_df['vehicle_acceleration'].fillna(0)
-                #ev_df['vehicle_energyCharged'] = \
+                # ev_df['vehicle_energyCharged'] = \
                 #    ev_df['vehicle_energyCharged'].fillna(0)
-                #ev_df['vehicle_energyChargedInTransit'] = \
+                # ev_df['vehicle_energyChargedInTransit'] = \
                 #    ev_df['vehicle_energyChargedInTransit'].fillna(0)
-                #ev_df['vehicle_energyChargedStopped'] = \
+                # ev_df['vehicle_energyChargedStopped'] = \
                 #    ev_df['vehicle_energyChargedStopped'].fillna(0)
+                ev_df['vehicle_actualBatteryCapacity'] = \
+                    ev_df['vehicle_actualBatteryCapacity'].ffill().bfill().\
+                    astype('int32')
                 ev_df['vehicle_energyConsumed'] = \
-                    ev_df['vehicle_energyConsumed'].fillna(0)
+                    ev_df['vehicle_energyConsumed'].fillna(0).astype('int16')
                 ev_df['vehicle_speed'] = \
-                    ev_df['vehicle_speed'].fillna(0)
+                    ev_df['vehicle_speed'].fillna(0).astype('int8')
                 ev_df = ev_df.ffill().bfill()
                 ev_df = ev_df.rename_axis('timestep_time').reset_index()
                 ev_dfs[idx] = ev_df
@@ -1148,16 +1185,17 @@ class Data_Analysis:
             ev_df_mean.to_csv(fleet_mean_file, index=True)
             ev_df_mean.reset_index(level='timestep_time', inplace=True)
 
-        del ev_dfs
+        # TODO Check if it is necessary to delete this.
+        # del ev_dfs
         del ev_names_and_dfs
 
         if self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
             num_vehicles = int(input("How many vehicles are in the study? " +
                                      "(Enter an integer)  "))
-            # Calculate the total number of trip instances. Multiply
-            # ev_df_mean by that number to get the *total* energy profile of the
-            # eMBT system. Divide that profile by the number of taxis in the city
-            # to get the average energy profile per taxi.
+            # Calculate the total number of trip instances. Multiply ev_df_mean
+            # by that number to get the *total* energy profile of the eMBT
+            # system. Divide that profile by the number of taxis in the city to
+            # get the average energy profile per taxi.
             frequencies_file = self.__scenario_dir.joinpath(
                 '_Inputs', 'Traces', 'Original', 'GTFS', 'frequencies.txt')
             if frequencies_file.exists():
@@ -1225,6 +1263,7 @@ class Data_Analysis:
             plt_figs['ev_mean_plot'] = self.__plot_summary_graph(
                 ev_df_mean_tmp, plt_title=
                 "Simulation Output of experiment: Fleet > EV Mean Plot")
+
 
         if self.input_data_fmt != dpr.DATA_FMTS['GTFS']:
             # color = plt_figs[0].get_axes()[0].get_lines()[2].get_color()
