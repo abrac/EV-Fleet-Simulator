@@ -355,10 +355,10 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
     fig_bar_chart = plt.figure(figsize=figsize)
     width = 0.3
     plt.bar(wind_potentials_avg_of_month_avgs.index - width / 2,
-            wind_potentials_avg_of_month_avgs['wind_Charge_Pot'] / 3600000,
+            wind_potentials_avg_of_month_avgs['wind_Charge_Pot'] / 3600,
             width=width)
     plt.bar(daily_wind_generated_p_month.index + width / 2,
-            daily_wind_generated_p_month['Avg Daily wind Generation'] / 3600000,
+            daily_wind_generated_p_month['Avg Daily wind Generation'] / 3600,
             width=width)
     plt.ylabel('Average energy in a day (kWh)') 
     plt.xlabel('Month of year')
@@ -383,10 +383,10 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
         wind_potentials_all_months_ev = []
         for wind_potentials_ev in wind_potentials_all_months:
             if type(wind_potentials_ev) is pd.DataFrame:
-                wind_potential = wind_potentials_ev['wind_Charge_Pot'] / 3600000
+                wind_potential = wind_potentials_ev['wind_Charge_Pot'] / 3600
             else:
                 wind_potentials_ev = wind_potentials_ev.to_frame().T
-                wind_potential = wind_potentials_ev['wind_Charge_Pot'] / 3600000
+                wind_potential = wind_potentials_ev['wind_Charge_Pot'] / 3600
             wind_potentials_all_months_ev.append(wind_potential)
 
         plt.boxplot(wind_potentials_all_months_ev,
@@ -435,7 +435,7 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
         wind_potentials_per_day.set_index([date_index.month]).\
         loc[j] for j in set(date_index.month)]
     wind_potentials_all_months = [
-        wind_potentials_ev['wind_Charge_Pot'] / 3600000 for
+        wind_potentials_ev['wind_Charge_Pot'] / 3600 for
         wind_potentials_ev in wind_potentials_all_months]
     plt.boxplot(wind_potentials_all_months,
                 medianprops={'color': 'black'},
@@ -474,7 +474,7 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
         daily_wind_generated.set_index(date_index.month).loc[i] for i in
         range(1, 13)]
     daily_wind_generated_all_months = [
-        daily_wind_generated['Daily_wind_Generation'] / 3600000 for
+        daily_wind_generated['Daily_wind_Generation'] / 3600 for
         daily_wind_generated in daily_wind_generated_all_months]
     plt.boxplot(daily_wind_generated_all_months,
                 medianprops={'color': 'black'},
@@ -503,7 +503,7 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
     for i, ev_name in enumerate(ev_names):
         df = wind_potentials_avg_of_month_avgs_per_taxi.loc[ev_name]
         plt.bar(df.index + (i - len(ev_names) / 2 - 0.5) * width,
-                df['wind_Charge_Pot'] / 3600000, width=width)
+                df['wind_Charge_Pot'] / 3600, width=width)
     plt.legend(ev_names)
     plt.ylabel('Average energy in a day (kWh)') 
     plt.xlabel('Month of year')
