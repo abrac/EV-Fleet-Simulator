@@ -277,10 +277,10 @@ class Data_Analysis:
         dist_dfs = []
         time_dfs = []
         for ev_df in ev_dfs:
-            power_df = ev_df['vehicle_energyConsumed']*3.6
+            power_df = ev_df['vehicle_energyConsumed'] * 3.6
 
             dist = integrate.cumtrapz(ev_df['vehicle_speed'], dx=1)
-            dist_df = pd.Series(dist/1000)
+            dist_df = pd.Series(dist / 1000)
             dist_dfs.append(dist_df)
 
             time_df = ev_df['timestep_time']
@@ -291,10 +291,10 @@ class Data_Analysis:
         power_min_df = np.nanmin(power_dfs, axis=0)
         power_max_df = np.nanmax(power_dfs, axis=0)
         # Plot
-        #time = np.linspace(
-        #    dt.time(hour=0), dt.time(hour=23, minute=59, second=59),
-        #    len(power_max_df)
-        #)
+        # time = np.linspace(
+        #     dt.time(hour=0), dt.time(hour=23, minute=59, second=59),
+        #     len(power_max_df)
+        # )
         min_time = np.nanmin(time_dfs)
         max_time = np.nanmax(time_dfs)
         time = pd.date_range(min_time, max_time, freq='S')

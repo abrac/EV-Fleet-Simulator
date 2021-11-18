@@ -3,6 +3,7 @@
 This scripts generates box plots from the stats.json files. The script must be
 executed from the within the scenario's simulation-outputs directory.
 """
+
 # FIXME Incorporate this into "Results Analysis" module of code repository.
 
 from pathlib import Path
