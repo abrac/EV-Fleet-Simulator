@@ -44,7 +44,7 @@ def _load_irradiance_data(scenario_dir: Path, year: int) -> tp.Callable:
     pv_output_df = pd.read_csv(irradiance_file)
     pv_output_df.columns = ['DateTime', 'P_Out']
 
-    # Convert first column to datetime objects.
+    # Convert first column of hourly times to to datetime objects.
     pv_output_df['DateTime'] = (
         pd.Timestamp(year=year, month=1, day=1, hour=0, minute=0) +
         pd.to_timedelta(pv_output_df['DateTime'], unit='H'))
@@ -57,6 +57,7 @@ def _load_irradiance_data(scenario_dir: Path, year: int) -> tp.Callable:
     # Create a function which interpolates between points of pv_output_df. This
     # will be used for integration.
     f_pv_out = interpolate.interp1d(
+        # Make the x-values seconds since the epoch.
         x=pd.Series(pv_output_df.index).apply(
             lambda datetime: time.mktime(datetime.timetuple())),
         y=pv_output_df['P_Out'],
@@ -123,21 +124,30 @@ def run_pv_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
 
             # Get the beginning of the stop.
             stop_beg_float = stop['Stop_Arrival']
-            stop_beg = [int(stop_beg_float), int((stop_beg_float % 1) * 60)]
+            # Seperate the stop time in to a tuple of (hours, minutes).
+            stop_beg = (int(stop_beg_float), int((stop_beg_float % 1) * 60))
+            # Convert it to a datetime.
             stop_beg = dt.datetime(date.year, date.month, date.day, *stop_beg)
+            # Convert it to a float which represents the seconds since the
+            # epoch.
             stop_beg = time.mktime(stop_beg.timetuple())
 
             # Get the end of the stop.
             stop_end_float = stop_beg_float + stop['Stop_Duration']
+            # Seperate the stop time in to a tuple of (hours, minutes).
             stop_end = [int(stop_end_float), int((stop_end_float % 1) * 60)]
             # Handle case where stop extends to the next day:
             while stop_end[0] >= 24:
                 stop_end[0] -= 24
                 date += dt.timedelta(1)
+            # Convert it to a datetime.
             stop_end = dt.datetime(date.year, date.month, date.day, *stop_end)
+            # Convert it to a float which represents the seconds since the
+            # epoch.
             stop_end = time.mktime(stop_end.timetuple())
 
             # Integrate to find the PV energy for this stop-event.
+            # Result is in Ws/m^2
             stop_pv_potential, error = integrate.quad(f_pv_out, stop_beg,
                                                       stop_end)
 
