@@ -451,7 +451,8 @@ class Data_Analysis:
             plt.setp(ax_VvT.get_xticklabels(), rotation=45)
             ax_VvT.xaxis.set_major_formatter(
                 matplotlib.dates.DateFormatter('%H:%M'))
-            ax_VvT.set_ylim(bottom=0, top=20)
+            # ax_VvT.set_ylim(bottom=0, top=20)
+            ax_VvT.axhline(color="0", lw=0.8)
             ax_VvT.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
 
         if new_fig:
@@ -460,6 +461,7 @@ class Data_Analysis:
                         lw=0.5)
             ax_VvX.set_ylabel('Speed (km/h)')
             ax_VvX.set_xlabel('Distance (km)')
+            ax_VvT.axhline(color="0", lw=0.8)
             ax_VvX.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
 
         if new_fig:
@@ -1159,11 +1161,8 @@ class Data_Analysis:
                       "Use this file? [Y]/n  ")
             use_existing_fleet_file = True if _.lower() != 'n' else False
 
-        if use_existing_fleet_file:
-            ev_df_mean = pd.read_csv(fleet_mean_file)
-            ev_df_mean['timestep_time'] = pd.to_datetime(
-                ev_df_mean['timestep_time'])
-        else:
+        def _reformat_ev_dfs(ev_dfs: typ.List[pd.DataFrame]
+                ) -> typ.List[pd.DataFrame]:
             earliest_time = min([ev_df['timestep_time'].min() for ev_df in ev_dfs])
             latest_time = max([ev_df['timestep_time'].max() for ev_df in ev_dfs])
             print("Preparing data for plotting...")
@@ -1192,10 +1191,26 @@ class Data_Analysis:
                 ev_df = ev_df.rename_axis('timestep_time').reset_index()
                 ev_dfs[idx] = ev_df
 
+        if use_existing_fleet_file:
+            ev_df_mean = pd.read_csv(fleet_mean_file)
+            ev_df_mean['timestep_time'] = pd.to_datetime(
+                ev_df_mean['timestep_time'])
+            # If the input format is GPS, and you loaded the fleet mean
+            # dataframe (`ev_df_mean`), then re-format ev_dfs.
+            if self.input_data_fmt == dpr.DATA_FMTS['GPS']:
+                _reformat_ev_dfs(ev_dfs)
+            # Else, if it is GTFS, discard ev_dfs, since you won't need it again.
+            elif self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
+                del ev_dfs
+            # Else, raise an error.
+            else:
+                raise ValueError(dpr.DATA_FMT_ERROR_MSG)
+        else:
+            _reformat_ev_dfs(ev_dfs)
+
             # Create a mean dataframe
             # XXX: TODO: Find a more memory efficient way of doing this.
             # `pd.concat` seems to duplicate everything in memory...
-            breakpoint()  # XXX
             ev_dfs_combined = pd.concat(ev_dfs)
             ev_df_mean = ev_dfs_combined.groupby(['timestep_time']).mean()
 
@@ -1206,7 +1221,6 @@ class Data_Analysis:
             del ev_dfs_combined
 
         # TODO Check if it is necessary to delete this.
-        # del ev_dfs
         del ev_names_and_dfs
 
         if self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
@@ -1286,7 +1300,6 @@ class Data_Analysis:
 
         if self.input_data_fmt != dpr.DATA_FMTS['GTFS']:
             # color = plt_figs[0].get_axes()[0].get_lines()[2].get_color()
-            breakpoint()  # XXX
             self.__fill_area_between(plt_figs['mean_plot'].get_axes()[0],
                                      ev_dfs, ev_names, '0')
 
