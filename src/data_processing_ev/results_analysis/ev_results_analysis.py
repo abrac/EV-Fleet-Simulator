@@ -215,7 +215,7 @@ class Data_Analysis:
         rolling_window = 3600  # seconds
 
         # Get units for plot_type
-        plt_units = {'Power': 'kW', 'Speed': 'km/h', 'Distance': 'km'}
+        plt_units = {'Power': 'W', 'Speed': 'km/h', 'Distance': 'km'}
 
         # Plot setup
         ax = fig.subplots()
@@ -224,7 +224,7 @@ class Data_Analysis:
         ax.set_xlabel('Time')
         plt.setp(ax.get_xticklabels(), rotation=45)
         ax.set_ylabel(f'Rolling Average {plt_type} ' +
-                      f'[{plt_units[plt_type]}]')
+                      f'({plt_units[plt_type]})')
         ax.xaxis.set_major_formatter(
             matplotlib.dates.DateFormatter('%H:%M'))
 
@@ -236,7 +236,7 @@ class Data_Analysis:
 
             # Get the column for plot_type
             plt_df_func = {
-                'Power': lambda: ev_df['vehicle_energyConsumed'] * 3.6,
+                'Power': lambda: ev_df['vehicle_energyConsumed'] * 3.6 * 1000,
                 'Speed': lambda: ev_df['vehicle_speed'] * 3.6,
                 'Distance': lambda: pd.Series(dist / 1000)}
             plt_df = plt_df_func[plt_type]()
@@ -253,6 +253,9 @@ class Data_Analysis:
         if ev_names:
             ax.legend(ev_names)
         ax.axhline(color="0", lw=0.8)
+
+        if plt_type == 'Power':
+            ax.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
 
         fig.tight_layout()
 
@@ -277,7 +280,7 @@ class Data_Analysis:
         dist_dfs = []
         time_dfs = []
         for ev_df in ev_dfs:
-            power_df = ev_df['vehicle_energyConsumed'] * 3.6
+            power_df = ev_df['vehicle_energyConsumed'] * 3.6 * 1000
 
             dist = integrate.cumtrapz(ev_df['vehicle_speed'], dx=1)
             dist_df = pd.Series(dist / 1000)
@@ -287,16 +290,21 @@ class Data_Analysis:
             time_dfs.append(time_df)
 
             power_df = power_df.rolling(rolling_window, center=True).mean()
+            # power_df = power_df.tolist()
             power_dfs.append(power_df)
-        power_min_df = np.nanmin(power_dfs, axis=0)
-        power_max_df = np.nanmax(power_dfs, axis=0)
+        # power_min_df = np.nanmin(power_dfs, axis=0)
+        # power_max_df = np.nanmax(power_dfs, axis=0)
+        power_min_df = pd.concat(power_dfs, axis=1).min(axis=1)
+        power_max_df = pd.concat(power_dfs, axis=1).max(axis=1)
         # Plot
         # time = np.linspace(
         #     dt.time(hour=0), dt.time(hour=23, minute=59, second=59),
         #     len(power_max_df)
         # )
-        min_time = np.nanmin(time_dfs)
-        max_time = np.nanmax(time_dfs)
+        # min_time = np.nanmin(time_dfs)
+        # max_time = np.nanmax(time_dfs)
+        min_time = pd.concat(time_dfs, axis=1).min(axis=1).min(axis=0)
+        max_time = pd.concat(time_dfs, axis=1).max(axis=1).max(axis=0)
         time = pd.date_range(min_time, max_time, freq='S')
         # ax.plot(time, power_min_df, color=color, alpha=0.6)
         # ax.plot(time, power_max_df, color=color, alpha=0.6)
@@ -304,13 +312,16 @@ class Data_Analysis:
                         facecolor='#00000000', label="Power Distribution",
                         hatch='.....')
         ax.legend()
-        ax.set_ylim(bottom=0, top=35)
+        # ax.set_ylim(bottom=0, top=35)
+        # ax.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
         # ax.legend(ncol=2)
 
     def __plot_summary_graph(self, ev_df: pd.DataFrame,
                              plt_fig: plt.Figure = None,
                              plt_title: str = "Simulation Output",
-                             dpi: int = MY_DPI
+                             dpi: int = MY_DPI,
+                             figsize: typ.Tuple[float, float] = (210 * mm,
+                                                                 297 * mm)
                              ) -> plt.Figure:
         """
         Plot the graph of battery output data for a given simulation.
@@ -330,13 +341,13 @@ class Data_Analysis:
         # TODO Separate each subplot into a new function.
         if plt_fig is None:
             new_fig = True
-            plt_fig = plt.figure(figsize=(210 * mm, 297 * mm), dpi=dpi)
+            plt_fig = plt.figure(figsize=figsize, dpi=dpi)
             plt.suptitle(plt_title)
-            (ax_PvT, ax_VvT), (ax_EvT, ax_EvX), (ax_PvX, ax_VvX) = (
+            (ax_PvT, ax_PvX), (ax_EvT, ax_EvX), (ax_VvT, ax_VvX) = (
                 plt_fig.subplots(3, 2))
         else:
             new_fig = False
-            ax_PvT, ax_VvT, ax_EvT, ax_EvX, ax_PvX, ax_VvX = plt_fig.get_axes()
+            ax_PvT, ax_PvX, ax_EvT, ax_EvX, ax_VvT, ax_VvX = plt_fig.get_axes()
 
         time = ev_df['timestep_time']
         # Convert the timestep_time column to datetimes if the current dtype is
@@ -375,13 +386,13 @@ class Data_Analysis:
 
         if new_fig:
             # ax_PvX.set_title('Power vs Distance')
-            ax_PvX.axhline(color="0", lw=0.8)
             ax_PvX.set_xlabel('Distance (km)')
             # Plot instantaneous power
-            ax_PvX.set_ylabel('Instantaneous Power (W)')
-            ax_PvX.plot(dist, power_df[1:])
+            ax_PvX.set_ylabel('Power (W)')
+            ax_PvX.plot(dist, power_df[1:], c='0.2', lw=0.5)
             ax_PvX.axhline(color="0", lw=0.8)
             plt.setp(ax_PvX.get_xticklabels(), rotation=45)
+            ax_PvX.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
             # # Plot rolling average power
             # #   TODO Make a dataframe that has rolling average of power with
             # # respect to distance
@@ -393,8 +404,13 @@ class Data_Analysis:
             # mpl_align.yaxes(ax_PvX, 0, ax_P2vX, 0)
 
         # plt.title('Energy vs Time')
-        ax_EvT.plot(time, (ev_df['vehicle_actualBatteryCapacity'].iloc[0] -
-                           ev_df['vehicle_actualBatteryCapacity']))
+        if new_fig:
+            ax_EvT.plot(time, (ev_df['vehicle_actualBatteryCapacity'].iloc[0] -
+                               ev_df['vehicle_actualBatteryCapacity']),
+                        c='0.2')
+        else:
+            ax_EvT.plot(time, (ev_df['vehicle_actualBatteryCapacity'].iloc[0] -
+                               ev_df['vehicle_actualBatteryCapacity']))
         ax_EvT.set_ylabel('Energy (Wh)')
         ax_EvT.set_xlabel('Time')
         plt.setp(ax_EvT.get_xticklabels(), rotation=45)
@@ -406,7 +422,7 @@ class Data_Analysis:
             # plt.title('Energy vs Distance')
             ax_EvX.plot(dist,
                         (ev_df['vehicle_actualBatteryCapacity'].iloc[1] -
-                         ev_df['vehicle_actualBatteryCapacity'][1:]))
+                         ev_df['vehicle_actualBatteryCapacity'][1:]), c='0.2')
             ax_EvX.set_ylabel('Energy (Wh)')
             ax_EvX.set_xlabel('Distance (km)')
             ax_EvX.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
@@ -435,14 +451,17 @@ class Data_Analysis:
             plt.setp(ax_VvT.get_xticklabels(), rotation=45)
             ax_VvT.xaxis.set_major_formatter(
                 matplotlib.dates.DateFormatter('%H:%M'))
-            ax_VvT.set_ylim(bottom=0, top=20)
+            # ax_VvT.set_ylim(bottom=0, top=20)
+            ax_VvT.axhline(color="0", lw=0.8)
             ax_VvT.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
 
         if new_fig:
             # plt.title('Speed vs Distance')
-            ax_VvX.plot(dist, ev_df['vehicle_speed'][1:] * 3.6)
-            ax_VvX.set_ylabel(r'$ Speed\ (km \cdot h^{-1}) $')
+            ax_VvX.plot(dist, ev_df['vehicle_speed'][1:] * 3.6, c='0.2',
+                        lw=0.5)
+            ax_VvX.set_ylabel('Speed (km/h)')
             ax_VvX.set_xlabel('Distance (km)')
+            ax_VvT.axhline(color="0", lw=0.8)
             ax_VvX.yaxis.set_major_formatter(FuncFormatter(_y_fmt))
 
         if new_fig:
@@ -1142,11 +1161,8 @@ class Data_Analysis:
                       "Use this file? [Y]/n  ")
             use_existing_fleet_file = True if _.lower() != 'n' else False
 
-        if use_existing_fleet_file:
-            ev_df_mean = pd.read_csv(fleet_mean_file)
-            ev_df_mean['timestep_time'] = pd.to_datetime(
-                ev_df_mean['timestep_time'])
-        else:
+        def _reformat_ev_dfs(ev_dfs: typ.List[pd.DataFrame]
+                ) -> typ.List[pd.DataFrame]:
             earliest_time = min([ev_df['timestep_time'].min() for ev_df in ev_dfs])
             latest_time = max([ev_df['timestep_time'].max() for ev_df in ev_dfs])
             print("Preparing data for plotting...")
@@ -1175,18 +1191,36 @@ class Data_Analysis:
                 ev_df = ev_df.rename_axis('timestep_time').reset_index()
                 ev_dfs[idx] = ev_df
 
+        if use_existing_fleet_file:
+            ev_df_mean = pd.read_csv(fleet_mean_file)
+            ev_df_mean['timestep_time'] = pd.to_datetime(
+                ev_df_mean['timestep_time'])
+            # If the input format is GPS, and you loaded the fleet mean
+            # dataframe (`ev_df_mean`), then re-format ev_dfs.
+            if self.input_data_fmt == dpr.DATA_FMTS['GPS']:
+                _reformat_ev_dfs(ev_dfs)
+            # Else, if it is GTFS, discard ev_dfs, since you won't need it again.
+            elif self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
+                del ev_dfs
+            # Else, raise an error.
+            else:
+                raise ValueError(dpr.DATA_FMT_ERROR_MSG)
+        else:
+            _reformat_ev_dfs(ev_dfs)
+
             # Create a mean dataframe
             # XXX: TODO: Find a more memory efficient way of doing this.
             # `pd.concat` seems to duplicate everything in memory...
-            ev_dfs = pd.concat(ev_dfs)
-            ev_df_mean = ev_dfs.groupby(['timestep_time']).mean()
+            ev_dfs_combined = pd.concat(ev_dfs)
+            ev_df_mean = ev_dfs_combined.groupby(['timestep_time']).mean()
 
             # Save the dataframe
             ev_df_mean.to_csv(fleet_mean_file, index=True)
             ev_df_mean.reset_index(level='timestep_time', inplace=True)
 
+            del ev_dfs_combined
+
         # TODO Check if it is necessary to delete this.
-        # del ev_dfs
         del ev_names_and_dfs
 
         if self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
@@ -1263,7 +1297,6 @@ class Data_Analysis:
             plt_figs['ev_mean_plot'] = self.__plot_summary_graph(
                 ev_df_mean_tmp, plt_title=
                 "Simulation Output of experiment: Fleet > EV Mean Plot")
-
 
         if self.input_data_fmt != dpr.DATA_FMTS['GTFS']:
             # color = plt_figs[0].get_axes()[0].get_lines()[2].get_color()

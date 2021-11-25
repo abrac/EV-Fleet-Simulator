@@ -22,6 +22,9 @@ def gen_map_traces(scenario_dir: Path, mapping_points: bool = True,
     # Get gps traces
     traces_dir = inputs_dir.joinpath('Traces', 'Processed')
     traces_list = [*traces_dir.glob('*.csv')]
+
+    # TODO TODO Plot all the routes as one map.
+
     if len(traces_list) == 0:
         raise ValueError('No traces found in {traces_dir}.')
     # Get map features (taz boundaries, etc.)
@@ -45,7 +48,8 @@ def gen_map_traces(scenario_dir: Path, mapping_points: bool = True,
         df = pd.read_csv(str(trace_file))
         # Initialise map
         map_area = folium.Map(location=[latitude, longitude],
-                              titles=scenario_name, zoom_start=12)
+                              titles=scenario_name, zoom_start=12,
+                              control_scale=True)
         if mapping_geojson:
             # Add geographic data to map
             folium.GeoJson(geojson_data).add_to(map_area)
