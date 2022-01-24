@@ -309,7 +309,7 @@ class Data_Analysis:
         # ax.plot(time, power_min_df, color=color, alpha=0.6)
         # ax.plot(time, power_max_df, color=color, alpha=0.6)
         ax.fill_between(time, power_min_df, power_max_df, color=color,
-                        facecolor='#00000000', label="Power Distribution",
+                        facecolor='#00000000', label="Power distribution",
                         hatch='.....')
         ax.legend()
         # ax.set_ylim(bottom=0, top=35)
@@ -369,16 +369,16 @@ class Data_Analysis:
         ax_PvT.set_xlabel('Time')
         ax_PvT.set_ylabel('Power (W)')
         if new_fig:
-            ax_PvT.plot(time, power_df, label="Instantaneous Power", lw=0.5,
+            ax_PvT.plot(time, power_df, label="Instantaneous power", lw=0.5,
                         c='0.5')
             ax_PvT.axhline(color="0", lw=0.8)
             plt.setp(ax_PvT.get_xticklabels(), rotation=45)
         if new_fig:
-            ax_PvT.plot(time, power_df_rolling, label="Rolling Average Power",
+            ax_PvT.plot(time, power_df_rolling, label="Rolling average power",
                         c='0')
             ax_PvT.legend()
         else:
-            ax_PvT.plot(time, power_df_rolling, label="Rolling Average Power")
+            ax_PvT.plot(time, power_df_rolling, label="Rolling average power")
         # mpl_align.yaxes(ax_PvT, 0, ax_P2vT, 0)
         ax_PvT.xaxis.set_major_formatter(
             matplotlib.dates.DateFormatter('%H:%M'))
@@ -728,8 +728,6 @@ class Data_Analysis:
         save_plots = input("Would you like to save the plots? [y]/n \n\t")
         save_plots = False if save_plots.lower() == 'n' else True
 
-        # XXX TODO Ask if wanting to plot. If not, skip that step.
-
         for vehicle_dir in tqdm(self.__indiv_vehicle_dirs):
             ev_name = vehicle_dir.name
             output_vehicle_dir = self.__scenario_dir.joinpath(
@@ -927,10 +925,12 @@ class Data_Analysis:
 
             #       Get the lowest time in ev_dfs.
             #       TODO Maybe hardcode this to 00h00 -> 24h00
-            earliest_time = min([ev_df['timestep_time'].min()
-                                 for ev_df in ev_dfs])
-            latest_time = max([ev_df['timestep_time'].max()
-                               for ev_df in ev_dfs])
+            # earliest_time = min([ev_df['timestep_time'].min()
+            #                      for ev_df in ev_dfs])
+            # latest_time = max([ev_df['timestep_time'].max()
+            #                    for ev_df in ev_dfs])
+            earliest_time = pd.datetime(1900, 1, 1, 0, 0, 0)
+            latest_time = pd.datetime(1900, 1, 1, 23, 59, 59)
 
             #       Prepend empty rows to the ev_dfs so that they have the same
             #       lowest time.
@@ -1163,6 +1163,7 @@ class Data_Analysis:
 
         def _reformat_ev_dfs(ev_dfs: typ.List[pd.DataFrame]
                 ) -> typ.List[pd.DataFrame]:
+            breakpoint()  # XXX
             earliest_time = min([ev_df['timestep_time'].min() for ev_df in ev_dfs])
             latest_time = max([ev_df['timestep_time'].max() for ev_df in ev_dfs])
             print("Preparing data for plotting...")
@@ -1182,12 +1183,12 @@ class Data_Analysis:
                 #    ev_df['vehicle_energyChargedStopped'].fillna(0)
                 ev_df['vehicle_actualBatteryCapacity'] = \
                     ev_df['vehicle_actualBatteryCapacity'].ffill().bfill().\
-                    astype('int32')
+                    astype('float32')
                 ev_df['vehicle_energyConsumed'] = \
-                    ev_df['vehicle_energyConsumed'].fillna(0).astype('int16')
+                    ev_df['vehicle_energyConsumed'].fillna(0).astype('float16')
                 ev_df['vehicle_speed'] = \
                     ev_df['vehicle_speed'].fillna(0).astype('int8')
-                ev_df = ev_df.ffill().bfill()
+                # ev_df = ev_df.ffill().bfill()
                 ev_df = ev_df.rename_axis('timestep_time').reset_index()
                 ev_dfs[idx] = ev_df
 
