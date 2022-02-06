@@ -109,14 +109,70 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
 
     stop_entries_and_exits = []
 
+    # These are the edges cases that we need to consider:
+    #   1. [x] Taxi is stopped at the first datapoint. Create stop event from
+    #          0h until the first *non-stopped* datapoint. Record the location
+    #          of the first datapoint.
+    #   2. [x] Taxi is running at the first datapoint. Create stop event from
+    #          0h until first datapoint. Use location of first datapont.
+    #   3. [x] Taxi is stopped at the last datapoint. Create stop event from
+    #          last datapoint until midnight. Use location of last datapoint.
+    #   4. [x] Taxi is running at the last datapoint. Do not create a stop
+    #          event.
+
     # GPS version.
     if input_data_fmt == dpr.DATA_FMTS['GPS']:
-        # prev_datapoint = None
-        entry_datapoint = None
-        start_new_entry = False
-        stop_encountered = False
-        stop_location = None  # Coordinates of the first datapoint in the stop.
+        prev_datapoint = None  # Bool
+        entry_datapoint = None  # First datapoint in the stop event.
+        start_new_entry = None  # Bool
+        stop_encountered = None  # Bool
         for _, datapoint in trace_df.iterrows():
+
+            curr_date = datapoint['Time'].split(' ')[0]
+
+            # In the first iteration, we are going to create a synthetic
+            # datapoint at 00h00, with the real first datapoint's location. We
+            # will set that datapoint as the `entry_datapoint`.
+            if prev_datapoint is None:
+                # If this is the first iteration of the whole dataframe:
+                first_iteration_of_date = True
+            elif curr_date != prev_datapoint['Time'].split(' ')[0]:
+                # If the current date does not match the previous date:
+                first_iteration_of_date = True
+            else:
+                # Else (i.e. The previous date is the same as the current
+                # date):
+                first_iteration_of_date = False
+
+            if first_iteration_of_date:
+
+                # If there is still a stop event from the previous date, which
+                # has not been concluded, then conclude it at midnight of that
+                # date.
+                if stop_encountered:
+                    # Make a copy of the final datapoint from the previous
+                    # date, and change its time to midnight.
+                    exit_datapoint = prev_datapoint.copy()
+                    exit_datapoint['GPSID'] = -exit_datapoint['GPSID']
+                    exit_datapoint['Time'] = (exit_datapoint['Time'].\
+                                              split(' ')[0] + " 23:59:59")
+                    exit_datapoint['Velocity'] = 0
+                    stop_entries_and_exits.append((entry_datapoint,
+                                                   exit_datapoint))
+                    stop_encountered = False
+
+                # Create a synthetic datapoint with the first datapoint's
+                # location, but the time set at 00h00
+                entry_datapoint = datapoint.copy()
+                entry_datapoint['GPSID'] = -entry_datapoint['GPSID']
+                entry_datapoint['Time'] = (datapoint['Time'].split(' ')[0] +
+                                           " 00:00:00")
+                entry_datapoint['Velocity'] = 0
+
+                stop_encountered = True
+                first_iteration_of_date = False
+
+
             # Check for consecutive points that have at least one point where
             # ... the taxi was stopped.
             # Continue until the taxi moved at a speed greater than or equal to
@@ -124,20 +180,15 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
             if stop_encountered:
                 current_location = (datapoint['Latitude'],
                                     datapoint['Longitude'])
-                distance_drifted = haversine(current_location, stop_location,
-                                             unit='m')
+                stop_location = (entry_datapoint['Latitude'],
+                                 entry_datapoint['Longitude'])
+                distance_drifted = haversine(current_location,
+                                             stop_location, unit='m')
                 if datapoint['Velocity'] >= 10 or distance_drifted >= 25:
                     start_new_entry = True
+
             # If the taxi stopped stopping:
             if start_new_entry:
-                # # If a stop was encountered between the entry datapoint and
-                # # the previous datapoint (i.e. just before the taxi left the
-                # # spatial cluster)...
-                # if prev_datapoint is not entry_datapoint:
-                #     # Record entry_datapoint and exit_datapoint
-                #     stop_entries_and_exits.append(
-                #         (entry_datapoint, prev_datapoint))
-
                 # Record the entry_datapoint and the current datapoint. We are
                 # considering the current datapoint's timestamp to be the *end*
                 # of the stop-event -- otherwise, single-datapoint stop-events
@@ -147,20 +198,28 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
                 # Reset the flags
                 start_new_entry = False
                 stop_encountered = False
-            if datapoint['Velocity'] < 1:
+
+            # Look for a new stop-entry
+            if datapoint['Velocity'] < 1 and not stop_encountered:
                 # if this is the first stop that was encountered, make it the
                 # "entry" datapoint of the stop event and record its location.
-                if not stop_encountered:
-                    entry_datapoint = datapoint
-                    stop_location = (datapoint['Latitude'],
-                                     datapoint['Longitude'])
+                entry_datapoint = datapoint
                 stop_encountered = True
-            # prev_datapoint = datapoint
+
+            prev_datapoint = datapoint
 
         # If, after the loop, there is a stop_entry remaining without a
         # stop_exit:
         if stop_encountered:
-            stop_entries_and_exits.append((entry_datapoint, datapoint))
+            # Make a copy of the final datapoint, and change its time to
+            # midnight.
+            exit_datapoint = datapoint.copy()
+            exit_datapoint['GPSID'] = -exit_datapoint['GPSID']
+            exit_datapoint['Time'] = (exit_datapoint['Time'].split(' ')[0] +
+                                      " 23:59:59")
+            exit_datapoint['Velocity'] = 0
+            stop_entries_and_exits.append((entry_datapoint, exit_datapoint))
+            stop_encountered = False
 
     # GTFS version.
     # TODO: Account for GTFS data which do not specify the arrival time
@@ -232,7 +291,7 @@ def _build_stops_df(trace_dfs_generator: Iterator[Tuple[pd.DataFrame, str]],
     """
 
     def _filter_stop_events(stops_df: pd.DataFrame, dropping=True,
-                            duration_limits: Tuple[float, float] = [0.33, 8],
+                            duration_limits: Tuple[float, float] = [0.33, 24],
                             arrival_limits: Tuple[float, float] = [0, 24]):
         min_stop_duration = duration_limits[0]
         max_stop_duration = duration_limits[1]
@@ -262,17 +321,13 @@ def _build_stops_df(trace_dfs_generator: Iterator[Tuple[pd.DataFrame, str]],
     stops_dfs_filtered = []
     input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
 
-    print("FIXME: Make sure that the stop-extraction code in this script is "
-          "in sync with the code in the temporal-clustering script.")
-    _ = input("Press enter to acknowledge the above warning.")
-
     # Generate the dataframe of stop-arrivals and -durations for each EV, and
     # append to trace_dfs.
     for trace_df, trip_name in tqdm(trace_dfs_generator):
 
         # First: Generate a list of stop-entry and exit times.
-        stop_entries_and_exits = _get_stop_entries_and_exits(trace_df, trip_name,
-                                                             **kwargs)
+        stop_entries_and_exits = _get_stop_entries_and_exits(
+            trace_df, trip_name, **kwargs)
 
         # If list of stop_times still empty, throw exception, and continue to
         # next EV.
