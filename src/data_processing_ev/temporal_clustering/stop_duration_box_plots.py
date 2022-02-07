@@ -49,6 +49,8 @@ def plot_stop_duration_boxes(scenario_dir: Path, plot_blotches: bool = False,
     plt.xticks(range(1, len(ev_names) + 1), ev_names, rotation=30,
                fontsize='small')
     plt.xlabel("eMBT ID")
+    ax = plt.gca()
+    ax.set_ylim(ymin=0)
 
     if plot_blotches:
         # Plot the stop_events which make up the box-plots.
