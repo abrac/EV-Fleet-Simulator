@@ -1163,7 +1163,6 @@ class Data_Analysis:
 
         def _reformat_ev_dfs(ev_dfs: typ.List[pd.DataFrame]
                 ) -> typ.List[pd.DataFrame]:
-            breakpoint()  # XXX
             earliest_time = min([ev_df['timestep_time'].min() for ev_df in ev_dfs])
             latest_time = max([ev_df['timestep_time'].max() for ev_df in ev_dfs])
             print("Preparing data for plotting...")
