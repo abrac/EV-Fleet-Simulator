@@ -32,9 +32,15 @@ def plot_stop_duration_boxes(scenario_dir: Path, plot_blotches: bool = False,
     else:
         raise ValueError(dpr.DATA_FMT_ERROR_MSG)
 
+    # Filter out stop events about a certain time threshold.
+    filtered_ev_stop_dfs = []
+    for ev_stop_df in ev_stop_dfs:
+        filtered_ev_stop_df = ev_stop_df[ev_stop_df['Stop_Duration'] <= 8]
+        filtered_ev_stop_dfs.append(filtered_ev_stop_df)
+
     # Group each stop_df by date, and calculate the sum at each date.
     summed_ev_stop_dfs = []
-    for ev_stop_df in ev_stop_dfs:
+    for ev_stop_df in filtered_ev_stop_dfs:
         summed_ev_stop_df = ev_stop_df['Stop_Duration'].groupby(
             ['EV_Name', 'Date']).sum()
         summed_ev_stop_dfs.append(summed_ev_stop_df)
@@ -50,7 +56,7 @@ def plot_stop_duration_boxes(scenario_dir: Path, plot_blotches: bool = False,
                fontsize='small')
     plt.xlabel("eMBT ID")
     ax = plt.gca()
-    ax.set_ylim(ymin=0)
+    ax.set_ylim(ymin=0, ymax=24)
 
     if plot_blotches:
         # Plot the stop_events which make up the box-plots.

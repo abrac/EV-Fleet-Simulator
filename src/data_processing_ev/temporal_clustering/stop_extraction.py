@@ -146,19 +146,41 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
 
             if first_iteration_of_date:
 
-                # If there is still a stop event from the previous date, which
-                # has not been concluded, then conclude it at midnight of that
-                # date.
-                if stop_encountered:
-                    # Make a copy of the final datapoint from the previous
-                    # date, and change its time to midnight.
-                    exit_datapoint = prev_datapoint.copy()
-                    exit_datapoint['GPSID'] = -exit_datapoint['GPSID']
-                    exit_datapoint['Time'] = (exit_datapoint['Time'].\
-                                              split(' ')[0] + " 23:59:59")
-                    exit_datapoint['Velocity'] = 0
-                    stop_entries_and_exits.append((entry_datapoint,
-                                                   exit_datapoint))
+                # Create a final stop event until midnight, for the previous
+                # date. If there is already an unconcluded stop event from the
+                # previous date, conclude it at midnight of that date. Else,
+                # create a stop event which starts at the final datapoint of
+                # the previous date, and ends at midnight of that date.
+                if prev_datapoint is not None:
+                    if stop_encountered:
+                        # Make a copy of the final datapoint from the previous
+                        # date, and change its time to midnight.
+                        exit_datapoint = prev_datapoint.copy()
+                        exit_datapoint['GPSID'] = -exit_datapoint['GPSID']
+                        exit_datapoint['Time'] = (exit_datapoint['Time'].\
+                                                  split(' ')[0] + " 23:59:59")
+                        exit_datapoint['Velocity'] = 0
+                        # TODO TODO DELETE DATES WHICH ONLY HAVE ONE STOP EVENT.
+                        # if entry_datapoint['GPSID'] < 0:
+                        #     # Discard the stop-event if the taxi didn't move at
+                        #     # all on the previous date.
+                        #     pass
+                        # else:
+                        #     stop_entries_and_exits.append((entry_datapoint,
+                        #                                    exit_datapoint))
+                        stop_entries_and_exits.append((entry_datapoint,
+                                                       exit_datapoint))
+                    else:
+                        entry_datapoint = prev_datapoint.copy()
+                        entry_datapoint['Velocity'] = 0
+                        exit_datapoint = prev_datapoint.copy()
+                        exit_datapoint['GPSID'] = -exit_datapoint['GPSID']
+                        exit_datapoint['Time'] = (exit_datapoint['Time'].\
+                                                  split(' ')[0] + " 23:59:59")
+                        exit_datapoint['Velocity'] = 0
+                        stop_entries_and_exits.append((entry_datapoint,
+                                                       exit_datapoint))
+
                     stop_encountered = False
 
                 # Create a synthetic datapoint with the first datapoint's
@@ -488,14 +510,25 @@ def _build_stop_labels(
             for _, datapoint in trace_df.iterrows():
                 # If the datapoint is stop_entry:
                 if not _stop_pairs_exhausted:
-                    if datapoint['GPSID'] == stop_entry['GPSID']:
+                    # If the datapoint is the stop-entry, or it is the first
+                    # datapoint of the day.
+                    if (datapoint['GPSID'] == stop_entry['GPSID'] or
+                            datapoint['GPSID'] == -stop_entry['GPSID']):
                         # set `_stopped`.
                         _stopped = True
 
-                    # If the datapoint is stop_exit:
-                    if datapoint['GPSID'] == stop_exit['GPSID']:
-                        # reset `_stopped`. and try to get get next stop-pair.
-                        _stopped = False
+                    # If the datapoint is the stop_exit, or it is the last
+                    # datapoint of the day.
+                    if (datapoint['GPSID'] == stop_exit['GPSID'] or
+                            datapoint['GPSID'] == -stop_exit['GPSID']):
+                        # If the datapoint is the stop_exit, reset `_stopped`.
+                        if datapoint['GPSID'] == stop_exit['GPSID']:
+                            _stopped = False
+                        # If the datapoint is the last datapoint of the day,
+                        # set `_stopped`.
+                        if datapoint['GPSID'] == -stop_exit['GPSID']:
+                            _stopped = True
+                        # Try to get get next stop-pair.
                         try:
                             # Get the next stop pair.
                             (stop_entry, stop_exit) = next(stop_pairs)
