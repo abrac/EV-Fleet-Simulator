@@ -11,6 +11,7 @@
 
 import os
 import sys
+import platform
 import itertools  # noqa
 import pandas as pd
 import numpy as np  # noqa
@@ -28,6 +29,7 @@ import matplotlib
 matplotlib.use("qt5agg")
 import matplotlib.pyplot as plt  # noqa
 from multiprocessing import Pool
+import multiprocessing as mp
 import pickle
 import gc
 import statsmodels.api as sm
@@ -44,6 +46,7 @@ plt.style.use('default')
 
 MY_DPI = 96
 mm = 1 / 25.4  # millimeters in inches
+PIGZ_WARNING_ACKNOWLEDGED = False
 
 
 def _y_fmt(y, pos):
@@ -112,6 +115,30 @@ class Data_Analysis:
                 if not battery_csv.exists():
                     logging.warning("Failed to create ev_csv in \n\t" +
                                     str(battery_csv.parent))
+                else:
+                    if platform.system() == 'Linux':
+                        # If creating the battery_csv was succesful, compress
+                        # the battery_xml file.
+                        try:
+                            subprocess.run(['pigz', '-p',
+                                            str(mp.cpu_count() - 2), '--quiet',
+                                            str(battery_xml.absolute())],
+                                           check=True)
+                        except subprocess.CalledProcessError:
+                            print("Warning: Pigz failed to compress the " +
+                                  "battery_xml file.")
+                        except OSError:
+                            global PIGZ_WARNING_ACKNOWLEDGED
+                            if not PIGZ_WARNING_ACKNOWLEDGED:
+                                print("Warning: You probably haven't " +
+                                      "installed `pigz`. Install it if you " +
+                                      "want the script to automagically " +
+                                      "compress your battery XML files " +
+                                      "after they have been converted!")
+                                input("For now, press enter to disable file " +
+                                      "compression.")
+                                PIGZ_WARNING_ACKNOWLEDGED = True
+
 
     def __init__(self, scenario_dir: Path,
                  ev_sim_dirs: typ.Sequence[Path], **kwargs) -> None:
