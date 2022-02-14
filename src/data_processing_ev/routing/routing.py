@@ -44,7 +44,8 @@ logger = logging.getLogger('__name__')
 def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Path,
                  vehicle_id: str, stop_labels: t.List[bool]) -> et.ElementTree:
     """
-    Generate xml.
+    Generate a route xml file using the road network and the sequence of
+    recorded stop events.
 
     Parameters:
     net (sumolib.net.Net): The SUMO network of the location of study.
@@ -57,7 +58,7 @@ def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Pat
     """
     # TODO Make these function arguments
     LANE_LOC_RADIUS_WARN = 100  # unit: meters. If distance is exceeded,
-    #                             a warning will be logged.
+                                # a warning will be logged.
 
     def seconds_since_midnight(time: str) -> int:
         """
@@ -232,7 +233,7 @@ def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Pat
         if len(route) < 1:
             logger.error(f"{vehicle_id} has no edges in its route on {date}!")
             route = []
-            for stope_node in stop_nodes:
+            for stop_node in stop_nodes:
                 route.append(stop_node.get('lane').split('_')[0])
         else:
             route.append(route_edges[-1].getID())
@@ -255,7 +256,7 @@ def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Pat
 def _do_route_building(input_file: Path, output_dir: Path, xml_template: Path,
                        skip_existing: bool, net: sumolib.net.Net,
                        stop_labels: t.List[bool]):
-    """Trip building multiprocessing function"""
+    """Route building multiprocessing function"""
     try:
         input_data = pd.read_csv(input_file)
     except pd.errors.EmptyDataError:
@@ -458,6 +459,9 @@ def _do_route_building_old(trip_file: Path, output_dir: Path, skip_existing: boo
 
 
 def build_routes(scenario_dir: Path, **kwargs):
+    """
+    Run the route building procedure. The "main" function of this script
+    """
 
     auto_run = kwargs.get('auto_run', False)
     input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
@@ -645,7 +649,10 @@ def build_routes(scenario_dir: Path, **kwargs):
     if combining_method == COMBINING_METHODS['per_ev']:
         print("Combining routes into one file per EV.")
         # Combine all routes into one file per EV!
-        ev_dirs = scenario_dir.joinpath("Routes", "Routes").glob('*/')
+        ev_dirs = []
+        for child in [*scenario_dir.joinpath("Routes", "Routes").glob('*/')]:
+            if child.is_dir():
+                ev_dirs.append(child)
         output_dir = scenario_dir.joinpath("Routes", "Combined_Routes")
         output_dir.mkdir(parents=True, exist_ok=True)
         for ev_dir in tqdm(ev_dirs):
