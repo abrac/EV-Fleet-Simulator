@@ -15,36 +15,34 @@
 Software
 --------
 
-    |-------------|--------------|--------------------------------------------|
-    | Name        | Version      | Description                                |
-    |-------------|:------------:|--------------------------------------------|
-    | *SUMO [^1]  | 1.8.0        | Traffic mobility simulator.                |
-    |-------------|--------------|--------------------------------------------|
-    | *Python     | > 3.8        | An awesome, easy-to-learn programming      |
-    |             |              | language named after a dangerous snake.    |
-    |-------------|--------------|--------------------------------------------|
-    | *Git        | Any          | A tool to collaborate on coding projects   |
-    |             |              | and track changes that we make.            |
-    |-------------|--------------|--------------------------------------------|
-    | *Bash       | Any          | The terminal used in Linux and MacOS.      |
-    |             |              | Windows can emulate Bash using *Git Bash*. |
-    |             |              | It will be automatically installed when    |
-    |             |              | you install Git.                           |
-    |-------------|--------------|--------------------------------------------|
-    | *SAM        | > 2020.11.29 | Simulator of Renewable-Energy Generators   |
-    |             |              | (Solar panels, wind-turbines, etc.).       |
-    |-------------|--------------|--------------------------------------------|
-    | *R          | > 4.0.4      | R programming language.                    |
-    |-------------|--------------|--------------------------------------------|
-    | *OSMConvert | > 0.8.10     | Software for cropping OpenStreetMap files. |
-    |             |              | Not available on Mac. For Mac, use Osmosis |
-    |             |              | or Osmium-Tool.                            |
-    |-------------|--------------|--------------------------------------------|
-    | Pigz        | Any          | Software for compressing files using       |
-    |             |              | multiple cpu threads. The software will    |
-    |             |              | only try use Pigz if you are running       |
-    |             |              | Linux.                                     |
-    |-------------|--------------|--------------------------------------------|
+    |------------|--------------|--------------------------------------------|
+    | Name       |    Version   | Description                                |
+    |------------|:------------:|--------------------------------------------|
+    | *SUMO [^1] |     1.8.0    | Traffic mobility simulator.                |
+    |------------|--------------|--------------------------------------------|
+    | *Python    |     > 3.8    | An awesome, easy-to-learn programming      |
+    |            |              | language named after a dangerous snake.    |
+    |------------|--------------|--------------------------------------------|
+    | *Git       |      Any     | A tool to collaborate on coding projects   |
+    |            |              | and track changes that we make.            |
+    |------------|--------------|--------------------------------------------|
+    | *Bash      |      Any     | The terminal used in Linux and MacOS.      |
+    |            |              | Windows can emulate Bash using *Git Bash*. |
+    |            |              | It will be automatically installed when    |
+    |            |              | you install Git.                           |
+    |------------|--------------|--------------------------------------------|
+    | *SAM       | > 2020.11.29 | Simulator of Renewable-Energy Generators   |
+    |            |              | (Solar panels, wind-turbines, etc.).       |
+    |------------|--------------|--------------------------------------------|
+    | *R         |    > 4.0.4   | R programming language.                    |
+    |------------|--------------|--------------------------------------------|
+    | *osmium    |    > 1.13    | Software for cropping OpenStreetMap files. |
+    |------------|--------------|--------------------------------------------|
+    | Pigz       |      Any     | Software for compressing files using       |
+    |            |              | multiple cpu threads. The software will    |
+    |            |              | only try use Pigz if you are running       |
+    |            |              | Linux.                                     |
+    |------------|--------------|--------------------------------------------|
 
     [^1]: Make sure that libsumo is compiled with SUMO. The Ubuntu PPA does not 
           include it by default. Libsumo is required by *Step 4 (Routing)*. The 
