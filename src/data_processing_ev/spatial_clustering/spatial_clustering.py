@@ -27,14 +27,14 @@ from collections import Counter
 import random
 from pathlib import Path
 import pandas as pd
-import hdbscan  # HDBSCAN clustering algorithm. (Hopefully better.)
+from sklearn.cluster import OPTICS  # OPTICS clustering algorithm.
 from sklearn.preprocessing import StandardScaler
 import folium
 from typing import Optional
 from multiprocessing import Pool, cpu_count
 from itertools import repeat
 # Deprecated imports:
-# from sklearn.cluster import OPTICS  # OPTICS clustering algorithm.
+# import hdbscan  # HDBSCAN clustering algorithm. (Hopefully better.)
 # from folium.plugins import Search
 # from tqdm import tqdm
 
@@ -114,13 +114,13 @@ class Dbscan_Algorithm:
             #   tructor arguments.
             # XXX: I am changing min_samples from 70 to 10. Kampala has less
             # data than the Stell_SSW_BF scenario.
-            # self.model = OPTICS(min_samples=10, max_eps=0.0002,
-            #                     metric='euclidean', cluster_method='dbscan',
-            #                     n_jobs=1).fit(lat_lon)
-            self.model = hdbscan.HDBSCAN(
-                min_cluster_size=500,
-                min_samples=50  # , cluster_selection_epsilon=0.001
-            ).fit(lat_lon)
+            self.model = OPTICS(min_samples=10, max_eps=0.0002,
+                                metric='euclidean', cluster_method='dbscan',
+                                n_jobs=1).fit(lat_lon)
+            # self.model = hdbscan.HDBSCAN(
+            #     min_cluster_size=500,
+            #     min_samples=50  # , cluster_selection_epsilon=0.001
+            # ).fit(lat_lon)
             self.model_labels = self.model.labels_
             #   Save the model
             saved_model.parent.mkdir(parents=True, exist_ok=True)
