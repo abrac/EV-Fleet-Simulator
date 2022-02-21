@@ -18,7 +18,7 @@ Software
     |------------|--------------|--------------------------------------------|
     | Name       |    Version   | Description                                |
     |------------|:------------:|--------------------------------------------|
-    | *SUMO [^1] |     1.8.0    | Traffic mobility simulator.                |
+    | *SUMO [^1] |   == 1.8.0   | Traffic mobility simulator.                |
     |------------|--------------|--------------------------------------------|
     | *Python    |     > 3.8    | An awesome, easy-to-learn programming      |
     |            |              | language named after a dangerous snake.    |
