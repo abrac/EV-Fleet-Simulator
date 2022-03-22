@@ -108,21 +108,20 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
         # Append nodes to tmp_root, until we find a node with a different id.
         prev_id = id
 
-    if platform.system() == 'Linux':
-        print("Compressing combined XML file.")
-        try:
-            subprocess.run(['pigz', '-p', str(mp.cpu_count() - 2), '--quiet',
-                           str(ev_xml_file.absolute())], check=True)
-        except subprocess.CalledProcessError:
-            print("Warning: Pigz failed to compress the xml file.")
-        except OSError:
-            print("Warning: You probably haven't installed `pigz`. Install " +
-                  "it if you want the script to automagically compress your " +
-                  "combined XML files after it has been split!")
-            global PIGZ_WARNING_ACKNOWLEDGED
-            if not PIGZ_WARNING_ACKNOWLEDGED:
-                input("For now, press enter to ignore.")
-                PIGZ_WARNING_ACKNOWLEDGED = True
+    print("Compressing combined XML file.")
+    try:
+        subprocess.run(['pigz', '-p', str(mp.cpu_count() - 2), '--quiet',
+                       str(ev_xml_file.absolute())], check=True)
+    except subprocess.CalledProcessError:
+        print("Warning: Pigz failed to compress the xml file.")
+    except OSError:
+        print("Warning: You probably haven't installed `pigz`. Install " +
+              "it if you want the script to automagically compress your " +
+              "combined XML files after it has been split!")
+        global PIGZ_WARNING_ACKNOWLEDGED
+        if not PIGZ_WARNING_ACKNOWLEDGED:
+            input("For now, press enter to ignore.")
+            PIGZ_WARNING_ACKNOWLEDGED = True
 
 
 def split_results(scenario_dir: Path, **kwargs):

@@ -39,7 +39,8 @@ from matplotlib.ticker import FuncFormatter
 if "SUMO_HOME" in os.environ:
     xml2csv = Path(os.environ["SUMO_HOME"], "tools", "xml", "xml2csv.py")
 else:
-    sys.exit("Please declare environmental variable 'SUMO_HOME'.")
+    sys.exit("Please declare environmental variable 'SUMO_HOME'. It must " +
+             "point to the root directory of the SUMO program.")
 
 # plt.ion()
 plt.style.use('default')
@@ -116,28 +117,27 @@ class Data_Analysis:
                     logging.warning("Failed to create ev_csv in \n\t" +
                                     str(battery_csv.parent))
                 else:
-                    if platform.system() == 'Linux':
-                        # If creating the battery_csv was succesful, compress
-                        # the battery_xml file.
-                        try:
-                            subprocess.run(['pigz', '-p',
-                                            str(mp.cpu_count() - 2), '--quiet',
-                                            str(battery_xml.absolute())],
-                                           check=True)
-                        except subprocess.CalledProcessError:
-                            print("Warning: Pigz failed to compress the " +
-                                  "battery_xml file.")
-                        except OSError:
-                            global PIGZ_WARNING_ACKNOWLEDGED
-                            if not PIGZ_WARNING_ACKNOWLEDGED:
-                                print("Warning: You probably haven't " +
-                                      "installed `pigz`. Install it if you " +
-                                      "want the script to automagically " +
-                                      "compress your battery XML files " +
-                                      "after they have been converted!")
-                                input("For now, press enter to disable file " +
-                                      "compression.")
-                                PIGZ_WARNING_ACKNOWLEDGED = True
+                    # If creating the battery_csv was succesful, compress
+                    # the battery_xml file.
+                    try:
+                        subprocess.run(['pigz', '-p',
+                                        str(mp.cpu_count() - 2), '--quiet',
+                                        str(battery_xml.absolute())],
+                                       check=True)
+                    except subprocess.CalledProcessError:
+                        print("Warning: Pigz failed to compress the " +
+                              "battery_xml file.")
+                    except OSError:
+                        global PIGZ_WARNING_ACKNOWLEDGED
+                        if not PIGZ_WARNING_ACKNOWLEDGED:
+                            print("Warning: You probably haven't " +
+                                  "installed `pigz`. Install it if you " +
+                                  "want the script to automagically " +
+                                  "compress your battery XML files " +
+                                  "after they have been converted!")
+                            input("For now, press enter to disable file " +
+                                  "compression.")
+                            PIGZ_WARNING_ACKNOWLEDGED = True
 
 
     def __init__(self, scenario_dir: Path,
