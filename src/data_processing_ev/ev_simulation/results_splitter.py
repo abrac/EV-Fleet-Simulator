@@ -108,6 +108,24 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
         # Append nodes to tmp_root, until we find a node with a different id.
         prev_id = id
 
+    # After the loop has exited, save the last node:
+
+    # Save the tmp_root as an xml_file.
+    ev_name = '_'.join(prev_id.split('_')[:-1])
+    date = prev_id.split('_')[-1]
+    output_file = scenario_dir.joinpath('SUMO_Simulation',
+                                        'Simulation_Outputs', ev_name, date,
+                                        'Battery.out.xml')
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    tmp_tree = et.ElementTree(tmp_root)
+    with open(output_file, 'wb') as f:
+        # f.write(et.tostring(tmp_root))
+        tmp_tree.write(f, encoding='UTF-8')
+    # Clear the temp root
+    root.clear()
+
+    # Compress the combined XML file.
+
     print("Compressing combined XML file.")
     try:
         subprocess.run(['pigz', '-p', str(mp.cpu_count() - 2), '--quiet',
@@ -125,7 +143,6 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
 
 
 def split_results(scenario_dir: Path, **kwargs):
-
     input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
 
     # Load xml as etree iterparse.
