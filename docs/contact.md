@@ -11,7 +11,7 @@ For private communcation, you can reach me on my e-mail address:
 
 Also, follow the latest news surrounding EV-Fleet-Sim, by following [our RSS feed]({{site.basurl}}/feed.xml) in your favourite RSS news reader.
 
-<h2>Staff</h2>
+<h2>Team</h2>
 
 <ul>
   {% for author in site.authors %}

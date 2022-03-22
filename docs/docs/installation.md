@@ -25,7 +25,7 @@ Please install the following software before installing `EV-Fleet-Sim`:
 | Name       |    Version   | Description                                                                                                                                                                                                                                                                              |
 |------------|:------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | *SUMO [^1] |   == 1.8.0   | Traffic mobility simulator. Once installed, make sure that the SUMO_HOME environment variable exists. [^0]                                                                                                                                                                               |
-| *Python    |     > 3.8    | An awesome, easy-to-learn programming language named after a dangerous snake. [^5]                                                                                                                                                                                                       |
+| *Python    |     > 3.8    | An awesome, easy-to-learn programming language named after a dangerous snake. Windows users: Make sure you tick the "Add Python to PATH" checkbox during installation!!! [^5]                                                                                                            |
 | *Git       |      Any     | A tool to collaborate on coding projects and track changes that we make.                                                                                                                                                                                                                 |
 | *Bash      |      Any     | The terminal used in Linux and MacOS. Windows can emulate Bash using *Git Bash*. It will be automatically installed when you install Git.                                                                                                                                                |
 | *SAM       | > 2020.11.29 | Simulator of Renewable-Energy Generators (Solar panels, wind-turbines, etc.).                                                                                                                                                                                                            |
@@ -107,8 +107,9 @@ After you have activated the venv, you can install ev-fleet-sim into it with `pi
 
 [^4]: https://www.macports.org/install.php
 
-[^5]: Windows users: Make sure you tick the "Add Python to PATH" checkbox during 
-      installation!!!
+[^5]: See image:
+    
+      ![Python Installer]({{site.baseurl}}/assets/images/docs/python_installation.png)
 
 [^6]: Required if using GTFS data inputs. Install from 
       https://github.com/ipeaGIT/gtfs2gps/
