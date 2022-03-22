@@ -1,11 +1,20 @@
 image: ruby:2.7
 
+cache:
+  paths:
+    - vendor/
+
+before_script:
+  - cd docs
+  - gem install bundler
+  - bundle install
+  - cd ..
+
 pages:
   script:
     - cd docs
-    - gem install bundler
-    - bundle install
     - bundle exec jekyll build -d ../public
+    - cd ..
   artifacts:
     paths:
       - public
