@@ -268,16 +268,24 @@ def main():
             continue
         break
 
-    _ = input("Would you like to skip all prompts and use only default " +
-              "values? y/[n] ")
-    auto_run = True if _.lower() == 'y' else False
+    # TODO: Implement auto_run properly!!!
+    # TODO And delete the conf parameter!!!
 
-    if auto_run:
-        conf = False
-    else:
-        _ = input("Would you like to configure the steps of the " +
-                  "analysis? y/[n] ")
-        conf = True if _.lower() == 'y' else False
+    # Hard-coding these values until they are properly implemented!
+
+    # _ = input("Would you like to skip all prompts and use only default " +
+    #           "values? y/[n] ")
+    # auto_run = True if _.lower() == 'y' else False
+
+    # if auto_run:
+    #     conf = False
+    # else:
+    #     _ = input("Would you like to configure the steps of the " +
+    #               "analysis? y/[n] ")
+    #     conf = True if _.lower() == 'y' else False
+
+    auto_run = False
+    conf = False
 
     kwargs = {'auto_run': auto_run, 'input_data_fmt': None}
 
