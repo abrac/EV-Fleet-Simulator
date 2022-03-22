@@ -1301,12 +1301,12 @@ class Data_Analysis:
 
         if self.input_data_fmt != dpr.DATA_FMTS['GTFS']:
             # color = plt_figs[0].get_axes()[0].get_lines()[2].get_color()
-            #self.__fill_area_between(plt_figs['mean_plot'].get_axes()[0],
-                                     #ev_dfs, ev_names, '0')
+            self.__fill_area_between(plt_figs['mean_plot'].get_axes()[0],
+                                     ev_dfs, ev_names, '0')
 
             # color = plt_figs[1].get_axes()[0].get_lines()[0].get_color()
-            #self.__fill_area_between(plt_figs['power_plot'].get_axes()[0],
-                                     #ev_dfs, ev_names, '0')
+            self.__fill_area_between(plt_figs['power_plot'].get_axes()[0],
+                                     ev_dfs, ev_names, '0')
 
             # Make multiple-line power plot (mean plot of each EV in the fleet)
             plt_figs['power_per_ev'] = self.__plot_multiple_lines(
