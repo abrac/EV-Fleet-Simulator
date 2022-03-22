@@ -1,0 +1,8 @@
+- name: Home
+  link: /docs
+- name: Installation
+  link: /docs/installation.html
+- name: Usage
+  link: /docs/usage.html
+- name: Contribute!
+  link: /docs/contributing.html

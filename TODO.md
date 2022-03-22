@@ -2,6 +2,12 @@
      view this file. Just search the web for a nice markdown editor (like
      Ghostwriter). -->
 
+- [x] Add MacOS instructions
+    - [x] Install pigz with macports
+    - [x] Export SUMO_HOME environment variable with `export SUMO_HOME="/opt/homebrew/share/sumo"` in `./.bash_profile` or `~/.zshrc`.
+- [ ] Save SUMO stdout for debugging.
+- [ ] Debug T6001 output, of Chris Hull.
+- [ ] Automatically run steps with default options.
 - [ ] Automatically compress results with
       ```sh
       tar -c -I 'xz -9 -T10' -f 'Battery.out.csv.tar.xz' ./T*/*/Battery.out.csv

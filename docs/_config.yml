@@ -1,0 +1,38 @@
+title: EV-Fleet-Sim
+email: chrisbrhm@gmail.com
+description: >- # this means to ignore newlines until "baseurl:"
+  This software computes the electrical energy requirements of a fleet of vehicles. It also determines how much of this energy can be offset by renewable energy. It does all this by analyzing the fleet's GPS traces and applying EV and Renewable-Energy models.
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "https://ev-fleet-sim.online" # the base hostname & protocol for your site, e.g. http://example.com
+gitlab_username: _abrac
+
+collections:
+  authors:
+    output: true
+
+defaults:
+  - scope:
+      path: ""
+      type: "authors"
+    values:
+      layout: "author"
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post_new"
+  - scope:
+      path: ""
+    values:
+      layout: "default"
+  - scope:
+      path: "docs"
+    values:
+      layout: "docs"
+
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+theme: minima
