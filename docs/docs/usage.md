@@ -16,7 +16,7 @@ EV-Fleet-Sim requires you to create a folder for the scenario that you would lik
 
 4. After you've initialised the scenario, a file called `initialisation-instructions.md` will appear in `<simulation-dir>`. Follow the steps in this file. The instructions can also be found here: [initialisation-instructions.md](https://gitlab.com/eputs/ev-fleet-sim/-/blob/master/src/data_processing_ev/scenario_initialisation/initialisation-instructions.md).
 
-   This file will give you instructions on how to import a map of the area of your scenario, how to import GPS traces of the vehicle that you are working with, and how to import whether files for the renewable energy-simulation. The instructions are quite details, so please take your time at this step and [contact us](/contact.html) if you face any difficulties!
+   This file will give you instructions on how to import a map of the area of your scenario, how to import GPS traces of the vehicle that you are working with, and how to import whether files for the renewable energy-simulation. The instructions are quite details, so please take your time at this step and [contact us]({{site.baseurl}}/contact.html) if you face any difficulties!
 
 5. Proceed to run the remaining steps of the program, by running again:
 

@@ -29,7 +29,7 @@ Installation
 
 To install `EV-Fleet-Sim`, all you have to do is:
 
-1. Install the dependencies listed in the [Installation page](/docs/installation.html/#dependencies).
+1. Install the dependencies listed in the [Installation page]({{site.baseurl}}/docs/installation.html/#dependencies).
 
 2. Run `pip install ev-fleet-sim` in a terminal.
 
@@ -41,13 +41,13 @@ To run the software, you simply enter `ev-fleet-sim` in a terminal. You can type
 
 When you run the software, you are presented with a menu which allows you to select which step of the simulation you would like to run. These steps are meant to be run sequentially.
 
-The simulation workflow is described in the [Usage page](/docs/usage.html).
+The simulation workflow is described in the [Usage page]({{site.baseurl}}/docs/usage.html).
 
 
 Contributing
 ============
 
-If you would like to contribute changes to the software, or even to this documentation, please see the instructions in the [Contributing page](/docs/contributing.html).
+If you would like to contribute changes to the software, or even to this documentation, please see the instructions in the [Contributing page]({{site.baseurl}}/docs/contributing.html).
 
 
 Getting Support
@@ -60,4 +60,4 @@ For private communcation, you can reach me on my e-mail address:
 `chris <abraham-without-the-A's> [at] gmail [dot] com` or via Matrix:
 [https://matrix.to/#/@abrac:matrix.org](https://matrix.to/#/@abrac:matrix.org).
 
-Also, follow the latest news surrounding EV-Fleet-Sim, by following [our RSS feed](/feed.xml) in your favourite RSS news reader.
+Also, follow the latest news surrounding EV-Fleet-Sim, by following [our RSS feed]({{site.baseurl}}/feed.xml) in your favourite RSS news reader.
