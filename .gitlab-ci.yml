@@ -8,11 +8,13 @@ before_script:
   - cd docs
   - gem install bundler
   - bundle install
+  - cd ..
 
 pages:
   script:
     - cd docs
-    - bundle exec jekyll build -d /public
+    - bundle exec jekyll build -d ../public
+    - cd ..
   artifacts:
     paths:
       - public
