@@ -19,6 +19,11 @@
 #  |Chris           |
 #  +----------------+
 
+# Jekyll
+.jekyll-cache/
+Gemfile.lock
+_site/
+
 # Sumo
 ## Simulation outputs
 dispatch.xml
