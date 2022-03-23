@@ -5,6 +5,7 @@
 - [x] Add MacOS instructions
     - [x] Install pigz with macports
     - [x] Export SUMO_HOME environment variable with `export SUMO_HOME="/opt/homebrew/share/sumo"` in `./.bash_profile` or `~/.zshrc`.
+- [ ] Improve SAM Simulation documentation!
 - [ ] Save SUMO stdout for debugging.
 - [ ] Debug T6001 output, of Chris Hull.
 - [ ] Automatically run steps with default options.
