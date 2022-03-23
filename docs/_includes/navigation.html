@@ -1,8 +1,18 @@
-<h1><a href='{{site.url}}{{site.baseurl}}/'>{{site.title}}</a></h1>
-<nav> |
-  {% for item in site.data.navigation %}
-      <a href="{{ site.baseurl }}{{ item.link }}" {% if page.url == item.link %}class="current"{% endif %}>
-        {{item.name}}</a> |
-  {% endfor %}
-</nav>
+<div>
+    <div style="float:left; width:130px; margin:set_margin">
+        <a href='{{site.url}}{{site.baseurl}}/'> 
+            <img src="{{site.baseurl}}/assets/images/logos/logo_96.png">
+        </a>
+    </div>
+    <div style="float:left; margin:set_margin; vertical-align:middle;">
+        <h1><a href='{{site.url}}{{site.baseurl}}/'>{{site.title}}</a></h1>
+
+        <nav> |
+          {% for item in site.data.navigation %}
+              <a href="{{ site.baseurl }}{{ item.link }}" {% if page.url == item.link %}class="current"{% endif %}>
+                {{item.name}}</a> |
+          {% endfor %}
+        </nav>
+    </div>
+</div>
 <hr>

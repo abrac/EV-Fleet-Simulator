@@ -11,6 +11,10 @@ Move from old fossil-fuel vehicles to electric vehicles, using the power of data
 
 Get started by installing and running the program, as explained in the [documentation]({{site.baseurl}}/docs.html)
 
+<a href="{{site.baseurl}}/docs.html">
+<button>To the Documentation!</button>
+</a>
+
 For scientists and programmers: the software is open source and can be modified. Download the source code from [here](https://gitlab.com/eputs/ev-fleet-sim).
 
 ---
