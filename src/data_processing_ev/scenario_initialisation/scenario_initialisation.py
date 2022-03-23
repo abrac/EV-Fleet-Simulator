@@ -5,6 +5,7 @@ import shutil
 from typing import Dict
 import json
 import data_processing_ev as dpr
+import platform
 
 
 def initialise_scenario(scenario_dir: Path, **kwargs):
@@ -52,11 +53,18 @@ def initialise_scenario(scenario_dir: Path, **kwargs):
         shutil.copy(from_file, to_file)
 
         # copy ./Initialisation_Files/Map_Construction/pbf_to_osm.sh
-        from_file = Path(__file__).parent.joinpath(
-            'Initialisation_Files', 'Map_Construction', 'pbf_to_osm.sh')
-        to_file = scenario_dir.joinpath(
-            '_Inputs', 'Map', 'Construction', 'pbf_to_osm.sh')
-        shutil.copy(from_file, to_file)
+        if platform.system() == 'Windows':
+            from_file = Path(__file__).parent.joinpath(
+                'Initialisation_Files', 'Map_Construction', 'pbf_to_osm_windows.sh')
+            to_file = scenario_dir.joinpath(
+                '_Inputs', 'Map', 'Construction', 'pbf_to_osm.sh')
+            shutil.copy(from_file, to_file)
+        else:
+            from_file = Path(__file__).parent.joinpath(
+                'Initialisation_Files', 'Map_Construction', 'pbf_to_osm.sh')
+            to_file = scenario_dir.joinpath(
+                '_Inputs', 'Map', 'Construction', 'pbf_to_osm.sh')
+            shutil.copy(from_file, to_file)
 
         # copy `./Initialisation_Files/Map_Construction/
         # osmNetconvert_Africa.typ.xml`
