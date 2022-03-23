@@ -66,8 +66,7 @@ SCENARIO_DIR_STRUCTURE = {
         'Sumocfgs': None
     },
     'SAM_Simulation': {
-        'Solar_results': None,
-        'Wind_results': None,
+        'Results': None,
         'SAM_Scenario_File': None
     },
     'Results': {
