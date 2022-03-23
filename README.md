@@ -68,6 +68,8 @@ For more help, please don't hesitate to contact me on my e-mail address:
 `chris <abraham-without-the-A's> [at] gmail [dot] com` or via Matrix:
 https://matrix.to/#/@abrac:matrix.org.
 
+If you have encountered any issues/bugs with the software, you can report them in our [issues tracker](https://gitlab.com/eputs/ev-fleet-sim/-/issues).
+
 Also remember to press the "star" and "notification bell" on the top of the
 GitLab page. That way, you will be notified of the latest commits and
 pull-requests.

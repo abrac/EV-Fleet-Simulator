@@ -5,6 +5,8 @@ title: Contact
 Welcome to our EV-Fleet-Sim community! You can join our community's group chat:
 [https://matrix.to/#/#ev-fleet-sim:matrix.org](https://matrix.to/#/#ev-fleet-sim:matrix.org).
 
+If you have encountered any issues/bugs with the software, you can report them in our [issues tracker](https://gitlab.com/eputs/ev-fleet-sim/-/issues).
+
 For private communcation, you can reach me on my e-mail address: 
 `chris <abraham-without-the-A's> [at] gmail [dot] com` or via Matrix:
 [https://matrix.to/#/@abrac:matrix.org](https://matrix.to/#/@abrac:matrix.org).
