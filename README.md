@@ -55,7 +55,7 @@ To learn how to install and use this software, please refer to the [documentatio
 
 If you learn better with videos, here is a video tutorial of the software:
 
-[![Video Tutorial](./docs/assets/images/youtube_tutorial.png)](https://youtu.be/vhiw34Hm7CI)
+<a href="https://youtu.be/vhiw34Hm7CI" target="_blank" rel="noopener noreferrer">![Video Tutorial](./docs/assets/images/youtube_tutorial.png)</a>
 
 Getting Support
 ===============

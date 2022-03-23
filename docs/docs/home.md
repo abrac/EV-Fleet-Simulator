@@ -24,7 +24,9 @@ article shows how this program can be used to derive meaningful results.
 
 If you learn better with videos, here is a video tutorial of the software:
 
-[![Video Tutorial]({{site.baseurl}}/assets/images/youtube_tutorial.png)](https://youtu.be/vhiw34Hm7CI)
+<a href="https://youtu.be/vhiw34Hm7CI" target="_blank" rel="noopener noreferrer">
+    ![Video Tutorial]({{site.baseurl}}/assets/images/youtube_tutorial.png)
+</a>
 
 Installation
 ============
