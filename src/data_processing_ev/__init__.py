@@ -17,6 +17,7 @@ from .ev_simulation import results_splitter
 from .results_analysis import ev_results_analysis
 from .results_analysis import ev_box_plots
 from .results_analysis import pv_results_analysis
+from .results_analysis import wind_results_analysis
 
 DATA_FMTS = {'GPS': 1, 'GTFS': 2}
 
@@ -93,6 +94,7 @@ MODULES = """
 6. results_analysis
     6.1. ev_results_analysis
     6.2. pv_results_analysis
+    6.3. wind_results_analysis
 """
 
 from pathlib import Path
@@ -212,11 +214,19 @@ def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
             scenario_dir, **kwargs)
     if 6 in steps or 6.2 in steps:
         """Generate Plots and Statistics from PV Simulation Results"""
-        # pv_results_analysis.run_pv_results_analysis(scenario_dir, **kwargs)
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
             pv_results_analysis.run_pv_results_analysis(scenario_dir, **kwargs)
         elif kwargs['input_data_fmt'] == DATA_FMTS['GTFS']:
             print("Warning: PV Results Analysis is not implemented for GTFS " +
+                  "scenarios yet.")
+        else:
+            raise ValueError(DATA_FMT_ERROR_MSG)
+    if 6 in steps or 6.3 in steps:
+        """Generate Plots and Statistics from Wind Simulation Results"""
+        if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
+            wind_results_analysis.run_wind_results_analysis(scenario_dir, **kwargs)
+        elif kwargs['input_data_fmt'] == DATA_FMTS['GTFS']:
+            print("Warning: Wind Results Analysis is not implemented for GTFS" +
                   "scenarios yet.")
         else:
             raise ValueError(DATA_FMT_ERROR_MSG)
