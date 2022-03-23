@@ -45,7 +45,7 @@ Initialisation Instructions
 
 > Definitions: 
 > 
-> `<simulation-dir>` refers to the root directory of the scenario.
+> `<simulation-dir>/` refers to the root directory of the scenario.
 
 Firstly, run the scenario-initialisation step of EV-Fleet-Sim to create the
 folder structure in your scenario directory (`<simulation-dir>`).
@@ -199,12 +199,12 @@ Initialising Road Network
    coordinates of each of the four points in the boundary box that you would
    like to create.
 
-   | Longitude |  Latitude |
-   |----------:|----------:|
-   | <min_lon> | <min_lat> |
-   | <max_lon> | <min_lat> |
-   | <max_lon> | <max_lat> |
-   | <min_lon> | <max_lat> |
+   |   Longitude |    Latitude |
+   |------------:|------------:|
+   | `<min_lon>` | `<min_lat>` |
+   | `<max_lon>` | `<min_lat>` |
+   | `<max_lon>` | `<max_lat>` |
+   | `<min_lon>` | `<max_lat>` |
 
    This bounding box will be used during the simulation. For FCD, if a vehicle
    leaves this bounding box on a particular day, that day's data will be
