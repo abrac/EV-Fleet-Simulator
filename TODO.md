@@ -5,6 +5,7 @@
 - [x] Add MacOS instructions
     - [x] Install pigz with macports
     - [x] Export SUMO_HOME environment variable with `export SUMO_HOME="/opt/homebrew/share/sumo"` in `./.bash_profile` or `~/.zshrc`.
+- [ ] Make `^C` cancel more elegantly. Currently it throws useless debugging info.
 - [ ] Improve SAM Simulation documentation!
 - [ ] Save SUMO stdout for debugging.
 - [ ] Debug T6001 output, of Chris Hull.
