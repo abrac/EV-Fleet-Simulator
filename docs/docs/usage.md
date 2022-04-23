@@ -105,12 +105,12 @@ Initialising Trace Data
    ##### Table: CSV input format for EV-Fleet-Sim
 
    ```
-   +----------+-------+---------------------------+-------------+--
-   |          | GPSID | Time *                    | Latitude *  |   ...
-   |----------|-------|---------------------------|-------------|--
-   | Datatype | str   | str                       | float       |   ...
-   | units    | -     | 'yyyy/mm/dd HH:MM:ss APM' | [-]11.11111 |
-   +----------+-------+---------------------------+-------------+--
+   +----------+-------+------------------------------+-------------+--
+   |          | GPSID | Time *                       | Latitude *  |   ...
+   |----------|-------|------------------------------|-------------|--
+   | Datatype | str   | str                          | float       |   ...
+   | units    | -     | 'yyyy-mm-dd hr24:MM:ss' [^3] | [-]11.11111 |
+   +----------+-------+------------------------------+-------------+--
 
         -------------+-----------+-----------+------------+----------+--
     ...  Longitude * | Altitude  | Heading   | Satellites | HDOP[^1] |   ...
@@ -131,10 +131,18 @@ Initialising Trace Data
    ======
 
    The headings marked with `*` are required. 
+
    Headings marked with `+` are conditionally required.
+
+   Unmarked headings are not required, and are not currently used by
+   EV-Fleet-Sim. They may be used in the future.
+
+   If you are not using a coloumn, leave its fields blank. (i.e. Don't fill it
+   with zeroes.)
 
    [^1]: Horizontal Dilution of Precision. Lower is better.
    [^2]: StopID column only required for GTFS input data.
+   [^3]: E.g: 2022-04-17 09:03:49
    ```
 
 1. Copy the script(s) to the `<simulation-dir>/_Inputs/Traces/` directory and run 
@@ -299,5 +307,20 @@ Because EV-Fleet-Sim also does renewable energy calculations, you may also put
 weather data files in the `<simulation-dir>/_Inputs/Weather` directory. If you are
 not interested in doing renewable energy calculations, you may leave the
 directory empty.
+
+This data can be obtained by first installing [SAM](https://sam.nrel.gov/), and
+using its user interface to download the data for the location that you need.
+In the case of solar energy data, SAM should have data for almost any location
+around the world. In the case of wind data, they only provide data for
+locations in the USA. In case they don't have data for the location that you
+are interested in, or if you just want to use your own dataset, you will need
+to re-format the data into a format that can be read by SAM. The following
+document described the format that is readable by SAM: 
+
+- For version 2020.2.29 r1 (current version as of writing) see: 
+  [this PDF](https://sam.nrel.gov/images/web_page_files/sam-help-2020-2-29-r2_weather_file_formats.pdf)
+
+- For future versions see: 
+  [this webpage](https://sam.nrel.gov/weather-data/weather-data-publications.html)
 
 <!-- TODO Add more information -->

@@ -13,7 +13,7 @@ MAX_VELOCITY = np.inf  # km/h
 
 def _reformat_time(time_old: str) -> str:
     # time format: "year/month/day hr12:min:sec meridiem" -->
-    # "year-month-day{T}hr24:min:sec"
+    # "year-month-day hr24:min:sec"
     (date, time, meridiem) = time_old.split(' ')
     (year, month, day) = date.split("/")
     (hr12, minute, sec) = time.split(":")
