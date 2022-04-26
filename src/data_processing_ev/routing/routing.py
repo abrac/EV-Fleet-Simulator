@@ -186,6 +186,7 @@ def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Pat
 
         # Generate routes between each pair of waypoints and chain them
         route = []
+        last_found_edge = None
         for waypoint_pair in waypoint_pairs:
             # NOTE: I use the shortest path between waypoints. This is a
             # simplification.
@@ -199,6 +200,7 @@ def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Pat
             if route_edges:
                 for route_edge in route_edges[:-1]:
                     route.append(route_edge.getID())
+                last_found_edge = route_edges[-1]
             else:
                 logger.error(f"{vehicle_id}: {date}: Failed to find a route " +
                              f"between edges {waypoint_pair[0]} and {waypoint_pair[1]}")
@@ -236,7 +238,7 @@ def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Pat
             for stop_node in stop_nodes:
                 route.append(stop_node.get('lane').split('_')[0])
         else:
-            route.append(route_edges[-1].getID())
+            route.append(last_found_edge.getID())
 
         route_str = " ".join(str(edge) for edge in route)
         route_node = et.Element('route', {'edges': route_str})
