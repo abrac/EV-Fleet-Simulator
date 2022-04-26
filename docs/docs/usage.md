@@ -229,15 +229,18 @@ Initialising Road Network
 
 1. Copy the `.osm.pbf` file to `<simulation-dir>/_Inputs/Map/Construction`. 
 
-   You will find a bash script called `pbf_to_osm.sh` in the `Construction`
-   directory. Open it in a text editor, and modify the
-   `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>` to correspond with the values
-   added to `boundary.csv`. 
+   You will find a bash script called `pbf_to_osm.sh` (`pbf_to_osm.bat` in
+   Windows) in the `Construction` directory. Open it in a text editor. In MacOS
+   and Linux, find the line which has `-bbox
+   <min_lon>,<min_lat>,<max_lon>,<max_lat>`. On Windows, find the line which
+   has `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>`. Modify the line to
+   correspond with the values added to `boundary.csv`. 
 
-   > E.g. `-b=18.6,-34.3,19.0,-33.7`
+   > E.g: `-bbox 18.6,-34.3,19.0,-33.7`<br>
+   > Or in Windows: `-b=18.6,-34.3,19.0,-33.7`
 
-   Run the modified `.sh` file to convert the `.osm.pbf` file to a `.osm` file,
-   while cropping to the specified boundary.
+   Run the modified `.sh`/`.bat` file to convert the `.osm.pbf` file to a
+   `.osm` file, while cropping to the specified boundary.
 
 1. You will also find a `net_convert.sh` file in the `Construction` directory.
    We will run this script to convert the `.osm` file to a `.net.xml` file (the
