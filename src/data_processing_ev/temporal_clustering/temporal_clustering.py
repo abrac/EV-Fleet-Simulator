@@ -54,7 +54,7 @@ def _gen_trace_dfs(scenario_dir: Path, input_type: str
     if input_type == INPUT_TYPES['clustered']:
         # TODO Merge changes from gen_trace_dfs() in 'filtered' input type
         trace_files = scenario_dir.joinpath(
-            'Spatial_Clusters', 'Clustered_Traces').glob('T*.csv')
+            'Spatial_Clusters', 'Clustered_Traces').glob('*.csv')
         for trace_file in trace_files:
             trace_df = pd.read_csv(trace_file)
             yield (trace_df, trace_file.stem)
