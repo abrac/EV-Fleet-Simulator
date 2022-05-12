@@ -110,8 +110,8 @@ class Data_Analysis:
                 if skipping and battery_csv.exists():
                     continue
                 battery_csv.parent.mkdir(parents=True, exist_ok=True)
-                subprocess.run(['python', xml2csv, '-o', battery_csv,
-                                battery_xml])
+                subprocess.run(['python', xml2csv, '-s', ',',
+                                '-o', battery_csv, battery_xml])
                 # Warn if battery_csv *still* doesn't exist
                 if not battery_csv.exists():
                     logging.warning("Failed to create ev_csv in \n\t" +
@@ -166,7 +166,7 @@ class Data_Analysis:
         )
 
     def __ev_csv_to_df(self, ev_csv: Path, warn_nan: bool = False,
-                       secs_to_dts: bool = False, delim=';') -> pd.DataFrame:
+                       secs_to_dts: bool = False, delim=',') -> pd.DataFrame:
         """
         Inputs:
             secs_to_dts: True if function must convert seconds to
