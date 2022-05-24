@@ -104,6 +104,7 @@ class Data_Analysis:
 
             print("\nConverting xml files to csv...")
 
+            global PIGZ_WARNING_ACKNOWLEDGED
             for ev_sim_dir in tqdm(ev_sim_dirs):
                 # Try create ev_csv if it doesn't exist
                 ev_name = ev_sim_dir.parents[0].name
@@ -135,7 +136,6 @@ class Data_Analysis:
                         print("Warning: Pigz failed to compress the " +
                               "battery_xml file.")
                     except OSError:
-                        global PIGZ_WARNING_ACKNOWLEDGED
                         if not PIGZ_WARNING_ACKNOWLEDGED:
                             print("Warning: You probably haven't " +
                                   "installed `pigz`. Install it if you " +
@@ -176,7 +176,6 @@ class Data_Analysis:
                         print("Warning: Pigz failed to compress the " +
                               "fcd_xml file.")
                     except OSError:
-                        global PIGZ_WARNING_ACKNOWLEDGED
                         if not PIGZ_WARNING_ACKNOWLEDGED:
                             print("Warning: You probably haven't " +
                                   "installed `pigz`. Install it if you " +

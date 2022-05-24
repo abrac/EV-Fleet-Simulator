@@ -25,6 +25,9 @@ PIGZ_WARNING_ACKNOWLEDGED = False
 def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
                   input_data_fmt: int):
 
+    file_stem = ev_xml_file.stem
+    file_stem = file_stem[:file_stem.find('.out')]
+
     # Get the length fo the file.
     print("Getting the length of the xml file...")
     with open(ev_xml_file) as f:
@@ -58,8 +61,8 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
                 next_time_offset = (route_count + 1) * time_offset_secs - 1
             continue
 
-        # If the current node is a 'battery-export' node, skip it.
-        if node.tag == 'battery-export':
+        # If the current node is a 'battery-/fcd-export' node, skip it.
+        if node.tag == f'{file_stem}-export':
             continue
 
         if event == 'start':
@@ -77,7 +80,7 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
                 output_file = scenario_dir.joinpath('SUMO_Simulation',
                                                     'Simulation_Outputs',
                                                     ev_name, date,
-                                                    'battery.out.xml')
+                                                    f'{file_stem}.out.xml')
                 output_file.parent.mkdir(parents=True, exist_ok=True)
                 tmp_tree = et.ElementTree(tmp_root)
                 with open(output_file, 'wb') as f:
@@ -86,7 +89,7 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
                 # Clear the temp root
                 root.clear()
 
-            tmp_root = et.Element('battery-export')
+            tmp_root = et.Element(f'{file_stem}-export')
             # Append current node, if it's not the last node.
             if node is not None:
                 time_in_route = time - time_offset
@@ -115,7 +118,7 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
     date = prev_id.split('_')[-1]
     output_file = scenario_dir.joinpath('SUMO_Simulation',
                                         'Simulation_Outputs', ev_name, date,
-                                        'battery.out.xml')
+                                        f'{file_stem}.out.xml')
     output_file.parent.mkdir(parents=True, exist_ok=True)
     tmp_tree = et.ElementTree(tmp_root)
     with open(output_file, 'wb') as f:
@@ -145,16 +148,17 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
 def split_results(scenario_dir: Path, **kwargs):
     input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
 
-    # Load xml as etree iterparse.
-    ev_xmls = sorted([*scenario_dir.joinpath(
-        'SUMO_Simulation', 'Simulation_Outputs_Combined').glob(
-        '*/battery.out.xml')])
+    for file_stem in ('battery', 'fcd'):
+        # Load xml as etree iterparse.
+        xmls = sorted([*scenario_dir.joinpath(
+            'SUMO_Simulation', 'Simulation_Outputs_Combined').glob(
+            f'*/{file_stem}.out.xml')])
 
-    args = zip(ev_xmls, repeat(scenario_dir, len(ev_xmls)),
-               repeat(input_data_fmt, len(ev_xmls)))
+        args = zip(xmls, repeat(scenario_dir, len(xmls)),
+                   repeat(input_data_fmt, len(xmls)))
 
-    # with mp.Pool(mp.cpu_count() - 1) as p:
-    #     p.starmap(_split_ev_xml, args)
+        # with mp.Pool(mp.cpu_count() - 1) as p:
+        #     p.starmap(_split_ev_xml, args)
 
-    for arg_set in args:
-        _split_ev_xml(*arg_set)
+        for arg_set in args:
+            _split_ev_xml(*arg_set)

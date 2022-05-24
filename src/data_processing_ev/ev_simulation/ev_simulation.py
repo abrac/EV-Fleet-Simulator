@@ -106,6 +106,9 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
                       {'value': 'battery.out.xml'})
         et.SubElement(output_node, 'fcd-output',
                       {'value': 'fcd.out.xml'})
+        # TODO Prompt whether the user wants geo outputs or not.
+        et.SubElement(output_node, 'fcd-output.geo',
+                      {'value': 'true'})
 
         # processing
         processing_node = et.SubElement(configuration_node, 'processing')
