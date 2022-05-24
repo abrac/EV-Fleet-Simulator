@@ -83,7 +83,7 @@ class Data_Analysis:
 
         # TODO Implement auto_run mode.
         battery_csvs = [*self.__scenario_dir.joinpath(
-                        'Results').glob('*/*/Battery.out.csv')]
+                        'Results').glob('*/*/battery.out.csv')]
         if len(battery_csvs) == 0:
             _ = input("Would you like to convert all " +
                       "battery.out.xml files to csv? [y]/n \n\t")
@@ -103,8 +103,8 @@ class Data_Analysis:
                 ev_name = ev_sim_dir.parents[0].name
                 date = ev_sim_dir.name
                 battery_csv = self.__scenario_dir.joinpath(
-                    'Results', ev_name, date, 'Battery.out.csv')
-                battery_xml = ev_sim_dir.joinpath("Battery.out.xml")
+                    'Results', ev_name, date, 'battery.out.csv')
+                battery_xml = ev_sim_dir.joinpath("battery.out.xml")
                 if not battery_xml.exists():
                     continue
                 if skipping and battery_csv.exists():
@@ -157,7 +157,7 @@ class Data_Analysis:
         self.__create_csvs(ev_sim_dirs)
 
         self.__battery_csv_paths = sorted(
-            [*scenario_dir.joinpath('Results').glob('*/*/Battery.out.csv')]
+            [*scenario_dir.joinpath('Results').glob('*/*/battery.out.csv')]
         )
         self.__agg_vehicle_dir = scenario_dir.joinpath('SUMO_Simulation',
                                                        'Simulation_Outputs')
@@ -713,7 +713,7 @@ class Data_Analysis:
 
                 # Save aggregated trip_instances dataframe
                 trip_mean_profile.to_csv(trip_csv.parent.joinpath(
-                    'Battery.out.aggregated.csv'))  # XXX FIXME Make sure that
+                    'battery.out.aggregated.csv'))  # XXX FIXME Make sure that
                     # `ev_fleet_stats` reads *this* csv file in the case of
                     # GTFS mode.
 
@@ -781,7 +781,7 @@ class Data_Analysis:
                         pass
                     elif self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
                         battery_csv = battery_csv.parent.joinpath(
-                            'Battery.out.aggregated.csv')
+                            'battery.out.aggregated.csv')
                     else:
                         raise ValueError(dpr.DATA_FMT_ERROR_MSG)
                     if vehicle_dir.name == battery_csv.parents[1].name:

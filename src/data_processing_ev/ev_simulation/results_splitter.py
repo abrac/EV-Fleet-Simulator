@@ -77,7 +77,7 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
                 output_file = scenario_dir.joinpath('SUMO_Simulation',
                                                     'Simulation_Outputs',
                                                     ev_name, date,
-                                                    'Battery.out.xml')
+                                                    'battery.out.xml')
                 output_file.parent.mkdir(parents=True, exist_ok=True)
                 tmp_tree = et.ElementTree(tmp_root)
                 with open(output_file, 'wb') as f:
@@ -115,7 +115,7 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
     date = prev_id.split('_')[-1]
     output_file = scenario_dir.joinpath('SUMO_Simulation',
                                         'Simulation_Outputs', ev_name, date,
-                                        'Battery.out.xml')
+                                        'battery.out.xml')
     output_file.parent.mkdir(parents=True, exist_ok=True)
     tmp_tree = et.ElementTree(tmp_root)
     with open(output_file, 'wb') as f:
@@ -148,7 +148,7 @@ def split_results(scenario_dir: Path, **kwargs):
     # Load xml as etree iterparse.
     ev_xmls = sorted([*scenario_dir.joinpath(
         'SUMO_Simulation', 'Simulation_Outputs_Combined').glob(
-        '*/Battery.out.xml')])
+        '*/battery.out.xml')])
 
     args = zip(ev_xmls, repeat(scenario_dir, len(ev_xmls)),
                repeat(input_data_fmt, len(ev_xmls)))

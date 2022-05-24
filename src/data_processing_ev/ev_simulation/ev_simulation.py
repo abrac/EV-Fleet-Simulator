@@ -35,7 +35,7 @@ def get_ev_depart_time(sumocfg_file: Path) -> int:
 
 def _seperate_battery_xml(scenario_dir: Path):
     xml_file = scenario_dir.joinpath('SUMO_Simulation', 'Simulation_Outputs',
-                                     'Battery.out.xml')
+                                     'battery.out.xml')
     xml_tree = et.parse(xml_file)
     # For each ev_name, date in route_files:
     # Find all `timestep` nodes with sub-node `vehicle` with attribute
@@ -79,20 +79,18 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
         et.SubElement(
             input_node,
             'net-file',
-            {
-                'value': str(
-                    [*scenario_dir.joinpath('_Inputs', 'Map').glob('*.net.xml')
-                     ][0].absolute()
-                )
-            }
-        )
+            {'value': os.path.relpath(
+                [*scenario_dir.joinpath('_Inputs', 'Map').\
+                 glob('*.net.xml')][0].absolute(),
+                output_sumocfg_dir)})
         et.SubElement(input_node, 'additional-files', {
-            'value': str(routes_dir.joinpath('vType.add.xml').absolute())}
-        )
+            'value': os.path.relpath(
+                routes_dir.joinpath('vType.add.xml'),
+                output_sumocfg_dir)})
         # Uncomment below if using multiple route files.
         # et.SubElement(input_node, 'route-files', {'value': route_str_list})
         et.SubElement(input_node, 'route-files', {
-            'value': str(route_file.absolute())}
+            'value': os.path.relpath(route_file, output_sumocfg_dir)}
         )
 
         # outputs
@@ -105,7 +103,9 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
         et.SubElement(output_node, 'tripinfo-output',
                       {'value': 'tripinfo.xml'})
         et.SubElement(output_node, 'battery-output',
-                      {'value': 'Battery.out.xml'})
+                      {'value': 'battery.out.xml'})
+        et.SubElement(output_node, 'fcd-output',
+                      {'value': 'fcd.out.xml'})
 
         # processing
         processing_node = et.SubElement(configuration_node, 'processing')
@@ -142,6 +142,6 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
 
     print("Simulations complete.")
 
-    # Seperating combined Battery.out.xml file into serpate files, organised
+    # Seperating combined battery.out.xml file into serpate files, organised
     # by ev_name and date...
-    print("Seperating combined Battery.out.xml file")
+    print("Seperating combined battery.out.xml file")
