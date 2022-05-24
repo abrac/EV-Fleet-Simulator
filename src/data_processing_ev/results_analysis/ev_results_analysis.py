@@ -75,7 +75,8 @@ def _y_fmt(y, pos):
 # %% Analysis Class ###########################################################
 class Data_Analysis:
     def __create_csvs(self, ev_sim_dirs: typ.Sequence[Path]) -> None:
-        """Convert all battery.out.xml files to csv files and save them
+        """Convert all battery.out.xml and fcd.out.xml files to csv files and
+           save them.
 
         They will be saved in a corresponding folder in
         {Scenario_Dir}/Results/
@@ -84,13 +85,17 @@ class Data_Analysis:
         # TODO Implement auto_run mode.
         battery_csvs = [*self.__scenario_dir.joinpath(
                         'Results').glob('*/*/battery.out.csv')]
-        if len(battery_csvs) == 0:
+        fcd_csvs = [*self.__scenario_dir.joinpath(
+                        'Results').glob('*/*/fcd.out.csv')]
+        if len(battery_csvs) == 0 or len(fcd_csvs) == 0:
             _ = input("Would you like to convert all " +
-                      "battery.out.xml files to csv? [y]/n \n\t")
+                      "battery.out.xml and fcd.out.xml " +
+                      "files to csv? [y]/n \n\t")
             convert = (True if _.lower() != 'n' else False)
         else:
             _ = input("Would you like to re-convert all " +
-                      "battery.out.xml files to csv? y/[n] \n\t")
+                      "battery.out.xml and fcd.out.xml " +
+                      "files to csv? [y]/n \n\t")
             convert = (False if _.lower() != 'y' else True)
 
         if convert:
@@ -98,6 +103,7 @@ class Data_Analysis:
             skipping = (True if _.lower() == 'y' else False)
 
             print("\nConverting xml files to csv...")
+
             for ev_sim_dir in tqdm(ev_sim_dirs):
                 # Try create ev_csv if it doesn't exist
                 ev_name = ev_sim_dir.parents[0].name
@@ -114,12 +120,13 @@ class Data_Analysis:
                                 '-o', battery_csv, battery_xml])
                 # Warn if battery_csv *still* doesn't exist
                 if not battery_csv.exists():
-                    logging.warning("Failed to create ev_csv in \n\t" +
-                                    str(battery_csv.parent))
+                    logging.warning("Failed to create: \n\t" +
+                                    str(battery_csv))
                 else:
                     # If creating the battery_csv was succesful, compress
                     # the battery_xml file.
                     try:
+                        # TODO Make the cpu count a command line argument.
                         subprocess.run(['pigz', '-p',
                                         str(mp.cpu_count() - 2), '--quiet',
                                         str(battery_xml.absolute())],
@@ -134,6 +141,47 @@ class Data_Analysis:
                                   "installed `pigz`. Install it if you " +
                                   "want the script to automagically " +
                                   "compress your battery XML files " +
+                                  "after they have been converted!")
+                            input("For now, press enter to disable file " +
+                                  "compression.")
+                            PIGZ_WARNING_ACKNOWLEDGED = True
+
+            for ev_sim_dir in tqdm(ev_sim_dirs):
+                # Try create ev_csv if it doesn't exist
+                ev_name = ev_sim_dir.parents[0].name
+                date = ev_sim_dir.name
+                fcd_csv = self.__scenario_dir.joinpath(
+                    'Results', ev_name, date, 'fcd.out.csv')
+                fcd_xml = ev_sim_dir.joinpath("fcd.out.xml")
+                if not fcd_xml.exists():
+                    continue
+                if skipping and fcd_csv.exists():
+                    continue
+                fcd_csv.parent.mkdir(parents=True, exist_ok=True)
+                subprocess.run(['python', xml2csv, '-s', ',',
+                                '-o', fcd_csv, fcd_xml])
+                # Warn if fcd_csv *still* doesn't exist
+                if not fcd_csv.exists():
+                    logging.warning("Failed to create: \n\t" +
+                                    str(fcd_csv))
+                else:
+                    # If creating the fcd_csv was succesful, compress
+                    # the fcd_xml file.
+                    try:
+                        subprocess.run(['pigz', '-p',
+                                        str(mp.cpu_count() - 2), '--quiet',
+                                        str(fcd_xml.absolute())],
+                                       check=True)
+                    except subprocess.CalledProcessError:
+                        print("Warning: Pigz failed to compress the " +
+                              "fcd_xml file.")
+                    except OSError:
+                        global PIGZ_WARNING_ACKNOWLEDGED
+                        if not PIGZ_WARNING_ACKNOWLEDGED:
+                            print("Warning: You probably haven't " +
+                                  "installed `pigz`. Install it if you " +
+                                  "want the script to automagically " +
+                                  "compress your fcd XML files " +
                                   "after they have been converted!")
                             input("For now, press enter to disable file " +
                                   "compression.")
