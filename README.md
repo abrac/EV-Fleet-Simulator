@@ -43,7 +43,7 @@ abstract = {Minibus taxi public transport is a seemingly chaotic phenomenon in t
 ```
 </details>
 
-Please also click the "star" button on the repository's homepage so that we know how many people our software is benefitting. This helps us to justify future funding and work on the project. Thank you!
+Please also click the "star" button on the top of our [repository's homepage](https://gitlab.com/eputs/ev-fleet-sim) so that we know how many people our software is benefitting. This helps us to justify future funding and work on the project. Thank you!
 
 Documentation
 =============
