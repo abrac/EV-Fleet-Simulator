@@ -1,33 +1,70 @@
 #!/bin/bash
 read -p "Does the scenario have have left-hand traffic? [y]/n  " LEFTHAND
+read -p "Do you want to import elevation data from the OSM file? y/[n]  " ELEVATION
+
+echo "Converting OSM file to SUMO Network..."
 
 if [[ ${LEFTHAND,,} != "n" ]]
 then
     echo "You selected left-hand traffic."
-    echo "Converting OSM file to SUMO Network..."
-    netconvert --osm square_boundary.osm  \
-        --type-files ./osmNetconvert_Africa.typ.xml \
-        --geometry.remove \
-        --ramps.guess \
-        --junctions.join \
-        --tls.guess-signals --tls.discard-simple --tls.join \
-        --tls.default-type actuated \
-        --lefthand \
-        --log netconvert_errors.log.txt \
-        -o ../square_boundary.net.xml
+
+    if [[ ${ELEVATION,,} != "y" ]]
+    then
+        echo "You opted to import elevation data."
+        netconvert --osm square_boundary.osm  \
+            --type-files ./osmNetconvert_Africa.typ.xml \
+            --geometry.remove \
+            --ramps.guess \
+            --junctions.join \
+            --tls.guess-signals --tls.discard-simple --tls.join \
+            --tls.default-type actuated \
+            --lefthand \
+            --log netconvert_errors.log.txt \
+            --osm.elevation \
+            -o ../square_boundary.net.xml
+    else
+        echo "You opted to ignore elevation data."
+        netconvert --osm square_boundary.osm  \
+            --type-files ./osmNetconvert_Africa.typ.xml \
+            --geometry.remove \
+            --ramps.guess \
+            --junctions.join \
+            --tls.guess-signals --tls.discard-simple --tls.join \
+            --tls.default-type actuated \
+            --lefthand \
+            --log netconvert_errors.log.txt \
+            -o ../square_boundary.net.xml
+    fi
 else
     echo "You selected right-hand traffic."
-    echo "Converting OSM file to SUMO Network..."
-    netconvert --osm square_boundary.osm  \
-        --type-files ./osmNetconvert_Africa.typ.xml \
-        --geometry.remove \
-        --ramps.guess \
-        --junctions.join \
-        --tls.guess-signals --tls.discard-simple --tls.join \
-        --tls.default-type actuated \
-        --log netconvert_errors.log.txt \
-        -o ../square_boundary.net.xml
+
+    if [[ ${ELEVATION,,} != "y" ]]
+    then
+        echo "You opted to import elevation data."
+        netconvert --osm square_boundary.osm  \
+            --type-files ./osmNetconvert_Africa.typ.xml \
+            --geometry.remove \
+            --ramps.guess \
+            --junctions.join \
+            --tls.guess-signals --tls.discard-simple --tls.join \
+            --tls.default-type actuated \
+            --log netconvert_errors.log.txt \
+            --osm.elevation \
+            -o ../square_boundary.net.xml
+    else
+        echo "You opted to ignore elevation data."
+        netconvert --osm square_boundary.osm  \
+            --type-files ./osmNetconvert_Africa.typ.xml \
+            --geometry.remove \
+            --ramps.guess \
+            --junctions.join \
+            --tls.guess-signals --tls.discard-simple --tls.join \
+            --tls.default-type actuated \
+            --log netconvert_errors.log.txt \
+            -o ../square_boundary.net.xml
+    fi
 fi
+
 
 # Rationalle behind command options:
 #   --osm: The OpenStreetMap file.
