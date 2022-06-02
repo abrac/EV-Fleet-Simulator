@@ -4,11 +4,11 @@ read -p "Do you want to import elevation data from the OSM file? y/[n]  " ELEVAT
 
 echo "Converting OSM file to SUMO Network..."
 
-if [[ ${LEFTHAND,,} != "n" ]]
+if [[ ${LEFTHAND,,} == "n" ]]
 then
-    echo "You selected left-hand traffic."
+    echo "You selected right-hand traffic."
 
-    if [[ ${ELEVATION,,} != "y" ]]
+    if [[ ${ELEVATION,,} == "y" ]]
     then
         echo "You opted to import elevation data."
         netconvert --osm square_boundary.osm  \
@@ -18,7 +18,6 @@ then
             --junctions.join \
             --tls.guess-signals --tls.discard-simple --tls.join \
             --tls.default-type actuated \
-            --lefthand \
             --log netconvert_errors.log.txt \
             --osm.elevation \
             -o ../square_boundary.net.xml
@@ -31,14 +30,13 @@ then
             --junctions.join \
             --tls.guess-signals --tls.discard-simple --tls.join \
             --tls.default-type actuated \
-            --lefthand \
             --log netconvert_errors.log.txt \
             -o ../square_boundary.net.xml
     fi
 else
-    echo "You selected right-hand traffic."
+    echo "You selected left-hand traffic."
 
-    if [[ ${ELEVATION,,} != "y" ]]
+    if [[ ${ELEVATION,,} == "y" ]]
     then
         echo "You opted to import elevation data."
         netconvert --osm square_boundary.osm  \
@@ -48,6 +46,7 @@ else
             --junctions.join \
             --tls.guess-signals --tls.discard-simple --tls.join \
             --tls.default-type actuated \
+            --lefthand \
             --log netconvert_errors.log.txt \
             --osm.elevation \
             -o ../square_boundary.net.xml
@@ -60,6 +59,7 @@ else
             --junctions.join \
             --tls.guess-signals --tls.discard-simple --tls.join \
             --tls.default-type actuated \
+            --lefthand \
             --log netconvert_errors.log.txt \
             -o ../square_boundary.net.xml
     fi
