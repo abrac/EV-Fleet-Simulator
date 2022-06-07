@@ -229,54 +229,100 @@ Initialising Road Network
 
 1. Copy the `.osm.pbf` file to `<simulation-dir>/_Inputs/Map/Construction`. 
 
-   You will find a bash script called `pbf_to_osm.sh` (`pbf_to_osm.bat` in
-   Windows) in the `Construction` directory. Open it in a text editor. In MacOS
-   and Linux, find the line which has `-bbox
-   <min_lon>,<min_lat>,<max_lon>,<max_lat>`. On Windows, find the line which
-   has `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>`. Modify the line to
-   correspond with the values added to `boundary.csv`. 
+   You will find a bash script called `pbf_to_osm.sh` (`pbf_to_osm.bat` in Windows) in the `Construction` directory. Open it in a text editor. In MacOS and Linux, find the line which has `-bbox <min_lon>,<min_lat>,<max_lon>,<max_lat>`. On Windows, find the line which has `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>`. Modify the line to correspond with the values added to `boundary.csv`. 
 
    > E.g: `-bbox 18.6,-34.3,19.0,-33.7`<br>
    > Or in Windows: `-b=18.6,-34.3,19.0,-33.7`
 
-   Run the modified `.sh`/`.bat` file to convert the `.osm.pbf` file to a
-   `.osm` file, while cropping to the specified boundary.
+   Run the modified `.sh`/`.bat` file to convert the `.osm.pbf` file to a `.osm` file, while cropping to the specified boundary.
 
-1. You will also find a `net_convert.sh` file in the `Construction` directory.
-   We will run this script to convert the `.osm` file to a `.net.xml` file (the
-   file-format compatible with SUMO). But before we do that, take note of the
-   `.typ.xml` file that is present in the `Construction` directory. This is a
-   *SUMO edge-type file*.
+1. <a id="importing-elevation-data"></a> ***Optional step: Importing elevation data*** 
 
-   The `.typ.xml` file defines which vehicle classes are allowed to access the
-   various road types. It needs to be modified to suit the context of the
-   scenario.
-
-   For example, gravel roads (`highway.track`) are common in developing
-   countries, and hence it would be expected that vehicles have access to those
-   roads in the simulation (since they have no choice). In cities of developed 
-   countries, where gravel roads are less common, it may be appropriate to
-   restrict vehicles from accessing them.
-
-   (Information on SUMO edge-type files: [SUMO Documentation](
-    https://sumo.dlr.de/docs/SUMO_edge_type_file.html))
-
-1. ##### Setting road access permissions:
-
-   Remember that [previously](#vehicle-definition) we
-   chose a vehicle class to represent our fleet? Now we need to choose which
-   road-types allow our vehicle class.
-
-   Open the `.typ.xml` file in your favourite text editor. For each road-type
-   listed, change the `disallow` and `allow` attributes to allow/disallow your
-   vehicle class. You can also change the other attributes, such as the speed
-   limits on the various road types.
-
-   (Description of the various road types: [OpenStreetMap Wiki](
-    https://wiki.openstreetmap.org/wiki/Map_features#Highway))
+    By default, OSM does not include elevation data. If you would like to use elevation data to create a more realistic simulation, then you will need to follow the following instructions:
 
 
-1. Now we can proceed to run the `net_convert.sh` script. Sometimes this step
+    <details markdown='1' style="background:#EEEEEE;padding: 0.5em;"><summary>Click to view</summary><br>
+
+    By default, OSM does not include elevation data. Elevation is supported by EV-Fleet-Sim to create more realistic simulations. In order to use that functionality, elevation data needs to be overlayed on the input OSM file. To do this, you need to install `osmosis`, and the `osmosis-srtm` plug-in.
+
+    To install them, follow the steps below:
+
+    1.  Download and unpack [Osmosis 0.45](https://bretth.dev.openstreetmap.org/osmosis-build/osmosis-0.45.zip) in a folder in your computer. We will call that folder `<osmosis-folder>`.
+
+    2.  Clone and build the [osmosis-srtm
+        plug-in](https://github.com/locked-fg/osmosis-srtm-plugin.git) repo. 
+
+        **OR:**
+
+        Download the pre-built [jar file](https://github.com/locked-fg/osmosis-srtm-plugin/files/8027597/srtmplugin-1.1.2.jar.zip) and place it in `<osmosis-folder>\lib\default`.
+
+    3.  Create an `osmosis-plugins.conf` file in the config-folder and add
+        this line: 
+
+        `de.locked.osmosis.srtmplugin.SrtmPlugin_loader`
+
+    Downloading elevation data:
+
+    1.  Create and sign into an account on [Earth Explorer](https://earthexplorer.usgs.gov/)
+
+    2.  Play around on the map until the entire area you want to cover is
+        seen.
+
+    3.  Click on the "Use map" button and continue to data set
+
+    4.  Check the *Use Data Set Prefilter* box and type: "NASA SRTM3
+        SRTMGL3" in the *Data Set Search* bar. Make sure only the checkbox
+        named "NASA SRTM3 SRTMGL3" is ticked
+
+    5.  Click the "Results" button.
+
+    6.  For each of the results, click "Download Options" and download the
+        HGT file.
+
+    7.  Unzip all of the downloads and place them together in a folder.
+
+    Overlaying elevation data on OSM:
+
+    1.  After cropping and converting the downloaded OSM file (after
+        completing the previous step of the Initialising Road Network instructions),
+        place it in `<osmosis-folder>`. Let's call it `test.osm`.
+
+    2.  Run the following line in you command prompt:
+
+        ```sh
+        osmosis --read-xml <osmosis-folder>/test.osm --write-srtm locDir=<location-of-unzipped-SRTM-files> repExisting=true tagName=ele --write-xml <osmosis-folder>/test_with_srtm.osm
+        ```
+
+    3.  The `test_with_srtm.osm` file will be found in `<osmosis-folder>`.
+
+    4.  Rename the file to `square_boundary.osm` and place it in `<scenario-dir>\_Inputs\Map\Construction`.
+
+    5.  Continue to the next step in the Initialising Road Network instructions.
+    </details><br>
+
+1. You will also find a `net_convert.sh` file in the `Construction` directory. We will run this script to convert the `.osm` file to a `.net.xml` file (the road-network file-format that is compatible with SUMO). 
+
+   But before we do that, you may want to take note of the `.typ.xml` file that is present in the `Construction` directory. This is a *SUMO edge-type file*.
+
+   The `.typ.xml` file defines which vehicle classes are allowed to access the various road types. It can optionally be modified to suit the context of the scenario.
+
+   For example, gravel roads (`highway.track`) are common in developing countries, and hence it would be expected that vehicles have access to those roads in the simulation (since tar roads are less common). In cities of developed countries, where gravel roads are less common, it may be appropriate to restrict vehicles from accessing them.
+
+1. <a id="setting-road-access-permissions"></a>***Optional step: Setting Road Access Permissions***
+
+   Remember that [previously](#vehicle-definition) we chose a vehicle class to represent our fleet? Now we need to choose which road-types allow our vehicle class.
+
+   Open the `.typ.xml` file in your favourite text editor. For each road-type listed, change the `disallow` and `allow` attributes to allow/disallow your vehicle class. You can also change the other attributes, such as the speed limits on the various road types.
+
+   (Description of the various road types: [OpenStreetMap Wiki](https://wiki.openstreetmap.org/wiki/Map_features#Highway))
+
+   (More information on SUMO edge-type files: [SUMO Documentation](https://sumo.dlr.de/docs/SUMO_edge_type_file.html))
+
+1. Now we can proceed to run the `net_convert.sh` script. 
+
+    The script will prompt you to ask you if the scenario has left- or right-handed traffic. It will also ask you if you want to import elevation data from the OSM file. This option will only work if you [import elevation data](#importing-elevation-data) as explained previously.
+
+   As the script runs, sometimes it
    will throw many warnings due to badly formed data. If you have time, try and
    fix the warnings by editing the `.net.xml` file in NETEDIT. (I usually
    ignore the errors, because most can be safely ignored.)
@@ -287,7 +333,7 @@ Initialising Road Network
    In such cases, netconvert will ignore roads which have not been defined.
    (I.e. It will pretend as if they didn't exist.) If the road type is
    important to you, add it to the `.typ.xml` file, and [set it's access
-   permissions](#setting-road-access-permissions%3A).
+   permissions](#setting-road-access-permissions).
 
    Once the scrpt is done running, the `.net.xml` file can be found in: 
    `<simulation-dir>/_Inputs/Map/`, and a log of the warnings will be saved as a
