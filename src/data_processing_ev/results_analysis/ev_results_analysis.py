@@ -129,7 +129,7 @@ class Data_Analysis:
                     try:
                         # TODO Make the cpu count a command line argument.
                         subprocess.run(['pigz', '-p',
-                                        str(mp.cpu_count() - 2), '--quiet',
+                                        str(mp.cpu_count() - 2),  # '--quiet',
                                         str(battery_xml.absolute())],
                                        check=True)
                     except subprocess.CalledProcessError:
@@ -169,7 +169,7 @@ class Data_Analysis:
                     # the fcd_xml file.
                     try:
                         subprocess.run(['pigz', '-p',
-                                        str(mp.cpu_count() - 2), '--quiet',
+                                        str(mp.cpu_count() - 2),  # '--quiet',
                                         str(fcd_xml.absolute())],
                                        check=True)
                     except subprocess.CalledProcessError:
