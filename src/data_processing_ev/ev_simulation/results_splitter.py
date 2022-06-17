@@ -131,8 +131,8 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
 
     print("Compressing combined XML file.")
     try:
-        subprocess.run(['pigz', '-p', str(mp.cpu_count() - 2), # '--quiet',
-                       str(ev_xml_file.absolute())], check=True)
+        subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 2), # '--quiet',
+                         str(ev_xml_file.absolute())])
     except subprocess.CalledProcessError:
         print("Warning: Pigz failed to compress the xml file.")
     except OSError:
