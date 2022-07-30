@@ -14,6 +14,20 @@ Let's imagine that you want to add some new functionality to the program. You wa
    git clone https://gitlab.com/eputs/ev-fleet-sim.git <source-dir> # Clone the git repository into the new folder.
    ```
 
+1. Install the program in "developer-mode".
+
+   On Linux/MacOS:
+
+   ```sh
+   pip install --prefix ~/.local/ -e .
+   ```
+
+   On Windows:
+
+   ```bash
+   pip install -e .
+   ```
+
 1. Open `<source-dir>/src/data_processing_ev/__init__.py` in your in your favourite text-editor.
 
 3. Go down to the line which says:
@@ -26,9 +40,10 @@ Let's imagine that you want to add some new functionality to the program. You wa
 
     ```python
     print("Hello world!")
+    import time; time.sleep(2)  # Wait two seconds after printing the above.
     ```
 
-5. Save the file, open a terminal, run `pip install <source-dir>`, and then run `ev-fleet-sim`. It should say "Hello
+5. Save the file, open a terminal and run `ev-fleet-sim`. It should now say "Hello
    world!" before continuing with the program.
 
 You will see that `__init__.py` defines a function called `run()`. This function is
@@ -71,4 +86,4 @@ project, we would gratefully accept them. This is how you do it:
 
 Why don't you create a fork, do this Hello-World exercise on your fork, and create a pull-request. Of course, I will reject the pull-request, but consider it the "initiation rites" of EV-Fleet-Sim 😉.
 
-Also remember to press the "star" and "notification bell" on the top of the [GitLab page](https://gitlab.com/eputs/ev-fleet-sim). That way, more people will be made aware of the software.
+Also remember to press the "star" and "notification bell" on the top of the project's [GitLab page](https://gitlab.com/eputs/ev-fleet-sim). That way, more people will be made aware of the software.
