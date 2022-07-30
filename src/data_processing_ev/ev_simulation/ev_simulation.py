@@ -115,6 +115,11 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
         et.SubElement(processing_node, 'max-num-vehicles', {'value': '1'})
         # et.SubElement(processing_node, 'threads', {'value': f'{mp.cpu_count() -1}'})
 
+        # time
+        time_node = et.SubElement(configuration_node, 'time')
+        et.SubElement(time_node, 'step-length', {'value': '0.2'})  # XXX FIXME Only use this step length if using EIDM car-following model.
+        # et.SubElement(processing_node, 'threads', {'value': f'{mp.cpu_count() -1}'})
+
         xmlstr = minidom.parseString(
             et.tostring(configuration_node)
         ).toprettyxml(indent="    ")
