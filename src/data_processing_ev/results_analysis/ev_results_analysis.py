@@ -206,8 +206,8 @@ class Data_Analysis:
         self.__battery_csv_paths = sorted(
             [*scenario_dir.joinpath('Results').glob('*/*/battery.out.csv')]
         )
-        self.__agg_vehicle_dir = scenario_dir.joinpath('SUMO_Simulation',
-                                                       'Simulation_Outputs')
+        self.__agg_vehicle_dir = scenario_dir.joinpath('EV_Simulation',
+                                                       'SUMO_Outputs')
         self.__indiv_vehicle_dirs = sorted(
             [x for x in self.__agg_vehicle_dir.glob('*/') if x.is_dir()]
         )
@@ -1420,7 +1420,7 @@ class Data_Analysis:
 def run_ev_results_analysis(scenario_dir: Path, **kwargs):
 
     ev_sim_dirs = sorted([*scenario_dir.joinpath(
-        'SUMO_Simulation', 'Simulation_Outputs').glob('*/*/')])
+        'EV_Simulation', 'SUMO_Outputs').glob('*/*/')])
 
     data_analysis = Data_Analysis(scenario_dir, ev_sim_dirs, **kwargs)
     # XXX GTFS: No changes will be required in `make_plots()`. The function

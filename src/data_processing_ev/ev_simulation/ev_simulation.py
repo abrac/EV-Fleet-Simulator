@@ -34,7 +34,7 @@ def get_ev_depart_time(sumocfg_file: Path) -> int:
 
 
 def _seperate_battery_xml(scenario_dir: Path):
-    xml_file = scenario_dir.joinpath('SUMO_Simulation', 'Simulation_Outputs',
+    xml_file = scenario_dir.joinpath('EV_Simulation', 'SUMO_Simulation_Outputs',
                                      'battery.out.xml')
     xml_tree = et.parse(xml_file)
     # For each ev_name, date in route_files:
@@ -59,10 +59,10 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
     simulation_cmds = []
     for route_file in combined_route_files:
         ev_name = route_file.stem.split('.')[0]
-        output_sumocfg_dir = scenario_dir.joinpath('SUMO_Simulation', 'Sumocfgs_Combined')
+        output_sumocfg_dir = scenario_dir.joinpath('EV_Simulation', 'Sumocfgs_Combined')
         output_sumocfg_file = output_sumocfg_dir.joinpath(f'{ev_name}.sumocfg')
         simulation_output_dir = scenario_dir.joinpath(
-            'SUMO_Simulation', 'Simulation_Outputs_Combined', ev_name)
+            'EV_Simulation', 'SUMO_Simulation_Outputs_Combined', ev_name)
         output_sumocfg_dir.mkdir(parents=True, exist_ok=True)
         simulation_output_dir.mkdir(parents=True, exist_ok=True)
 

@@ -61,8 +61,8 @@ SCENARIO_DIR_STRUCTURE = {
         'Routes': None,
         'Trips': None
     },
-    'SUMO_Simulation': {
-        'Simulation_Outputs': None,
+    'EV_Simulation': {
+        'SUMO_Simulation_Outputs': None,
         'Sumocfgs': None
     },
     'SAM_Simulation': {
