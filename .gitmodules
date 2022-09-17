@@ -1,0 +1,3 @@
+[submodule "src/data_processing_ev/helper_scripts/kinetic_model/Bumpy-Ride"]
+	path = src/data_processing_ev/helper_scripts/kinetic_model/Bumpy-Ride
+	url = git@github.com:ChullEPG/Bumpy-Ride.git
