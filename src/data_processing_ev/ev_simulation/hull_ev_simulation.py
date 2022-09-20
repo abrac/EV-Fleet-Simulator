@@ -2,9 +2,75 @@
 columns with the geodesic distance and slope angles between consecutive
 observations"""
 
+import pandas as pd
+from datetime import datetime, timedelta
 import numpy as np
 import geopy.distance
 
+
+def read_file(filename, path):
+    """ This function takes the filename of a GPS trip stored in a .csv file,
+    and path to the file.
+
+    It reads the file, cleans it, adds columns that are necessary for the
+    kinetic model, and returns the file in a pandas dataframe. """
+
+    journey = pd.read_csv(path + "/" + filename)
+
+    # Data cleaning
+
+    if 'Aatitude' in journey.columns:
+        journey['Altitude'] = journey['Aatitude']
+        journey.drop(columns = ['Aatitude'])
+
+    if 'GPS Speed' in journey.columns:
+        journey['Speed'] = journey['GPS Speed']
+        journey.drop(columns = ['GPS Speed'])
+
+    # Join date and time columns into one column
+    journey['DateTime'] = pd.to_datetime(journey['Date'] + journey['Time'], format = '%m/%d/%Y%H:%M:%S')
+
+    # Check if the time logger got stuck for a second, and correct if so
+    for i in range(len(journey) - 1):
+         if journey['DateTime'][i] == journey['DateTime'][i + 1]:
+            journey['DateTime'][i + 1] += timedelta(seconds = 1)
+
+
+
+    #######################################################################
+
+    ############ Set up dataframe for energy consumption estimations ############
+
+
+    # Convert speed in km/h to m/s
+    journey['Velocity'] = np.where(journey['Speed'] >= 0.5, journey['Speed']/3.6, 0) #
+
+
+   # for i in range(len(journey)): ### Observations less than 0.5 km/h are set to 0, due to GPS noise
+   #     if journey['Speed'][i] < 0.5:
+      #      journey['Velocity'][i] = 0
+
+    #Calculate elevation change
+    journey['ElevChange'] = np.where(abs(journey['Altitude'].shift(-1) - journey['Altitude']) >= 0.2, journey['Altitude'].shift(-1) - journey['Altitude'], 0)
+   # for i in range(len(journey)): # If measured elevation change < 0.2, then set to 0 due to GPS noise.
+    #    if abs(journey['ElevChange'][i]) < 0.2:
+     #       journey['ElevChange'][i] = 0
+
+    # Calculate time between samples. Useful for kinetic model.
+    # This is needed because some samples are 1/2Hz.
+    journey['DeltaT'] = journey['DateTime'].shift(-1) - journey['DateTime']
+    journey.DeltaT = journey['DeltaT']/ np.timedelta64(1, 's') # Convert from timedelta to float
+
+    # Calculate change in velocity between each timestep
+    journey['DeltaV'] = journey['Velocity'].shift(-1) - journey['Velocity']
+
+    # Calculate acceleration
+    journey['Acceleration'] = np.where(journey['DeltaT'] > 0, journey['DeltaV']/journey['DeltaT'], 0)
+
+    # Joins lat/lon Coords into one column, useful for getDist function
+    journey['Coordinates'] = list(zip(journey.Latitude, journey.Longitude))
+
+    return journey
 
 def getDistSlope(journey):
     """
@@ -211,3 +277,7 @@ class Vehicle:
         # TODO Return this as a dictionary, rather than ordered values.
         return Fa, Frr, Fhc, Fr, Frpb, Er, ErP, ErB, offtake_power
             # N,N,N,N,N,m/s,ms,N,Ws, Ws,Ws,Ws
+
+
+def simulate():
+    ...
