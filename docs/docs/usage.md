@@ -104,46 +104,21 @@ Initialising Trace Data
 
    ##### Table: CSV input format for EV-Fleet-Sim
 
-   ```
-   +----------+-------+------------------------------+-------------+--
-   |          | GPSID | Time *                       | Latitude *  |   ...
-   |----------|-------|------------------------------|-------------|--
-   | Datatype | str   | str                          | float       |   ...
-   | units    | -     | 'yyyy-mm-dd hr24:MM:ss' [^3] | [-]11.11111 |
-   +----------+-------+------------------------------+-------------+--
-
-        -------------+-----------+-----------+------------+----------+--
-    ...  Longitude * | Altitude  | Heading   | Satellites | HDOP[^1] |   ...
-        -------------|-----------|-----------|------------|----------|--
-    ...  float       | int/float | int/float | int        | float    |   ...
-         [-]11.11111 | meters    | degrees   | -          | meters   |
-        -------------+-----------+-----------+------------+----------+--
-
-        --------------+----------------------+------------+--------------+
-    ...  AgeOfReading | DistanceSinceReading | Velocity * | StopID[^2] + |
-        --------------|----------------------|------------|--------------|
-    ...  int          | int                  | int        | str          |
-         minutes?     | meters               | km/h       | -            |
-        --------------+----------------------+------------+--------------+
+   |          | GPSID | Time *                       | Latitude *  |   Longitude * | Altitude[^4] + | Heading   | Satellites | HDOP[^1] |  AgeOfReading | DistanceSinceReading | Velocity * | StopID[^2] + |
+   |----------|-------|------------------------------|-------------|---------------|----------------|-----------|------------|----------|---------------|----------------------|------------|--------------|
+   | Datatype | str   | str                          | float       |   float       | int/float      | int/float | int        | float    |  int          | int                  | int        | str          |
+   | units    | -     | 'yyyy-mm-dd hr24:MM:ss' [^3] | [-]11.11111 |   [-]11.11111 | meters         | degrees   | -          | meters   |  minutes?     | meters               | km/h       | -            |
 
 
-   Notes:
-   ======
-
-   The headings marked with `*` are required. 
-
-   Headings marked with `+` are conditionally required.
-
-   Unmarked headings are not required, and are not currently used by
-   EV-Fleet-Sim. They may be used in the future.
-
-   If you are not using a coloumn, leave its fields blank. (i.e. Don't fill it
-   with zeroes.)
-
-   [^1]: Horizontal Dilution of Precision. Lower is better.
-   [^2]: StopID column only required for GTFS input data.
-   [^3]: E.g: 2022-04-17 09:03:49
-   ```
+   > Note:
+   >
+   > The headings marked with `*` are required.
+   >
+   > Headings marked with `+` are conditionally required.
+   >
+   > Unmarked headings are not required, and are not currently used by EV-Fleet-Sim. They may be used in the future.
+   > 
+   > If you are not using a coloumn, leave its fields blank. (i.e. Don't fill it with zeroes.)
 
 1. Copy the script(s) to the `<simulation-dir>/_Inputs/Traces/` directory and run 
    them.
@@ -227,14 +202,14 @@ Initialising Road Network
    are available and more information about pbf files can be found at the [OSM
    wiki](https://wiki.openstreetmap.org/wiki/PBF_Format).
 
-1. Copy the `.osm.pbf` file to `<simulation-dir>/_Inputs/Map/Construction`. 
+1. Copy the `.osm.pbf` file to `<simulation-dir>/_Inputs/Map/Construction`. From here on, we will refer to this directory as `<construction-dir>`.
 
-   You will find a bash script called `pbf_to_osm.sh` (`pbf_to_osm.bat` in Windows) in the `Construction` directory. Open it in a text editor. In MacOS and Linux, find the line which has `--bbox <min_lon>,<min_lat>,<max_lon>,<max_lat>`. On Windows, find the line which has `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>`. Modify the line to correspond with the values added to `boundary.csv`. 
+   You will find a bash script called `pbf_to_osm.sh` (`pbf_to_osm.bat` in Windows) in `<construction-dir>`. Open it in a text editor. In MacOS and Linux, find the line which has `--bbox <min_lon>,<min_lat>,<max_lon>,<max_lat>`. On Windows, find the line which has `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>`. Modify the line to correspond with the values added to `boundary.csv`. 
 
    > E.g: `--bbox 18.6,-34.3,19.0,-33.7`<br>
    > Or in Windows: `-b=18.6,-34.3,19.0,-33.7`
 
-   Run the modified `.sh`/`.bat` file to convert the `.osm.pbf` file to a `.osm` file, while cropping to the specified boundary.
+   Run the modified `.sh`/`.bat` file to convert the `.osm.pbf` file to a `.osm` file, while cropping to the specified boundary. This should produce a file called `square_boundary.osm`.
 
 1. <a id="importing-elevation-data"></a> ***Optional step: Importing elevation data*** 
 
@@ -247,17 +222,16 @@ Initialising Road Network
 
     To install them, follow the steps below:
 
-    1.  Download and unpack [Osmosis 0.45](https://bretth.dev.openstreetmap.org/osmosis-build/osmosis-0.45.zip) in a folder in your computer. We will call that folder `<osmosis-folder>`.
+    1.  Download and unpack [Osmosis 0.45](https://bretth.dev.openstreetmap.org/osmosis-build/osmosis-0.45.zip) in a folder in your computer. We will refer to the folder's directory as `<osmosis-dir>`.
 
-    2.  Clone and build the [osmosis-srtm
-        plug-in](https://github.com/locked-fg/osmosis-srtm-plugin.git) repo. 
+    2.  Download the pre-built [jar file](https://github.com/locked-fg/osmosis-srtm-plugin/files/8027597/srtmplugin-1.1.2.jar.zip) and place it in `<osmosis-dir>\lib\default`.
 
         **OR:**
 
-        Download the pre-built [jar file](https://github.com/locked-fg/osmosis-srtm-plugin/files/8027597/srtmplugin-1.1.2.jar.zip) and place it in `<osmosis-folder>\lib\default`.
+        Clone and build the [osmosis-srtm plug-in](https://github.com/locked-fg/osmosis-srtm-plugin.git) repo. 
 
-    3.  Create an `osmosis-plugins.conf` file in the config-folder and add
-        this line: 
+
+    3.  Create a text file called `osmosis-plugins.conf` in the `<osmosis-dir>/config/` directory and add this line to the file: 
 
         `de.locked.osmosis.srtmplugin.SrtmPlugin_loader`
 
@@ -279,25 +253,28 @@ Initialising Road Network
     6.  For each of the results, click "Download Options" and download the
         HGT file.
 
-    7.  Unzip all of the downloads and place them together in a folder.
+    7.  Unzip all of the downloads and place them together in the directory: `<construction-dir>/Elevation/`
 
     Overlaying elevation data on OSM:
 
-    1.  After cropping and converting the downloaded OSM file (after
-        completing the previous step of the Initialising Road Network instructions),
-        place it in `<osmosis-folder>`. Let's call it `test.osm`.
+    1.  As instructed in the previous step of the Initialising Road Network instructions, you should have a file called `square_boundary.osm` in `<construction-dir>`. Rename this file to `map-without-elevation.osm`.
 
     2.  Run the following line in you command prompt:
 
+        Linux/MacOS:
+
         ```sh
-        osmosis --read-xml <osmosis-folder>/test.osm --write-srtm locDir=<location-of-unzipped-SRTM-files> repExisting=true tagName=ele --write-xml <osmosis-folder>/test_with_srtm.osm
+        <osmosis-dir>/bin/osmosis --read-xml <construction-dir>/map-without-elevation.osm --write-srtm locDir=<construction-dir>/Elevation/ repExisting=true tagName=ele --write-xml <construction-dir>/map-with-elevation.osm
+        ```
+        
+        Windows:
+
+        ```
+        <osmosis-dir>/bin/osmosis.bat --read-xml <construction-dir>\map-without-elevation.osm --write-srtm locDir=<construction-dir>\Elevation\ repExisting=true tagName=ele --write-xml <construction-dir>\map-with-elevation.osm
         ```
 
-    3.  The `test_with_srtm.osm` file will be found in `<osmosis-folder>`.
+    4.  Rename `map-with-elevation.osm` to `square_boundary.osm` so that it can be used in the next step in the Initialising Road Network instructions.
 
-    4.  Rename the file to `square_boundary.osm` and place it in `<scenario-dir>\_Inputs\Map\Construction`.
-
-    5.  Continue to the next step in the Initialising Road Network instructions.
     </details><br>
 
 1. You will also find a `net_convert.sh` file in the `Construction` directory. We will run this script to convert the `.osm` file to a `.net.xml` file (the road-network file-format that is compatible with SUMO). 
@@ -310,13 +287,15 @@ Initialising Road Network
 
 1. <a id="setting-road-access-permissions"></a>***Optional step: Setting Road Access Permissions***
 
-   Remember that [previously](#vehicle-definition) we chose a vehicle class to represent our fleet? Now we need to choose which road-types allow our vehicle class.
+   Remember that [previously](#vehicle-definition) we chose a vehicle class to represent our fleet? Now we can specify which road-types allow access for our fleet's vehicle class.
 
+   <details markdown='1' style="background:#EEEEEE;padding: 0.5em;"><summary>Click to view</summary><br>
    Open the `.typ.xml` file in your favourite text editor. For each road-type listed, change the `disallow` and `allow` attributes to allow/disallow your vehicle class. You can also change the other attributes, such as the speed limits on the various road types.
 
    (Description of the various road types: [OpenStreetMap Wiki](https://wiki.openstreetmap.org/wiki/Map_features#Highway))
 
    (More information on SUMO edge-type files: [SUMO Documentation](https://sumo.dlr.de/docs/SUMO_edge_type_file.html))
+   </details><br>
 
 1. Now we can proceed to run the `net_convert.sh` script. 
 
@@ -373,3 +352,8 @@ document described the format that is readable by SAM:
   [this webpage](https://sam.nrel.gov/weather-data/weather-data-publications.html)
 
 <!-- TODO Add more information -->
+
+[^1]: Horizontal Dilution of Precision. Lower is better.
+[^2]: StopID column only required for GTFS input data.
+[^3]: E.g: 2022-04-17 09:03:49
+[^4]: Only required if you would like to account for elevation in the EV model. Press the following link to see the [steps to import elevation data](#importing-elevation-data).
