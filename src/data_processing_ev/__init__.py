@@ -2,6 +2,10 @@
 # https://stackoverflow.com/a/62570479/10462623 OR Create the dir structure in
 # the file system, and store it using Path.glob('**')
 
+DATA_FMTS = {'GPS': 1, 'GTFS': 2}
+
+EV_MODELS = {'SUMO': 1, 'Hull': 2}
+
 from .scenario_initialisation.scenario_initialisation \
     import initialise_scenario
 from . import data_visualisation  # TODO Make this consistent with the others.
@@ -12,17 +16,26 @@ from .temporal_clustering import temporal_clustering
 from .temporal_clustering import stop_extraction
 from .temporal_clustering import stop_duration_box_plots
 from .routing import routing
-from .ev_simulation import ev_simulation
+from .ev_simulation import sumo_ev_simulation
+from .ev_simulation import hull_ev_simulation
 from .ev_simulation import results_splitter
 from .results_analysis import ev_results_analysis
 from .results_analysis import ev_box_plots
 from .results_analysis import pv_results_analysis
 from .results_analysis import wind_results_analysis
 
-DATA_FMTS = {'GPS': 1, 'GTFS': 2}
+from pathlib import Path
+from typing import Iterable, SupportsFloat
+import argparse
+import time
+import subprocess
+import multiprocessing as mp
+
 
 DATA_FMT_ERROR_MSG = "The function has not been implemented for the " + \
                      "currently selected input data format."
+
+PIGZ_WARNING_ACKNOWLEDGED = False
 
 SCENARIO_DIR_STRUCTURE = {
     '_Inputs': {
@@ -62,14 +75,18 @@ SCENARIO_DIR_STRUCTURE = {
         'Trips': None
     },
     'EV_Simulation': {
+        'Sumocfgs': None,
         'SUMO_Simulation_Outputs': None,
-        'Sumocfgs': None
+        'Hull_Simulation_Outputs': None,
+            # Simulation outputs from our custom simulation model, developed by
+            # Christopher Hull. [TODO Cite.]
+            # TODO: Only allow one to be selected!
     },
     'SAM_Simulation': {
         'Results': None,
         'SAM_Scenario_File': None
     },
-    'Results': {
+    'EV_Results': {
     }
 }
 
@@ -89,18 +106,110 @@ MODULES = """
     3. temporal_clustering
 4. routing
 5. ev_simulation
-    5.1. ev_simulation
+    5.1. sumo_ev_simulation
     5.2. result_splitting
+    5.3. hull_ev_simulation
 6. results_analysis
     6.1. ev_results_analysis
     6.2. pv_results_analysis
     6.3. wind_results_analysis
 """
 
-from pathlib import Path
-from typing import Iterable, SupportsFloat
-import argparse
-import time
+
+def decompress_file(file: Path) -> Path:
+    try:
+        gz_index = file.name.find('.gz')
+        # if the file ends with gz
+        if gz_index != -1:
+            decompressed_file = file.parent.joinpath(file.name[:gz_index])
+            compressed_file = file
+        else:
+            decompressed_file = file
+            compressed_file = file.parent.joinpath(file.name + '.gz')
+
+        # If the file has already been decompressed...
+        if decompressed_file.exists():
+            if compressed_file.exists():
+                _ = input("Both the compressed and the decompressed " +
+                          "versions of the file exist. May I delete one? [y]/n")
+                delete = True if _.lower() != 'n' else False
+                if delete:
+                    compressed_file.unlink()
+            return decompressed_file
+        else:
+            p = subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 2), '-d',  # '--quiet',
+                                       str(compressed_file.absolute())])
+            # Wait until the decompression is complete.
+            process_complete = False
+            while not process_complete:
+                poll = p.poll()
+                if poll is None:
+                    process_complete = False
+                else:
+                    process_complete = True
+            return decompressed_file
+
+    except subprocess.CalledProcessError:
+        print("Warning: Pigz failed to compress the xml file.")
+        return None
+
+    except OSError:
+        print("Warning: You probably haven't installed `pigz`. Install " +
+              "it if you want the script to automagically compress your " +
+              "combined XML files after it has been split!")
+        global PIGZ_WARNING_ACKNOWLEDGED
+        if not PIGZ_WARNING_ACKNOWLEDGED:
+            input("For now, press enter to ignore.")
+            PIGZ_WARNING_ACKNOWLEDGED = True
+        return None
+
+
+def compress_file(file: Path) -> Path:
+    try:
+        gz_index = file.name.find('.gz')
+        # if the file ends with gz
+        if gz_index != -1:
+            decompressed_file = file.parent.joinpath(file.name[:gz_index])
+            compressed_file = file
+        else:
+            decompressed_file = file
+            compressed_file = file.parent.joinpath(file.name + '.gz')
+
+        if compressed_file.exists():
+            if decompressed_file.exists():
+                _ = input("Both the compressed and the decompressed " +
+                          "versions of the file exist. May I delete one? [y]/n")
+                delete = True if _.lower() != 'n' else False
+                if delete:
+                    decompressed_file.unlink()
+            return compressed_file
+        else:
+            p = subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 2),  # '--quiet',
+                                 str(decompressed_file.absolute())])
+
+            # Wait until the compression is complete.
+            process_complete = False
+            while not process_complete:
+                poll = p.poll()
+                if poll is None:
+                    process_complete = False
+                else:
+                    process_complete = True
+
+            return compressed_file
+
+    except subprocess.CalledProcessError:
+        print("Warning: Pigz failed to compress the xml file.")
+        return None
+    except OSError:
+        print("Warning: You probably haven't installed `pigz`. Install " +
+              "it if you want the script to automagically compress your " +
+              "combined XML files after it has been split!")
+        global PIGZ_WARNING_ACKNOWLEDGED
+        if not PIGZ_WARNING_ACKNOWLEDGED:
+            input("For now, press enter to ignore.")
+            PIGZ_WARNING_ACKNOWLEDGED = True
+        return None
 
 
 def get_input_data_fmt(scenario_dir: Path):
@@ -122,12 +231,13 @@ def get_input_data_fmt(scenario_dir: Path):
     return data_fmt
 
 
-def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
+def _run(scenario_dir: Path, steps: Iterable[SupportsFloat],
         configuring_steps: bool = False, **kwargs):
     """Run specified steps of data_analysis."""
     auto_run = kwargs.get('auto_run', False)
 
     kwargs['input_data_fmt'] = get_input_data_fmt(scenario_dir)
+    # TODO Other important kwargs: EV_Model
 
     if 0 in steps:
         initialise_scenario(scenario_dir, **kwargs)
@@ -185,26 +295,31 @@ def run(scenario_dir: Path, steps: Iterable[SupportsFloat],
         """Temporal clustering"""
         #   TODO: Disable this step by default (similar to how we disable
         # spatial_clustering).
-        if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
-            clustering_type = 'spatial_filtered_traces'
-            temporal_clustering.cluster_scenario(scenario_dir, clustering_type,
-                                                     **kwargs)
-        elif kwargs['input_data_fmt'] == DATA_FMTS['GTFS']:
-            print("Warning: Temporal clustering is not implemented for GTFS " +
-                  "scenarios yet.")
-        else:
-            raise ValueError(DATA_FMT_ERROR_MSG)
+        print("Temporal clustering has been temporarily disabled.")
+        temporal_clustering_enabled = False
+        if temporal_clustering_enabled:
+            if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
+                clustering_type = 'spatial_filtered_traces'
+                temporal_clustering.cluster_scenario(scenario_dir, clustering_type,
+                                                         **kwargs)
+            elif kwargs['input_data_fmt'] == DATA_FMTS['GTFS']:
+                print("Warning: Temporal clustering is not implemented for GTFS " +
+                      "scenarios yet.")
+            else:
+                raise ValueError(DATA_FMT_ERROR_MSG)
 
     if 4 in steps:
         """Routing"""
         routing.build_routes(scenario_dir, **kwargs)
     if 5 in steps or 5.1 in steps:
         """Simulation"""
-        ev_simulation.simulate_all_routes(
+        sumo_ev_simulation.simulate_all_routes(
             scenario_dir, skip_existing=False, **kwargs)
     if 5 in steps or 5.2 in steps:
         # De-combine simulation results.
         results_splitter.split_results(scenario_dir, **kwargs)
+    if 5 in steps or 5.3 in steps:
+        hull_ev_simulation.simulate(scenario_dir, **kwargs)
     if 6 in steps or 6.1 in steps:
         """Generate Plots and Statistics from EV Simulation Results"""
         ev_results_analysis.run_ev_results_analysis(scenario_dir, **kwargs)
@@ -245,6 +360,8 @@ def main():
              " of floats without spaces (e.g. '1,2.2,4').")
     parser.add_argument(
         '--debug', action='store_true')
+    parser.add_argument(
+        '--incl-weekends', action='store_true')
     args = parser.parse_args()
 
     if args.debug:
@@ -297,8 +414,8 @@ def main():
     auto_run = False
     conf = False
 
-    kwargs = {'auto_run': auto_run, 'input_data_fmt': None}
+    kwargs = {'auto_run': auto_run, 'input_data_fmt': None, 'incl_weekends': args.incl_weekends}
 
     # Run all the steps
     # run(scenario_dir, steps=range(6), configuring_steps=conf)
-    run(scenario_dir, steps=steps, configuring_steps=conf, **kwargs)
+    _run(scenario_dir, steps=steps, configuring_steps=conf, **kwargs)

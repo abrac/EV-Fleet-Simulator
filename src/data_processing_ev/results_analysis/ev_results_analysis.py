@@ -16,7 +16,6 @@ import itertools  # noqa
 import pandas as pd
 import numpy as np  # noqa
 from pathlib import Path
-import subprocess
 import logging
 import typing as typ
 from tqdm import tqdm
@@ -36,18 +35,11 @@ import statsmodels.api as sm
 import data_processing_ev as dpr
 from matplotlib.ticker import FuncFormatter
 
-if "SUMO_HOME" in os.environ:
-    xml2csv = Path(os.environ["SUMO_HOME"], "tools", "xml", "xml2csv.py")
-else:
-    sys.exit("Please declare environmental variable 'SUMO_HOME'. It must " +
-             "point to the root directory of the SUMO program.")
-
 # plt.ion()
 plt.style.use('default')
 
 MY_DPI = 96
 mm = 1 / 25.4  # millimeters in inches
-PIGZ_WARNING_ACKNOWLEDGED = False
 
 
 def _y_fmt(y, pos):
@@ -74,121 +66,9 @@ def _y_fmt(y, pos):
 
 # %% Analysis Class ###########################################################
 class Data_Analysis:
-    def __create_csvs(self, ev_sim_dirs: typ.Sequence[Path]) -> None:
-        """Convert all battery.out.xml and fcd.out.xml files to csv files and
-           save them.
-
-        They will be saved in a corresponding folder in
-        {Scenario_Dir}/Results/
-        """
-
-        # TODO Implement auto_run mode.
-        battery_csvs = [*self.__scenario_dir.joinpath(
-                        'Results').glob('*/*/battery.out.csv')]
-        fcd_csvs = [*self.__scenario_dir.joinpath(
-                        'Results').glob('*/*/fcd.out.csv')]
-        if len(battery_csvs) == 0 or len(fcd_csvs) == 0:
-            _ = input("Would you like to convert all " +
-                      "battery.out.xml and fcd.out.xml " +
-                      "files to csv? [y]/n \n\t")
-            convert = (True if _.lower() != 'n' else False)
-        else:
-            _ = input("Would you like to re-convert all " +
-                      "battery.out.xml and fcd.out.xml " +
-                      "files to csv? [y]/n \n\t")
-            convert = (False if _.lower() != 'y' else True)
-
-        if convert:
-            _ = input("Would you like to skip existing csv files? y/[n] \n\t")
-            skipping = (True if _.lower() == 'y' else False)
-
-            print("\nConverting xml files to csv...")
-
-            global PIGZ_WARNING_ACKNOWLEDGED
-            for ev_sim_dir in tqdm(ev_sim_dirs):
-                # Try create ev_csv if it doesn't exist
-                ev_name = ev_sim_dir.parents[0].name
-                date = ev_sim_dir.name
-                battery_csv = self.__scenario_dir.joinpath(
-                    'Results', ev_name, date, 'battery.out.csv')
-                battery_xml = ev_sim_dir.joinpath("battery.out.xml")
-                if not battery_xml.exists():
-                    continue
-                if skipping and battery_csv.exists():
-                    continue
-                battery_csv.parent.mkdir(parents=True, exist_ok=True)
-                subprocess.run(['python', xml2csv, '-s', ',',
-                                '-o', battery_csv, battery_xml])
-                # Warn if battery_csv *still* doesn't exist
-                if not battery_csv.exists():
-                    logging.warning("Failed to create: \n\t" +
-                                    str(battery_csv))
-                else:
-                    # If creating the battery_csv was succesful, compress
-                    # the battery_xml file.
-                    try:
-                        # TODO Make the cpu count a command line argument.
-                        subprocess.run(['pigz', '-p',
-                                        str(mp.cpu_count() - 2),  # '--quiet',
-                                        str(battery_xml.absolute())],
-                                       check=True)
-                    except subprocess.CalledProcessError:
-                        print("Warning: Pigz failed to compress the " +
-                              "battery_xml file.")
-                    except OSError:
-                        if not PIGZ_WARNING_ACKNOWLEDGED:
-                            print("Warning: You probably haven't " +
-                                  "installed `pigz`. Install it if you " +
-                                  "want the script to automagically " +
-                                  "compress your battery XML files " +
-                                  "after they have been converted!")
-                            input("For now, press enter to disable file " +
-                                  "compression.")
-                            PIGZ_WARNING_ACKNOWLEDGED = True
-
-            for ev_sim_dir in tqdm(ev_sim_dirs):
-                # Try create ev_csv if it doesn't exist
-                ev_name = ev_sim_dir.parents[0].name
-                date = ev_sim_dir.name
-                fcd_csv = self.__scenario_dir.joinpath(
-                    'Results', ev_name, date, 'fcd.out.csv')
-                fcd_xml = ev_sim_dir.joinpath("fcd.out.xml")
-                if not fcd_xml.exists():
-                    continue
-                if skipping and fcd_csv.exists():
-                    continue
-                fcd_csv.parent.mkdir(parents=True, exist_ok=True)
-                subprocess.run(['python', xml2csv, '-s', ',',
-                                '-o', fcd_csv, fcd_xml])
-                # Warn if fcd_csv *still* doesn't exist
-                if not fcd_csv.exists():
-                    logging.warning("Failed to create: \n\t" +
-                                    str(fcd_csv))
-                else:
-                    # If creating the fcd_csv was succesful, compress
-                    # the fcd_xml file.
-                    try:
-                        subprocess.run(['pigz', '-p',
-                                        str(mp.cpu_count() - 2),  # '--quiet',
-                                        str(fcd_xml.absolute())],
-                                       check=True)
-                    except subprocess.CalledProcessError:
-                        print("Warning: Pigz failed to compress the " +
-                              "fcd_xml file.")
-                    except OSError:
-                        if not PIGZ_WARNING_ACKNOWLEDGED:
-                            print("Warning: You probably haven't " +
-                                  "installed `pigz`. Install it if you " +
-                                  "want the script to automagically " +
-                                  "compress your fcd XML files " +
-                                  "after they have been converted!")
-                            input("For now, press enter to disable file " +
-                                  "compression.")
-                            PIGZ_WARNING_ACKNOWLEDGED = True
-
 
     def __init__(self, scenario_dir: Path,
-                 ev_sim_dirs: typ.Sequence[Path], **kwargs) -> None:
+                 ev_model: dpr.EV_MODELS, **kwargs) -> None:
         """
         Create a data_analysis class.
         """
@@ -196,18 +76,29 @@ class Data_Analysis:
         self.kwargs = kwargs
         self.input_data_fmt = kwargs.get('input_data_fmt',
                                          dpr.DATA_FMTS['GPS'])
+        self.graphs_dir = scenario_dir.joinpath('EV_Results')
+
+        if ev_model == dpr.EV_MODELS['SUMO']:
+            ev_model_str = 'SUMO'
+        else:
+            ev_model_str = 'Hull'
 
         # Convert all battery.out.xml files to csv files
         # with Pool() as p:
         #    p.map(self.__create_csvs, ev_sim_dirs)
 
-        self.__create_csvs(ev_sim_dirs)
+        ev_sim_dirs = sorted([*scenario_dir.joinpath(
+            'EV_Simulation', f'{ev_model_str}_Simulation_Outputs').glob('*/*/')])
+
+        for ev_sim_dir in ev_sim_dirs:
+            ev_name = ev_sim_dir.parents[1].name
 
         self.__battery_csv_paths = sorted(
-            [*scenario_dir.joinpath('Results').glob('*/*/battery.out.csv')]
+            [ev_sim_dir.joinpath('battery.out.csv') for
+             ev_sim_dir in ev_sim_dirs]
         )
         self.__agg_vehicle_dir = scenario_dir.joinpath('EV_Simulation',
-                                                       'SUMO_Outputs')
+                                                       f'{ev_model_str}_Simulation_Outputs')
         self.__indiv_vehicle_dirs = sorted(
             [x for x in self.__agg_vehicle_dir.glob('*/') if x.is_dir()]
         )
@@ -561,20 +452,24 @@ class Data_Analysis:
             print("\nGenerating plots...")
 
             for ev_csv in tqdm(self.__battery_csv_paths):
+                ev_name = ev_csv.parents[1].name
+                date = ev_csv.parent.name
+
                 # Get parent directory
-                ev_dir = ev_csv.parent
-                trip_instance = self.__ev_csv_to_df(ev_csv, secs_to_dts=True)
+                trip_segment = self.__ev_csv_to_df(ev_csv, secs_to_dts=True)
                 # Plot
                 plt_fig = self.__plot_summary_graph(
-                    trip_instance, plt_title="Simulation Output of experiment: "
-                    + f"{ev_dir.parent.name} > " + f"{ev_dir.name}")
+                    trip_segment, plt_title="Simulation Output of experiment: "
+                    + f"{ev_name} > " + f"{date}")
+
                 # Create Graphs folder and save plot
-                graphsdir = ev_dir.joinpath('Graphs')
-                graphsdir.mkdir(parents=True, exist_ok=True)
-                save_path = graphsdir.joinpath('summary.svg')
+                graphdir = self.graphs_dir.joinpath(ev_name, date)
+                graphdir.mkdir(parents=True, exist_ok=True)
+
+                save_path = graphdir.joinpath('summary.svg')
                 plt_fig.savefig(save_path)
                 # Save interactive figure
-                output_file = graphsdir.joinpath(
+                output_file = graphdir.joinpath(
                     'summary.fig.pickle'
                 )
                 pickle.dump(plt_fig, open(output_file, 'wb'))
@@ -625,6 +520,7 @@ class Data_Analysis:
 
             for trip_csv in tqdm(self.__battery_csv_paths):
                 trip_id = trip_csv.parents[1].name
+                trip_segment = trip_csv.parent.name
 
                 # Find the times that the trip applies.
                 trip_df = self.__ev_csv_to_df(trip_csv, secs_to_dts=True)
@@ -661,11 +557,11 @@ class Data_Analysis:
                     # Plot the trip itinary.
                     plt_fig = self.__plot_summary_graph(
                         trip_df, plt_title="Simulation output of experiment: "
-                        + f"{trip_id} > {trip_csv.parent.name} -- itinary")
+                        + f"{trip_id} > {trip_segment} -- itinary")
                     # Create Graphs folder and save plot
-                    graphsdir = trip_csv.parent.joinpath('Graphs')
-                    graphsdir.mkdir(parents=True, exist_ok=True)
-                    save_path = graphsdir.joinpath('trip_itinary.svg')
+                    graphdir = self.graphs_dir.joinpath(trip_id, trip_segment)
+                    graphdir.mkdir(parents=True, exist_ok=True)
+                    save_path = graphdir.joinpath('trip_itinary.svg')
                     plt_fig.savefig(save_path)
                     # Save interactive figure
                     # output_file = graphsdir.joinpath(
@@ -676,25 +572,25 @@ class Data_Analysis:
                 trip_instances = []
                 first_time = True
                 for time in times:
-                    trip_instance = trip_df.copy()
-                    trip_instance['timestep_time'] = (
-                        trip_instance['timestep_time'] + time -
+                    trip_segment = trip_df.copy()
+                    trip_segment['timestep_time'] = (
+                        trip_segment['timestep_time'] + time -
                         departure_delay)
-                    trip_instances.append(trip_instance)
+                    trip_instances.append(trip_segment)
 
                     if plotting:
                         # Add the trip instance onto the figure.
                         if first_time:
                             plt_fig = self.__plot_summary_graph(
-                                trip_instance)
+                                trip_segment)
                             first_time = False
                         else:
                             plt_fig = self.__plot_summary_graph(
-                                trip_instance, plt_fig)
+                                trip_segment, plt_fig)
 
                 if plotting:
                     # Save the trip instances plot.
-                    save_path = graphsdir.joinpath('trip_instances.svg')
+                    save_path = graphdir.joinpath('trip_instances.svg')
                     plt_fig.savefig(save_path)
 
                     # Save interactive figure
@@ -709,9 +605,9 @@ class Data_Analysis:
                 # `save_ev_stats`.
 
                 # Remove dates from the timestep_time column
-                for trip_instance in trip_instances:
-                    trip_instance['timestep_time'] = pd.to_datetime(
-                        trip_instance['timestep_time'].dt.time,
+                for trip_segment in trip_instances:
+                    trip_segment['timestep_time'] = pd.to_datetime(
+                        trip_segment['timestep_time'].dt.time,
                         format='%H:%M:%S'
                     )
 
@@ -723,10 +619,10 @@ class Data_Analysis:
 
                 # Prepend empty rows to the ev_dfs so that they have the same
                 # lowest time.
-                for idx, trip_instance in enumerate(trip_instances):
-                    trip_instance.set_index('timestep_time', inplace=True)
+                for idx, trip_segment in enumerate(trip_instances):
+                    trip_segment.set_index('timestep_time', inplace=True)
 
-                    trip_instance = trip_instance.reindex(
+                    trip_segment = trip_segment.reindex(
                         pd.date_range(earliest_time, latest_time, freq='s'))
                     # Fill nan values
                     # trip_instance['vehicle_acceleration'] = \
@@ -737,20 +633,20 @@ class Data_Analysis:
                     #     trip_instance['vehicle_energyChargedInTransit'].fillna(0)
                     # trip_instance['vehicle_energyChargedStopped'] = \
                     #     trip_instance['vehicle_energyChargedStopped'].fillna(0)
-                    trip_instance['vehicle_actualBatteryCapacity'] = \
-                        trip_instance['vehicle_actualBatteryCapacity'].\
-                        ffill().bfill().astype('int32')
-                    trip_instance['vehicle_energyConsumed'] = \
-                        trip_instance['vehicle_energyConsumed'].fillna(0).\
-                        astype('int16')
-                    trip_instance['vehicle_speed'] = \
-                        trip_instance['vehicle_speed'].fillna(0).astype('int8')
+                    trip_segment['vehicle_actualBatteryCapacity'] = \
+                        trip_segment['vehicle_actualBatteryCapacity'].\
+                        ffill().bfill().astype(np.float32)
+                    trip_segment['vehicle_energyConsumed'] = \
+                        trip_segment['vehicle_energyConsumed'].fillna(0).\
+                        astype(np.float32)
+                    trip_segment['vehicle_speed'] = \
+                        trip_segment['vehicle_speed'].fillna(0).astype(np.float32)
                     # Modify the prepended rows so that their energy usage is
                     # equal to their first energy level.
-                    trip_instance = trip_instance.ffill().bfill()
-                    trip_instance = trip_instance.\
+                    trip_segment = trip_segment.ffill().bfill()
+                    trip_segment = trip_segment.\
                         rename_axis('timestep_time').reset_index()
-                    trip_instances[idx] = trip_instance
+                    trip_instances[idx] = trip_segment
 
                 # Create the mean data frame
                 trip_mean_profile = pd.concat(trip_instances).groupby(
@@ -759,7 +655,7 @@ class Data_Analysis:
                                               inplace=True)
 
                 # Save aggregated trip_instances dataframe
-                trip_mean_profile.to_csv(trip_csv.parent.joinpath(
+                trip_mean_profile.to_csv(graphdir.joinpath(
                     'battery.out.aggregated.csv'))  # XXX FIXME Make sure that
                     # `ev_fleet_stats` reads *this* csv file in the case of
                     # GTFS mode.
@@ -768,11 +664,11 @@ class Data_Analysis:
                     # Plot aggregated trip_instances
                     plt_fig = self.__plot_summary_graph(
                         trip_mean_profile, plt_title="Simulation Output of " +
-                        f"experiment: {trip_id} > {trip_csv.parent.name}" +
+                        f"experiment: {trip_id} > {trip_segment}" +
                         f"Mean plot of {len(times)} instances")
 
                     # Save plot
-                    save_path = graphsdir.joinpath(
+                    save_path = graphdir.joinpath(
                         'trip_instances_aggregated.svg')
                     plt_fig.savefig(save_path)
 
@@ -794,6 +690,20 @@ class Data_Analysis:
         plt.close('all')
 
     def save_ev_stats(self) -> None:
+        """ This function computes statistics for each EV. It generates mean
+        plots and statistics across the dates that the EV operated.
+
+        In the case of GTFS: `save_ev_stats()` will do two things. Firstly, it
+        will combine days in multi-day trips (those that take over 24 hours to
+        complete). This is the default behaviour of this function for GPS
+        inputs. Secondly, the function will use frequencies.txt data to figure
+        out how often the trip is serviced. It will then create an energy usage
+        profile which represents the trip. E.g. If a 30 minute trip is
+        serviced, from 7--8 am, at 20 minute intervals, the average energy
+        usage will be higher when two taxis are present (i.e. from
+        07:20--07:30, 07:40--07:50, and 08:00--08:10.  TODO: Check if GTFS
+        specifies that a bus should leave at 8 am in a case like this.) """
+
         _ = input("Would you like to compute statistics for each EV? [y]/n  ")
         if _.lower() == 'n':
             return
@@ -804,8 +714,7 @@ class Data_Analysis:
 
         for vehicle_dir in tqdm(self.__indiv_vehicle_dirs):
             ev_name = vehicle_dir.name
-            output_vehicle_dir = self.__scenario_dir.joinpath(
-                'Results', ev_name, 'Outputs')
+            output_vehicle_dir = self.graphs_dir.joinpath(ev_name, 'Outputs')
 
             # Initialise a statistics tree
             stats_tree: typ.Dict = {
@@ -970,8 +879,7 @@ class Data_Analysis:
                     # only be one day defined per trip, therefore, errors are
                     # ignored in the GTFS case.
                     if self.input_data_fmt == dpr.DATA_FMTS['GPS']:
-                        print(e)
-                        input("Press any key to continue")
+                        logging.warning(e)
                     elif self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
                         pass
                     else:
@@ -979,7 +887,7 @@ class Data_Analysis:
 
             # Write stat_file
             stats_path = output_vehicle_dir.joinpath(
-                f"stats_{vehicle_dir.name}.json"
+                f"stats_{ev_name}.json"
             )
             stats_path.parent.mkdir(parents=True, exist_ok=True)
             with open(stats_path, 'w') as stats_file:
@@ -1029,11 +937,11 @@ class Data_Analysis:
                 #    ev_df['vehicle_energyChargedStopped'].fillna(0)
                 ev_df['vehicle_actualBatteryCapacity'] = \
                     ev_df['vehicle_actualBatteryCapacity'].ffill().bfill().\
-                    astype('int32')
+                    astype(np.float32)
                 ev_df['vehicle_energyConsumed'] = \
-                    ev_df['vehicle_energyConsumed'].fillna(0).astype('int16')
+                    ev_df['vehicle_energyConsumed'].fillna(0).astype(np.float32)
                 ev_df['vehicle_speed'] = \
-                    ev_df['vehicle_speed'].fillna(0).astype('int8')
+                    ev_df['vehicle_speed'].fillna(0).astype(np.float32)
                 ev_df = ev_df.ffill().bfill()
                 ev_df = ev_df.rename_axis('timestep_time').reset_index()
                 ev_dfs[idx] = ev_df
@@ -1051,14 +959,14 @@ class Data_Analysis:
                 + vehicle_dir.name + " > Mean Plot")
 
             # Save the dataframe
-            csv_path = output_vehicle_dir.joinpath(f'{vehicle_dir.name}.csv')
+            csv_path = output_vehicle_dir.joinpath(f'{ev_name}.csv')
             csv_path.parent.mkdir(parents=True, exist_ok=True)
             ev_df_mean.to_csv(csv_path, index=False)
 
             # Save the plot
             if save_plots:
                 # Create Graphs folder and save plot
-                graphsdir = output_vehicle_dir.joinpath('Graphs')
+                graphsdir = output_vehicle_dir
                 graphsdir.mkdir(parents=True, exist_ok=True)
                 save_path = graphsdir.joinpath('summary.svg')
                 plt_fig.savefig(save_path)
@@ -1075,6 +983,14 @@ class Data_Analysis:
         #
 
     def save_fleet_stats(self) -> None:
+        """
+        This function computes statistics for the fleet. It generates mean
+        plots and statistics across the EVs of the fleet.
+
+        GTFS: Using the 2nd output of `save_ev_stats()`, `save_fleet_stats()`
+        will compute the average profile of all the trips together.
+        """
+
         # FIXME Make this function use
         # sub-functions of `save_ev_stats`
 
@@ -1091,7 +1007,7 @@ class Data_Analysis:
                 # FIXME This should be generator, not Tuple.
             """Generate dataframes of each taxi's mean data."""
             vehicle_result_dirs = sorted(
-                [*self.__scenario_dir.joinpath('Results').glob('*')]
+                [*self.graphs_dir.glob('*')]
             )
             for ev_dir in vehicle_result_dirs:
                 # Obtain the EV's mean dataframe
@@ -1211,12 +1127,10 @@ class Data_Analysis:
                 energy_period_tree['mean'] = statistics.mean(energy_period)
                 energy_period_tree['stdev'] = statistics.stdev(energy_period)
             except statistics.StatisticsError as e:
-                print(e)
-                input("Press any key to continue")
+                logging.warning(e)
 
         # Write stat_file
-        stats_path = self.__scenario_dir.joinpath('Results', 'Outputs',
-                                                  'stats_fleet.json')
+        stats_path = self.graphs_dir.joinpath('Outputs', 'stats_fleet.json')
         stats_path.parent.mkdir(parents=True, exist_ok=True)
         with open(stats_path, 'w') as stats_file:
             json.dump(stats_tree, stats_file, indent=4)
@@ -1224,7 +1138,7 @@ class Data_Analysis:
         # Make *Mean* plot ####################################################
 
         # Check if fleet mean energy has been calculated already.
-        fleet_output_dir = self.__scenario_dir.joinpath('Results', 'Outputs')
+        fleet_output_dir = self.graphs_dir.joinpath('Outputs')
         fleet_mean_file = fleet_output_dir.joinpath("fleet.csv")
         fleet_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1237,6 +1151,7 @@ class Data_Analysis:
 
         def _reformat_ev_dfs(ev_dfs: typ.List[pd.DataFrame]
                 ) -> typ.List[pd.DataFrame]:
+
             earliest_time = min([ev_df['timestep_time'].min() for ev_df in ev_dfs])
             latest_time = max([ev_df['timestep_time'].max() for ev_df in ev_dfs])
             print("Preparing data for plotting...")
@@ -1256,11 +1171,11 @@ class Data_Analysis:
                 #    ev_df['vehicle_energyChargedStopped'].fillna(0)
                 ev_df['vehicle_actualBatteryCapacity'] = \
                     ev_df['vehicle_actualBatteryCapacity'].ffill().bfill().\
-                    astype('float32')
+                    astype(np.float32)
                 ev_df['vehicle_energyConsumed'] = \
-                    ev_df['vehicle_energyConsumed'].fillna(0).astype('float16')
+                    ev_df['vehicle_energyConsumed'].fillna(0).astype(np.float32)
                 ev_df['vehicle_speed'] = \
-                    ev_df['vehicle_speed'].fillna(0).astype('int8')
+                    ev_df['vehicle_speed'].fillna(0).astype(np.float32)
                 # ev_df = ev_df.ffill().bfill()
                 ev_df = ev_df.rename_axis('timestep_time').reset_index()
                 ev_dfs[idx] = ev_df
@@ -1399,7 +1314,7 @@ class Data_Analysis:
         # Save the plots
         if save_plots:
             # Create Graphs folder and save plot
-            graphsdir = fleet_output_dir.joinpath('Graphs')
+            graphsdir = fleet_output_dir
             graphsdir.mkdir(parents=True, exist_ok=True)
             for key, plt_fig in plt_figs.items():
                 save_file = graphsdir.joinpath(key + '.svg')
@@ -1419,34 +1334,16 @@ class Data_Analysis:
 # %% Main #####################################################################
 def run_ev_results_analysis(scenario_dir: Path, **kwargs):
 
-    ev_sim_dirs = sorted([*scenario_dir.joinpath(
-        'EV_Simulation', 'SUMO_Outputs').glob('*/*/')])
+    # TODO TODO: Allow the user to choose their preferred model earlier, on in the
+    # process. Write the chosen model to a metadata file. Allow the model to be
+    # chosen in the configs.
+    _ = input("Which model EV model's results would you like to use in the " +
+              "analysis? ([sumo]/hull)  ")
+    ev_model = dpr.EV_MODELS['SUMO'] if _.lower() != 'hull' else dpr.EV_MODELS['Hull']
 
-    data_analysis = Data_Analysis(scenario_dir, ev_sim_dirs, **kwargs)
-    # XXX GTFS: No changes will be required in `make_plots()`. The function
-    # will plot each day of each trip once. The plots will start at midnight,
-    # as currently defined in the simulation results. Additionally (and I will
-    # do this only later), this function will have an "interactive mode", which
-    # will allow you to view the plot of any *instance* of the trip.
+    data_analysis = Data_Analysis(scenario_dir, ev_model, **kwargs)
     data_analysis.make_plots()
-    # XXX GTFS: `save_ev_stats()` will do two things. Firstly, it will combine
-    # days in multi-day trips (those that take over 24 hours to complete). This
-    # is the default behaviour of this function for GPS inputs. Secondly, the
-    # function will use frequencies.txt data to figure out how often the trip
-    # is serviced. It will then create an energy usage profile which represents
-    # the trip. E.g. If a 30 minute trip is serviced, from 7--8 am, at 20
-    # minute intervals, the average energy usage will be higher when two taxis
-    # are present (i.e. from 07:20--07:30, 07:40--07:50, and 08:00--08:10.
-    # TODO: Check if GTFS specifies that a bus should leave at 8 am in a case
-    # like this.) Additionally (and I will do this only later), this function
-    # will have an interactive mode which will allow you to view the aggregated
-    # plot of any calendar date of this trip.
     data_analysis.save_ev_stats()
-    # XXX GTFS: Using the 2nd output of the above function,
-    # `save_fleet_stats()` will compute the average pprofile of all the trips
-    # together. Additionally (and I will do this only later), this function
-    # will aggregagate the results from *all dates* to find th averae profile
-    # of all the trips, across all the dates over a year.
     data_analysis.save_fleet_stats()
 
 
