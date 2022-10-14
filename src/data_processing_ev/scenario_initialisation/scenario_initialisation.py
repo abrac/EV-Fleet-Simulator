@@ -6,6 +6,7 @@ from typing import Dict
 import json
 import data_processing_ev as dpr
 import platform
+import logging
 
 
 def initialise_scenario(scenario_dir: Path, **kwargs):
@@ -24,63 +25,65 @@ def initialise_scenario(scenario_dir: Path, **kwargs):
                 create_dir(sub_dir, sub_sub_dirs)
 
     def copy_default_files():
+        src_files = []
+        dest_files = []
+
         # copy ev_template
-        from_file = Path(__file__).parent.joinpath('Initialisation_Files',
-                                                   'ev_template.xml')
-        to_file = scenario_dir.joinpath('_Inputs', 'Configs',
-                                        'ev_template.xml')
-        shutil.copy(from_file, to_file)
+        src_files.append(Path(__file__).parent.joinpath('Initialisation_Files',
+                                                        'ev_template.xml'))
+        dest_files.append(scenario_dir.joinpath('_Inputs', 'Configs',
+                                                'ev_template.xml'))
 
         # copy custom_osm_test.template.sumocfg
-        from_file = Path(__file__).parent.joinpath(
-            'Initialisation_Files', 'custom_osm_test.template.sumocfg')
-        to_file = scenario_dir.joinpath(
-            '_Inputs', 'Configs', 'custom_osm_test.template.sumocfg')
-        shutil.copy(from_file, to_file)
+        src_files.append(Path(__file__).parent.joinpath(
+            'Initialisation_Files', 'custom_osm_test.template.sumocfg'))
+        dest_files.append(scenario_dir.joinpath(
+            '_Inputs', 'Configs', 'custom_osm_test.template.sumocfg'))
 
         # copy boundary.csv
-        from_file = Path(__file__).parent.joinpath(
-            'Initialisation_Files', 'boundary.csv')
-        to_file = scenario_dir.joinpath(
-            '_Inputs', 'Map', 'Boundary', 'boundary.csv')
-        shutil.copy(from_file, to_file)
+        src_files.append(Path(__file__).parent.joinpath(
+            'Initialisation_Files', 'boundary.csv'))
+        dest_files.append(scenario_dir.joinpath(
+            '_Inputs', 'Map', 'Boundary', 'boundary.csv'))
 
         # copy ./Initialisation_Files/Map_Construction/netconvert.sh
-        from_file = Path(__file__).parent.joinpath(
-            'Initialisation_Files', 'Map_Construction', 'netconvert.sh')
-        to_file = scenario_dir.joinpath(
-            '_Inputs', 'Map', 'Construction', 'netconvert.sh')
-        shutil.copy(from_file, to_file)
+        src_files.append(Path(__file__).parent.joinpath(
+            'Initialisation_Files', 'Map_Construction', 'netconvert.sh'))
+        dest_files.append(scenario_dir.joinpath(
+            '_Inputs', 'Map', 'Construction', 'netconvert.sh'))
 
         # copy ./Initialisation_Files/Map_Construction/pbf_to_osm.sh
         if platform.system() == 'Windows':
-            from_file = Path(__file__).parent.joinpath(
-                'Initialisation_Files', 'Map_Construction', 'pbf_to_osm.bat')
-            to_file = scenario_dir.joinpath(
-                '_Inputs', 'Map', 'Construction', 'pbf_to_osm.bat')
-            shutil.copy(from_file, to_file)
+            src_files.append(Path(__file__).parent.joinpath(
+                'Initialisation_Files', 'Map_Construction', 'pbf_to_osm.bat'))
+            dest_files.append(scenario_dir.joinpath(
+                '_Inputs', 'Map', 'Construction', 'pbf_to_osm.bat'))
         else:
-            from_file = Path(__file__).parent.joinpath(
-                'Initialisation_Files', 'Map_Construction', 'pbf_to_osm.sh')
-            to_file = scenario_dir.joinpath(
-                '_Inputs', 'Map', 'Construction', 'pbf_to_osm.sh')
-            shutil.copy(from_file, to_file)
+            src_files.append(Path(__file__).parent.joinpath(
+                'Initialisation_Files', 'Map_Construction', 'pbf_to_osm.sh'))
+            dest_files.append(scenario_dir.joinpath(
+                '_Inputs', 'Map', 'Construction', 'pbf_to_osm.sh'))
 
         # copy `./Initialisation_Files/Map_Construction/
         # osmNetconvert_Africa.typ.xml`
-        from_file = Path(__file__).parent.joinpath(
+        src_files.append(Path(__file__).parent.joinpath(
             'Initialisation_Files', 'Map_Construction',
-            'osmNetconvert_Africa.typ.xml')
-        to_file = scenario_dir.joinpath(
-            '_Inputs', 'Map', 'Construction', 'osmNetconvert_Africa.typ.xml')
-        shutil.copy(from_file, to_file)
+            'osmNetconvert_Africa.typ.xml'))
+        dest_files.append(scenario_dir.joinpath(
+            '_Inputs', 'Map', 'Construction', 'osmNetconvert_Africa.typ.xml'))
 
         # Copy `./initialisation-instructions.md`
-        from_file = Path(__file__).parent.joinpath(
-            'initialisation-instructions.md')
-        to_file = scenario_dir.joinpath(
-            'initialisation-instructions.md')
-        shutil.copy(from_file, to_file)
+        src_files.append(Path(__file__).parent.joinpath(
+            'initialisation-instructions.md'))
+        dest_files.append(scenario_dir.joinpath(
+            'initialisation-instructions.md'))
+
+        for src_file, dest_file in zip(src_files, dest_files):
+            if not dest_file.exists():
+                shutil.copy(src_file, dest_file)
+            else:
+                logging.warning("Distination file already exists: \n\t\t " +
+                    str(dest_file.absolute()))
 
     def create_readme():
         with open(str(scenario_dir.joinpath('directory_structure.json')), 'w') as f:
