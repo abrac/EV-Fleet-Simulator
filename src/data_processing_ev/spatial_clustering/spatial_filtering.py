@@ -106,7 +106,7 @@ def filter_cluster(cluster_file: Path, pid: int, boundary_file: Path,
     boundary = pd.read_csv(boundary_file, skipinitialspace=True,
                            sep='\\s*,\\s*', engine='python')
     bad_dates = [*generate_bad_dates(clustered_trace, boundary, ev_name, pid,
-                                     incl_weekends=False, **kwargs)]
+                                     **kwargs)]
 
     output_list = []
     prev_date = None
@@ -157,10 +157,10 @@ def filter_scenario(scenario_dir: Path, **kwargs):
     auto_run = kwargs.get('auto_run', False)
     # TODO Make the below inputs function arguments.
     # TODO Make option of discarding weekends a command-line argument.
-    clustered_files = [*scenario_dir.joinpath(
-        'Spatial_Clusters', 'Clustered_Traces').glob('*.csv')]
-    boundary_file = [*scenario_dir.joinpath('_Inputs', 'Map',
-                                            'Boundary').glob('*.csv')][0]
+    clustered_files = sorted([*scenario_dir.joinpath(
+        'Spatial_Clusters', 'Clustered_Traces').glob('*.csv')])
+    boundary_file = sorted([*scenario_dir.joinpath('_Inputs', 'Map',
+        'Boundary').glob('*.csv')])[0]
     output_path = scenario_dir.joinpath('Spatial_Clusters', 'Filtered_Traces')
     # Check if files exist in output_path.
     if any(output_path.glob('*/*.csv')):
