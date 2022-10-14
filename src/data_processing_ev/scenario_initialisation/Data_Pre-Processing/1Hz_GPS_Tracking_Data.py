@@ -1,9 +1,9 @@
+#!/usr/bin/env python3
+
 """
 For use on the following dataset:
 https://data.mendeley.com/datasets/xt69cnwh56/1
 """
-
-# NOTE: Create folder "Processed_Temp" in die Traces folder before running code
 
 
 import os
@@ -155,6 +155,8 @@ def _generate_minute_data(traces_dir: Path):
 def main(scenario_dir: Path):
     # Create a list of csv files found in the traces directory.
     traces_dir = scenario_dir.joinpath('_Inputs', 'Traces')
+
+    traces_dir.joinpath('Processed_Temp').mkdir(parents=True, exist_ok=True)
 
     if not traces_dir.joinpath('Processed').glob('*.csv'):
         _generate_traces(traces_dir)
