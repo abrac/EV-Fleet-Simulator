@@ -27,13 +27,12 @@ def plot_ev_energy_boxes(scenario_dir: Path, plot_blotches: bool = False,
     input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
 
     # Get a list of paths to the stats.json files of each taxi.
-    simulation_outputs_dir = scenario_dir.joinpath('Results')
+    simulation_outputs_dir = scenario_dir.joinpath('EV_Results')
     ev_stats_files = sorted([
         *simulation_outputs_dir.glob('*/Outputs/stats_*.json')
     ])
 
-    box_plots_dir = simulation_outputs_dir.joinpath('Outputs', 'Graphs',
-                                                    'Box_Plots')
+    box_plots_dir = simulation_outputs_dir.joinpath('Outputs', 'Box_Plots')
 
     # for each ev, read statistics and generate a box plot
     all_date_strs = []
@@ -61,20 +60,48 @@ def plot_ev_energy_boxes(scenario_dir: Path, plot_blotches: bool = False,
 
         ev_names.append('_'.join(ev_stats_file.stem.split('_')[1:]))
 
-    if input_data_fmt == dpr.DATA_FMTS['GTFS']:
+    # Calculating the distance travelled on each day.
+    all_dists_travelled = []
+    ev_dirs = sorted([
+        *scenario_dir.joinpath('EV_Simulation', 'SUMO_Simulation_Outputs').glob('*')
+    ])
+    for ev_dir in ev_dirs:
+        dists_travelled = []
+        ev_csv_files = sorted([
+            *ev_dir.glob('*/battery.out.csv')])
+        for ev_csv_file in ev_csv_files:
+            ev_df = pd.read_csv(ev_csv_file)
+            dist_travelled = ev_df['vehicle_speed'].sum()
+            dists_travelled.append(dist_travelled)
+        all_dists_travelled.append(dists_travelled)
+
+    flatten_mode = False  # TODO Make this a configurable parameter.
+    if input_data_fmt == dpr.DATA_FMTS['GTFS'] or flatten_mode:
         # Flatten the energy diffs array, so that only one box plot is created.
         all_energy_diffs_grouped = all_energy_diffs
         all_energy_diffs = []
         for energy_diffs in all_energy_diffs_grouped:
             all_energy_diffs.append(*energy_diffs)
+        all_dists_travelled_grouped = all_dists_travelled
+        all_dists_travelled = []
+        for dists_travelled in all_dists_travelled_grouped:
+            all_dists_travelled.append(*dists_travelled)
         ev_names_bak = ev_names
         ev_names = ['Fleet']
+        kwh_p_km = (np.array(all_energy_diffs) /
+                    (np.array(all_dists_travelled) / 1000))
+    else:
+        kwh_p_km = []
+        for energy_diffs, dists_travelled in zip(all_energy_diffs,
+                all_dists_travelled):
+            kwh_p_km.append(np.array(energy_diffs) /
+                            (np.array(dists_travelled) / 1000))
 
     # Generate a box-plot from the values in all_energy_diffs.
-    plt.boxplot(all_energy_diffs,
+    plt.boxplot(kwh_p_km,
                 medianprops={'color': 'black'},
                 flierprops={'marker': '.'})
-    plt.ylabel("Daily energy usage (kWh)")
+    plt.ylabel("Daily energy usage (kWh/km)")
     plt.xticks(range(1, len(ev_names) + 1), ev_names, rotation=30,
                fontsize='small')
     plt.xlabel("eMBT ID")
@@ -97,20 +124,22 @@ def plot_ev_energy_boxes(scenario_dir: Path, plot_blotches: bool = False,
     # Convert all_energy_diffs to a dataframe and save as a csv file.
     csv_dir = box_plots_dir.joinpath("Energy_usage.csv")
 
-    if input_data_fmt == dpr.DATA_FMTS['GTFS']:
+    if input_data_fmt == dpr.DATA_FMTS['GTFS'] or flatten_mode:
         # Restore (or unflatten) the energy diffs array.
         all_energy_diffs = all_energy_diffs_grouped
+        all_dists_travelled = all_dists_travelled_grouped
         ev_names = ev_names_bak
 
     export_data_zipped = []
     for i, ev_name in enumerate(ev_names):
         ev_name_list = [*repeat(ev_name, len(all_date_strs[i]))]
         export_data_zipped.extend(
-            [*zip(ev_name_list, all_date_strs[i], all_energy_diffs[i])]
+            [*zip(ev_name_list, all_date_strs[i],
+                  all_energy_diffs[i], all_dists_travelled[i])]
         )
 
     df = pd.DataFrame(export_data_zipped,
-                      columns=['ev_name', 'date', 'energy_used'])
+        columns=['ev_name', 'date', 'energy_used', 'dist_travelled'])
     df.set_index(['ev_name', 'date'])  # This is not necessary for the saving
         # process, but it's useful in-case this script is extended.
     df.to_csv(csv_dir, index=False)
