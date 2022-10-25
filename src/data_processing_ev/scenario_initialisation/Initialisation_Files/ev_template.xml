@@ -1,5 +1,5 @@
 <routes>
-    <vType id="e_minibus_taxi" length="5.4" width="1.9" height="2.3" emissionClass="Energy/unknown" maxSpeed="27.78" vClass="taxi" guiShape="delivery" personCapacity="16" boardingDuration="5" >
+    <vType id="e_minibus_taxi" length="5.4" width="1.9" height="2.3" emissionClass="Energy/unknown" maxSpeed="27.78" vClass="taxi" guiShape="delivery" personCapacity="16" boardingDuration="5" accel="1.08" decel="1.92">
         <param key="has.battery.device" value="true"/>
         <!-- <param key="has.taxi.device" value="true"/> -->
         <param key="maximumBatteryCapacity" value="2000000"/> 
