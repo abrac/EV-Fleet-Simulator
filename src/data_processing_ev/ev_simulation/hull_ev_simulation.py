@@ -8,53 +8,11 @@ import geopy.distance
 from pathlib import Path
 from tqdm import tqdm
 
-
-def read_file(fcd_file: Path):
-    """ This function takes the filename of a GPS trip stored in a .csv file,
-    and path to the file.
-
-    It reads the file, cleans it, adds columns that are necessary for the
-    kinetic model, and returns the file in a pandas dataframe. """
-
-    # Load journey.
-    journey = pd.read_csv(fcd_file)
-
-    # Set up dataframe for energy consumption estimations
-    journey['Velocity'] = journey['vehicle_speed']
-    journey['Longitude'] = journey['vehicle_x']
-    journey['Latitude'] = journey['vehicle_y']
-    journey['Altitude'] = journey['vehicle_z']
-
-    journey.drop(columns=['vehicle_speed', 'vehicle_x', 'vehicle_y',
-                          'vehicle_z'])
-
-    # Convert speed in km/h to m/s.
-    # journey['Velocity'] = journey['Velocity']/3.6
-    # OR: Observations less than 0.5 m/s are set to 0, due to GPS noise
-    # journey['Velocity'] = np.where(journey['Velocity'] >= 0.5, journey['Velocity']/3.6, 0)
-
-    # Calculate elevation change
-    elev_change = journey['Altitude'] - journey['Altitude'].shift(1)
-    journey['ElevChange'] = np.where(abs(elev_change) >= 0.2, elev_change, 0)
-
-    # Calculate time between samples. Useful for kinetic model.
-    journey['DeltaT'] = journey['timestep_time'] - \
-                        journey['timestep_time'].shift(1)
-
-    # Calculate change in velocity between each timestep
-    journey['DeltaV'] = journey['Velocity'] - \
-                        journey['Velocity'].shift(1)
-
-    # Calculate acceleration
-    journey['Acceleration'] = np.where(journey['DeltaT'] > 0, journey['DeltaV']/journey['DeltaT'], 0)
-
-    # Joins lat/lon Coords into one column, useful for getDist function
-    journey['Coordinates'] = list(zip(journey['Latitude'], journey['Longitude']))
-
-    return journey
+INTEGRATION_MTHD = {'forward-looking': 0, 'backward-looking': 1}
 
 
-def getDistSlope(journey):
+def _getDistSlope(journey,
+        integration_method=INTEGRATION_MTHD['forward-looking']):
     """
     Inputs: dataframe with vehicle journey data
 
@@ -68,26 +26,43 @@ def getDistSlope(journey):
     Slope = np.zeros(len(journey))
     l_route = journey.shape[0]
 
-    for i in range(0, l_route - 1):  # end before i + 1 out of range
-        elev_change = journey.Altitude.iloc[i+1] - journey.Altitude.iloc[i]
-        # elev_change = journey['ElevChange'][i]
-        dist_lateral = geopy.distance.geodesic(
-            journey.Coordinates.iloc[i],
-                # Lateral distance in meters - dist between two lat/lon coord
-                # pairs
-            journey.Coordinates.iloc[i+1]).m
-                # Coordinates is
-                # list(zip(journey['Latitude'], journey['Longitude']))
+    if integration_method == INTEGRATION_MTHD['forward-looking']:
+        for i in range(0,l_route-1):  # end before i + 1 out of range
+            elev_change = journey.Altitude.iloc[i+1] - journey.Altitude.iloc[i]
+            dist_lateral = geopy.distance.geodesic(
+                journey.Coordinates.iloc[i],
+                    # Lateral distance in meters - dist between two lat/lon
+                    # coord pairs
+                journey.Coordinates.iloc[i+1]).m
+                    # Coordinates is list(zip(journey['Latitude'],
+                    # journey['Longitude']))
 
-        dist_3d = np.sqrt(dist_lateral**2 + elev_change**2)
-            # geodesic distance (3d = accounting for elevation), in meters
-        if i == 0:
-            Distance[i] = 0
-        else:
+            dist_3d = np.sqrt(dist_lateral**2 + elev_change**2)
+                # geodesic distance (3d = accounting for elevation), in meters
             Distance[i] = dist_3d
-        if Distance[i] != 0 and elev_change != 0:
-            Slope[i] = np.arcsin(elev_change/dist_3d)
-                # calculate slope angle in radians from opposite/hypotenuse
+            if Distance[i] != 0 and elev_change != 0:
+                Slope[i] = np.arcsin(elev_change/dist_3d)
+                    # calculate slope angle in radians from opposite/hypotenuse
+        Distance[l_route-1] = 0
+
+    elif integration_method == INTEGRATION_MTHD['backward-looking']:
+        Distance[0] = 0
+        for i in range(1,l_route):  # Start after i-1 out of range
+            elev_change = journey.Altitude.iloc[i] - journey.Altitude.iloc[i-1]
+            dist_lateral = geopy.distance.geodesic(
+                journey.Coordinates.iloc[i-1],
+                    # Lateral distance in meters - dist between two lat/lon
+                    # coord pairs
+                journey.Coordinates.iloc[i]).m
+                    # Coordinates is list(zip(journey['Latitude'],
+                    # journey['Longitude']))
+
+            dist_3d = np.sqrt(dist_lateral**2 + elev_change**2)
+                # geodesic distance (3d = accounting for elevation), in meters
+            Distance[i] = dist_3d
+            if Distance[i] != 0 and elev_change != 0:
+                Slope[i] = np.arcsin(elev_change/dist_3d)
+                    # calculate slope angle in radians from opposite/hypotenuse
 
     journey['Displacement_m'] = list(Distance)  # add displacement to dataframe
     journey['slope_rad'] = list(Slope)  # add slope in radians to dataframe
@@ -96,6 +71,62 @@ def getDistSlope(journey):
 
 
 # -----------------------------------------------------------------------------
+def read_file(fcd_file: Path, integration_method=INTEGRATION_MTHD['forward-looking']):
+    """ This function takes the filename of a GPS trip stored in a .csv file,
+    and path to the file.
+
+    It reads the file, cleans it, adds columns that are necessary for the
+    kinetic model, and returns the file in a pandas dataframe. """
+
+    # Load journey.
+    journey = pd.read_csv(fcd_file)
+
+    # Set up dataframe for energy consumption estimations
+    journey['Velocity'] = journey['vehicle_speed']
+    journey['Longitude'] = journey['vehicle_x']
+    journey['Latitude'] = journey['vehicle_y']
+    journey.drop(columns=['vehicle_speed', 'vehicle_x', 'vehicle_y'])
+    if 'vehicle_z' in journey.columns:
+        journey['Altitude'] = journey['vehicle_z']
+        journey.drop(columns=['vehicle_z'])
+    else:
+        journey['Altitude'] = 0
+
+    # Convert speed in km/h to m/s.
+    # journey['Velocity'] = journey['Velocity']/3.6
+    # OR: Observations less than 0.5 m/s are set to 0, due to GPS noise
+    # journey['Velocity'] = np.where(journey['Velocity'] >= 0.5, journey['Velocity']/3.6, 0)
+
+    # Calculate elevation change
+    elev_change = - journey['Altitude'] + journey['Altitude'].shift(-1)
+    journey['ElevChange'] = np.where(abs(elev_change) >= 0.2, elev_change, 0)
+
+    if integration_method == INTEGRATION_MTHD['forward-looking']:
+        # Calculate time between samples. Useful for kinetic model.
+        journey['DeltaT'] = journey['timestep_time'].shift(-1) - journey['timestep_time']
+        # Calculate change in velocity between each timestep
+        journey['DeltaV'] = journey['Velocity'].shift(-1) - journey['Velocity']
+
+    elif integration_method == INTEGRATION_MTHD['backward-looking']:
+        # Calculate time between samples. Useful for kinetic model.
+        journey['DeltaT'] = journey['timestep_time'] - journey['timestep_time'].shift(1)
+        # Calculate change in velocity between each timestep
+        journey['DeltaV'] = journey['Velocity'] - journey['Velocity'].shift(1)
+
+    else:
+        raise ValueError("Unknown integration method.")
+
+    # Calculate acceleration
+    journey['Acceleration'] = np.where(journey['DeltaT'] > 0, journey['DeltaV']/journey['DeltaT'], 0)
+
+    # Joins lat/lon Coords into one column, useful for getDist function
+    journey['Coordinates'] = list(zip(journey['Latitude'], journey['Longitude']))
+
+    _getDistSlope(journey, integration_method)
+
+    return journey
+
+
 # Functions that calculate three environmental forces acting on
 # the vehicle in N.
 
@@ -140,19 +171,18 @@ class Vehicle:
     """
 
     # mass=3900, c_d=0.36, c_rr=0.02, A=4, propulsion_eff=0.9, regen_eff=0.65, constant_power=100
-    # def __init__(self, journey: pd.DataFrame, mass=3900, payload=0, cd=0.36,
-    #              crr=0.02, A=4, eff=0.9, rgbeff=0.65, cap=1000000, p0=100,
-    #              regbrake=True):
+    def __init__(self, journey: pd.DataFrame, mass=3900, payload=0, cd=0.36,
+                 crr=0.02, A=4, eff=0.9, rgbeff=0.65, cap=1000000, p0=100,
+                 regbrake=True):
 
     # mass=2900, c_d=0.35, c_rr=0.01, A=4, propulsion_eff=0.8, regen_eff=0.5, constant_power=100
-    def __init__(self, journey: pd.DataFrame, mass=2900, payload=0, cd=0.35,
-                 crr=0.01, A=4, eff=0.8, rgbeff=0.5, cap=2000000,
-                 ini_cap=1000000, p0=100, regbrake=True):
+    # def __init__(self, journey: pd.DataFrame, mass=2900, payload=0, cd=0.35,
+    #              crr=0.01, A=4, eff=0.8, rgbeff=0.5, cap=2000000,
+    #              ini_cap=1000000, p0=100, regbrake=True):
 
         # TODO: Doesn't implement InternalMomentOfInertia, radialDragCoefficient
 
         self.journey = journey
-        getDistSlope(self.journey)
 
         self.regbrake = regbrake
 
@@ -260,7 +290,7 @@ class Vehicle:
 
         cur_bat_state = self.battery  # Current battery state.
         for i in range(len(Er)):
-            offtake_power[i] = self.p0  # constant offtake
+            offtake_power[i] = self.p0  # constant offtake TODO Add this to the battery energy, right?
 
             if Er[i] > 0:  # energy that is used for propulsion
                 Er_batt[i] = Er[i]/self.eff
@@ -308,14 +338,15 @@ class Vehicle:
         return self.battery_output
 
 
-def simulate(scenario_dir: Path, **kwargs):
+def simulate(scenario_dir: Path,
+        integration_method=INTEGRATION_MTHD['forward-looking'], **kwargs):
 
     fcd_files = sorted([*scenario_dir.joinpath('EV_Simulation',
         'SUMO_Simulation_Outputs').glob('*/*/fcd.out.csv*')])
 
     for fcd_file in tqdm(fcd_files):
         # Read data
-        journey = read_file(fcd_file)
+        journey = read_file(fcd_file, integration_method)
 
         # Initialise vehicle
         vehicle = Vehicle(journey)
