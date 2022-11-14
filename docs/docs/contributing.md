@@ -14,19 +14,42 @@ Let's imagine that you want to add some new functionality to the program. You wa
    git clone https://gitlab.com/eputs/ev-fleet-sim.git <source-dir> # Clone the git repository into the new folder.
    ```
 
-1. Install the program in "developer-mode".
-
-   On Linux/MacOS:
-
-   ```sh
-   pip install --prefix ~/.local/ -e .
-   ```
-
-   On Windows:
+1. Create a python virtual environment for this project.
 
    ```bash
-   pip install -e .
+   python -m venv --prompt ev-fleet-sim <source-dir>/.venv/
    ```
+
+1. <a name=activate-venv></a>Activate the virtual environment for this project.
+
+   Linux/MacOS:
+
+   ```bash
+   source <source-dir>/bin/activate
+   ```
+
+   Windows PowerShell:
+
+   ```ps
+   <source-dir>/bin/Activate.ps1
+   ```
+
+   If you haven't done so before, you may first need to run the following command to allow PowerShell to run scripts:
+
+   ```ps
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
+
+1. Install the program in "developer-mode".
+
+   ```bash
+   pip install -e <source-dir>
+   ```
+
+   > Note: If you are installing the program outside of a virtual environment (not recommended) in Linux or MacOS, then use the followin command instead:
+   > ```sh
+   > pip install --prefix ~/.local/ -e <source-dir>
+   > ```
 
 1. Open `<source-dir>/src/data_processing_ev/__init__.py` in your in your favourite text-editor.
 
@@ -44,7 +67,9 @@ Let's imagine that you want to add some new functionality to the program. You wa
     ```
 
 5. Save the file, open a terminal and run `ev-fleet-sim`. It should now say "Hello
-   world!" before continuing with the program.
+   world!" before continuing with the program. 
+
+**NB:** Note that you need to [activate the virtual environment](#activate-venv) before running `ev-fleet-sim`.
 
 You will see that `__init__.py` defines a function called `run()`. This function is
 responsible for running the *sub-modules* corresponding each of the steps.
