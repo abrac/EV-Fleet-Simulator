@@ -20,7 +20,8 @@ Let's imagine that you want to add some new functionality to the program. You wa
    python -m venv --prompt ev-fleet-sim <source-dir>/.venv/
    ```
 
-1. <a name=activate-venv></a>Activate the virtual environment for this project.
+1. Activate the virtual environment for this project.
+   {: #activate-venv }
 
    Linux/MacOS:
 
