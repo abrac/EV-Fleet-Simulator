@@ -2,9 +2,9 @@
 # https://stackoverflow.com/a/62570479/10462623 OR Create the dir structure in
 # the file system, and store it using Path.glob('**')
 
-DATA_FMTS = {'GPS': 1, 'GTFS': 2}
+DATA_FMTS = {'GPS': 0, 'GTFS': 1}
 
-EV_MODELS = {'SUMO': 1, 'Hull': 2}
+EV_MODELS = {'SUMO': 0, 'Hull': 1}
 
 from .scenario_initialisation.scenario_initialisation \
     import initialise_scenario
@@ -319,7 +319,18 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat],
         # De-combine simulation results.
         results_splitter.split_results(scenario_dir, **kwargs)
     if 5 in steps or 5.3 in steps:
-        hull_ev_simulation.simulate(scenario_dir, **kwargs)
+        integration_mthd = None
+        while integration_mthd is None:
+            _ = input("Would you like to do center, forward or backward integration? [center]/forward/backward  ")
+            if _.lower() == 'center' or _ == '':
+                integration_mthd = hull_ev_simulation.INTEGRATION_MTHD['ctr']
+            elif _.lower() == 'forward':
+                integration_mthd = hull_ev_simulation.INTEGRATION_MTHD['fwd']
+            elif _.lower() == 'backward':
+                integration_mthd = hull_ev_simulation.INTEGRATION_MTHD['bwd']
+            else:
+                print("Bad input!")
+        hull_ev_simulation.simulate(scenario_dir, integration_mthd, **kwargs)
     if 6 in steps or 6.1 in steps:
         """Generate Plots and Statistics from EV Simulation Results"""
         ev_results_analysis.run_ev_results_analysis(scenario_dir, **kwargs)

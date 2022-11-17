@@ -19,6 +19,10 @@
 #  |Chris           |
 #  +----------------+
 
+src/data_processing_ev/helper_scripts/kinetic_model/Bumpy-Ride
+
+diff.txt*
+
 # Jekyll
 .jekyll-cache/
 Gemfile.lock

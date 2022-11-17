@@ -8,34 +8,71 @@ import geopy.distance
 from pathlib import Path
 from tqdm import tqdm
 
-INTEGRATION_MTHD = {'forward-looking': 0, 'backward-looking': 1}
+INTEGRATION_MTHD = {'fwd': 0, 'bwd': 1, 'ctr': 2}
+DFLT_INTEGRATION_MTHD = INTEGRATION_MTHD['ctr']
 
 
-def _getDistSlope(journey,
-        integration_method=INTEGRATION_MTHD['forward-looking']):
+def delta_fwd(array: pd.Series):
+    array_shifted_bwd = np.roll(array, -1)
+    array_shifted_bwd[-1] = 0
+    array_cpy = np.copy(array)
+    array_cpy[-1] = 0
+    return pd.Series(array_shifted_bwd - array_cpy, name=array.name)
+
+
+def delta_bwd(array: pd.Series):
+    array_shifted_fwd = np.roll(array, 1)
+    array_shifted_fwd[0] = 0
+    array_cpy = np.copy(array)
+    array_cpy[0] = 0
+    return pd.Series(array_cpy - array_shifted_fwd, name=array.name)
+
+
+def delta_ctr(array: pd.Series):
+    array_shifted_fwd = np.roll(array, 1)
+    array_shifted_fwd[0] = 0
+    array_shifted_bwd = np.roll(array, -1)
+    array_shifted_bwd[-1] = 0
+    return pd.Series((array_shifted_bwd - array_shifted_fwd)/2,
+                     name=array.name)
+
+
+def _getDistSlope(journey, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
     """
-    Inputs: dataframe with vehicle journey data
+    Inputs:
+        - dataframe with vehicle journey data
+        - geo: If true, then the coordinates are interpreted as latitude and
+            longitude. If false, then the coordinates are interpreted as coordinates in
+            meters (with respect to some reference).
 
-    Calculates distance between each successive pair of lat/lon coordinates
-    (accounts for elevation difference)
+    Calculates distance between each successive pair of coordinates,
+    accounting also for elevation difference.
 
-    Calculates slope angle faced by vehicle at each timestamp
+    Calculates slope angle faced by vehicle at each timestamp.
     """
 
     Distance = np.zeros(len(journey))
     Slope = np.zeros(len(journey))
     l_route = journey.shape[0]
 
-    if integration_method == INTEGRATION_MTHD['forward-looking']:
+    geo = kwargs.get('geo')
+    if integration_mthd == INTEGRATION_MTHD['fwd']:
+        Distance[-1] = 0
+        Slope[-1] = 0
         for i in range(0,l_route-1):  # end before i + 1 out of range
             elev_change = journey.Altitude.iloc[i+1] - journey.Altitude.iloc[i]
-            dist_lateral = geopy.distance.geodesic(
-                journey.Coordinates.iloc[i],
-                    # Lateral distance in meters - dist between two lat/lon
-                    # coord pairs
-                journey.Coordinates.iloc[i+1]).m
-                    # Coordinates is list(zip(journey['Latitude'],
-                    # journey['Longitude']))
+            if geo:
+                dist_lateral = geopy.distance.geodesic(
+                    journey.Coordinates.iloc[i],
+                        # Lateral distance in meters - dist between two lat/lon
+                        # coord pairs
+                    journey.Coordinates.iloc[i+1]).m
+                        # Coordinates is list(zip(journey['Latitude'],
+                        # journey['Longitude']))
+            else:
+                dist_lateral = np.sqrt(
+                    (journey.Coordinates.iloc[i+1][0] - journey.Coordinates.iloc[i][0])**2 +
+                    (journey.Coordinates.iloc[i+1][1] - journey.Coordinates.iloc[i][1])**2)
 
             dist_3d = np.sqrt(dist_lateral**2 + elev_change**2)
                 # geodesic distance (3d = accounting for elevation), in meters
@@ -43,19 +80,24 @@ def _getDistSlope(journey,
             if Distance[i] != 0 and elev_change != 0:
                 Slope[i] = np.arcsin(elev_change/dist_3d)
                     # calculate slope angle in radians from opposite/hypotenuse
-        Distance[l_route-1] = 0
 
-    elif integration_method == INTEGRATION_MTHD['backward-looking']:
+    elif integration_mthd == INTEGRATION_MTHD['bwd']:
         Distance[0] = 0
+        Slope[0] = 0
         for i in range(1,l_route):  # Start after i-1 out of range
             elev_change = journey.Altitude.iloc[i] - journey.Altitude.iloc[i-1]
-            dist_lateral = geopy.distance.geodesic(
-                journey.Coordinates.iloc[i-1],
-                    # Lateral distance in meters - dist between two lat/lon
-                    # coord pairs
-                journey.Coordinates.iloc[i]).m
-                    # Coordinates is list(zip(journey['Latitude'],
-                    # journey['Longitude']))
+            if geo:
+                dist_lateral = geopy.distance.geodesic(
+                    journey.Coordinates.iloc[i-1],
+                        # Lateral distance in meters - dist between two lat/lon
+                        # coord pairs
+                    journey.Coordinates.iloc[i]).m
+                        # Coordinates is list(zip(journey['Latitude'],
+                        # journey['Longitude']))
+            else:
+                dist_lateral = np.sqrt(
+                    (journey.Coordinates.iloc[i][0] - journey.Coordinates.iloc[i-1][0])**2 +
+                    (journey.Coordinates.iloc[i][1] - journey.Coordinates.iloc[i-1][1])**2)
 
             dist_3d = np.sqrt(dist_lateral**2 + elev_change**2)
                 # geodesic distance (3d = accounting for elevation), in meters
@@ -63,6 +105,38 @@ def _getDistSlope(journey,
             if Distance[i] != 0 and elev_change != 0:
                 Slope[i] = np.arcsin(elev_change/dist_3d)
                     # calculate slope angle in radians from opposite/hypotenuse
+
+    elif integration_mthd == INTEGRATION_MTHD['ctr']:
+        Distance[0] = 0
+        Distance[-1] = 0
+        Slope[0] = 0
+        Slope[-1] = 0
+        for i in range(1, l_route-1):  # Start after i-1 out of range
+            elev_change = journey.Altitude.iloc[i+1] - journey.Altitude.iloc[i-1]
+            if geo:
+                dist_lateral = geopy.distance.geodesic(
+                    journey.Coordinates.iloc[i-1],
+                        # Lateral distance in meters - dist between two lat/lon
+                        # coord pairs
+                    journey.Coordinates.iloc[i+1]).m
+                        # Coordinates is list(zip(journey['Latitude'],
+                        # journey['Longitude']))
+            else:
+                dist_lateral = np.sqrt(
+                    (journey.Coordinates.iloc[i+1][0] -
+                     journey.Coordinates.iloc[i-1][0])**2 +
+                    (journey.Coordinates.iloc[i+1][1] -
+                     journey.Coordinates.iloc[i-1][1])**2)
+
+            dist_3d = np.sqrt(dist_lateral**2 + elev_change**2) / 2
+                # geodesic distance (3d = accounting for elevation), in meters
+            Distance[i] = dist_3d
+            if Distance[i] != 0 and elev_change != 0:
+                Slope[i] = np.arcsin(elev_change / dist_3d)
+                    # calculate slope angle in radians from opposite/hypotenuse
+
+    else:
+        raise ValueError("Integration method not supported.")
 
     journey['Displacement_m'] = list(Distance)  # add displacement to dataframe
     journey['slope_rad'] = list(Slope)  # add slope in radians to dataframe
@@ -71,7 +145,7 @@ def _getDistSlope(journey,
 
 
 # -----------------------------------------------------------------------------
-def read_file(fcd_file: Path, integration_method=INTEGRATION_MTHD['forward-looking']):
+def read_file(fcd_file: Path, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
     """ This function takes the filename of a GPS trip stored in a .csv file,
     and path to the file.
 
@@ -83,8 +157,6 @@ def read_file(fcd_file: Path, integration_method=INTEGRATION_MTHD['forward-looki
 
     # Set up dataframe for energy consumption estimations
     journey['Velocity'] = journey['vehicle_speed']
-    journey['Longitude'] = journey['vehicle_x']
-    journey['Latitude'] = journey['vehicle_y']
     journey.drop(columns=['vehicle_speed', 'vehicle_x', 'vehicle_y'])
     if 'vehicle_z' in journey.columns:
         journey['Altitude'] = journey['vehicle_z']
@@ -101,17 +173,23 @@ def read_file(fcd_file: Path, integration_method=INTEGRATION_MTHD['forward-looki
     elev_change = - journey['Altitude'] + journey['Altitude'].shift(-1)
     journey['ElevChange'] = np.where(abs(elev_change) >= 0.2, elev_change, 0)
 
-    if integration_method == INTEGRATION_MTHD['forward-looking']:
+    if integration_mthd == INTEGRATION_MTHD['fwd']:
         # Calculate time between samples. Useful for kinetic model.
-        journey['DeltaT'] = journey['timestep_time'].shift(-1) - journey['timestep_time']
+        journey['DeltaT'] = delta_fwd(journey['timestep_time'])
         # Calculate change in velocity between each timestep
-        journey['DeltaV'] = journey['Velocity'].shift(-1) - journey['Velocity']
+        journey['DeltaV'] = delta_fwd(journey['Velocity'])
 
-    elif integration_method == INTEGRATION_MTHD['backward-looking']:
+    elif integration_mthd == INTEGRATION_MTHD['bwd']:
         # Calculate time between samples. Useful for kinetic model.
-        journey['DeltaT'] = journey['timestep_time'] - journey['timestep_time'].shift(1)
+        journey['DeltaT'] = delta_bwd(journey['timestep_time'])
         # Calculate change in velocity between each timestep
-        journey['DeltaV'] = journey['Velocity'] - journey['Velocity'].shift(1)
+        journey['DeltaV'] = delta_bwd(journey['Velocity'])
+
+    elif integration_mthd == INTEGRATION_MTHD['ctr']:
+        # Calculate time between samples. Useful for kinetic model.
+        journey['DeltaT'] = delta_ctr(journey['timestep_time'])
+        # Calculate change in velocity between each timestep
+        journey['DeltaV'] = delta_ctr(journey['Velocity'])
 
     else:
         raise ValueError("Unknown integration method.")
@@ -120,9 +198,9 @@ def read_file(fcd_file: Path, integration_method=INTEGRATION_MTHD['forward-looki
     journey['Acceleration'] = np.where(journey['DeltaT'] > 0, journey['DeltaV']/journey['DeltaT'], 0)
 
     # Joins lat/lon Coords into one column, useful for getDist function
-    journey['Coordinates'] = list(zip(journey['Latitude'], journey['Longitude']))
+    journey['Coordinates'] = list(zip(journey['vehicle_x'], journey['vehicle_y']))
 
-    _getDistSlope(journey, integration_method)
+    _getDistSlope(journey, integration_mthd, **kwargs)
 
     return journey
 
@@ -313,8 +391,8 @@ class Vehicle:
                 [self.capacity]*len(Er),
                 journey['vehicle_pos'],
                 journey['Velocity'],
-                journey['Longitude'],
-                journey['Latitude'],
+                journey['vehicle_x'],
+                journey['vehicle_y'],
             ]).T
         self.battery_output.columns = [
             'timestep_time',
@@ -338,21 +416,28 @@ class Vehicle:
         return self.battery_output
 
 
+def simulate_trace(fcd_file: Path, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs) -> pd.DataFrame:
+    """Simulates the Hull model on the one FCD trace."""
+    # Read data
+    journey = read_file(fcd_file, integration_mthd, **kwargs)
+
+    # Initialise vehicle
+    vehicle = Vehicle(journey)
+
+    # Execute EV simulation
+    battery_output = vehicle.getEnergyExpenditure()
+
+    return battery_output
+
+
 def simulate(scenario_dir: Path,
-        integration_method=INTEGRATION_MTHD['forward-looking'], **kwargs):
+        integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
 
     fcd_files = sorted([*scenario_dir.joinpath('EV_Simulation',
         'SUMO_Simulation_Outputs').glob('*/*/fcd.out.csv*')])
 
     for fcd_file in tqdm(fcd_files):
-        # Read data
-        journey = read_file(fcd_file, integration_method)
-
-        # Initialise vehicle
-        vehicle = Vehicle(journey)
-
-        # Execute EV simulation
-        battery_output = vehicle.getEnergyExpenditure()
+        battery_output = simulate_trace(fcd_file, integration_mthd)
 
         # Write results
         ev_name = fcd_file.parents[1].name
