@@ -15,10 +15,10 @@ from operator import itemgetter
 import numpy as np
 import csv
 
-Lat_max = -33.7
-Lon_max = 19.0
-Lon_min = 18.6
-Lat_min = -34.3
+Lat_max = -180.000000
+Lon_max = -180.000000
+Lon_min = 180.000000
+Lat_min = 180.0000000
 
 
 def _generate_traces(traces_dir: Path):

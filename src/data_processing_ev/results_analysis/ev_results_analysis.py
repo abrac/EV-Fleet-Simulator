@@ -911,8 +911,8 @@ class Data_Analysis:
             #                      for ev_df in ev_dfs])
             # latest_time = max([ev_df['timestep_time'].max()
             #                    for ev_df in ev_dfs])
-            earliest_time = pd.datetime(1900, 1, 1, 0, 0, 0)
-            latest_time = pd.datetime(1900, 1, 1, 23, 59, 59)
+            earliest_time = dt.datetime(1900, 1, 1, 0, 0, 0)
+            latest_time = dt.datetime(1900, 1, 1, 23, 59, 59)
 
             #       Prepend empty rows to the ev_dfs so that they have the same
             #       lowest time.
@@ -1337,7 +1337,7 @@ def run_ev_results_analysis(scenario_dir: Path, **kwargs):
     # TODO TODO: Allow the user to choose their preferred model earlier, on in the
     # process. Write the chosen model to a metadata file. Allow the model to be
     # chosen in the configs.
-    _ = input("Which model EV model's results would you like to use in the " +
+    _ = input("Which EV model's results would you like to use in the " +
               "analysis? ([sumo]/hull)  ")
     ev_model = dpr.EV_MODELS['SUMO'] if _.lower() != 'hull' else dpr.EV_MODELS['Hull']
 
