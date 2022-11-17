@@ -112,23 +112,23 @@ def _getDistSlope(journey, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
         Slope[0] = 0
         Slope[-1] = 0
         for i in range(1, l_route-1):  # Start after i-1 out of range
-            elev_change = journey.Altitude.iloc[i+1] - journey.Altitude.iloc[i-1]
+            elev_change = (journey.Altitude.iloc[i+1] - journey.Altitude.iloc[i-1])/2
             if geo:
-                dist_lateral = geopy.distance.geodesic(
+                dist_lateral = (geopy.distance.geodesic(
                     journey.Coordinates.iloc[i-1],
                         # Lateral distance in meters - dist between two lat/lon
                         # coord pairs
-                    journey.Coordinates.iloc[i+1]).m
+                    journey.Coordinates.iloc[i+1]).m)/2
                         # Coordinates is list(zip(journey['Latitude'],
                         # journey['Longitude']))
             else:
-                dist_lateral = np.sqrt(
+                dist_lateral = (np.sqrt(
                     (journey.Coordinates.iloc[i+1][0] -
                      journey.Coordinates.iloc[i-1][0])**2 +
                     (journey.Coordinates.iloc[i+1][1] -
-                     journey.Coordinates.iloc[i-1][1])**2)
+                     journey.Coordinates.iloc[i-1][1])**2))/2
 
-            dist_3d = np.sqrt(dist_lateral**2 + elev_change**2) / 2
+            dist_3d = np.sqrt(dist_lateral**2 + elev_change**2)
                 # geodesic distance (3d = accounting for elevation), in meters
             Distance[i] = dist_3d
             if Distance[i] != 0 and elev_change != 0:
