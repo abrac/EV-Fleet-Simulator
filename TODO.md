@@ -10,6 +10,7 @@
 - [ ] Create a sub-module which does battery-sizing estimates.
 - [ ] Automatically run steps with default options.
 - [ ] Add stop-location functionality.
+- [ ] Make the Hull simulation multithreaded!
 - [x] ~~Seperate EV and BEV simulations?~~
 - [x] Merge Chris Hull's BEV/EV simulation model.
 - [x] Add MacOS instructions
