@@ -15,9 +15,11 @@ import pandas as pd
 from itertools import repeat
 import pickle
 import data_processing_ev as dpr
+from tqdm import tqdm
 
 
 def _gen_box_plots(scenario_dir: Path,
+                  ev_model: dpr.EV_MODELS,
                   flatten_mode: bool = False,
                   input_data_fmt=dpr.DATA_FMTS['GPS'],
                   figsize=(4, 3),
@@ -58,15 +60,21 @@ def _gen_box_plots(scenario_dir: Path,
 
     # Calculating the distance travelled on each day.
     all_dists_travelled = []
+
+    ev_model_str = ('SUMO' if ev_model == dpr.EV_MODELS['SUMO'] else
+                    'Hull' if ev_model == dpr.EV_MODELS['Hull'] else None)
+    if ev_model_str is None:
+        raise ValueError("EV Model not supported.")
+
     ev_dirs = sorted([
-        *scenario_dir.joinpath('EV_Simulation', 'SUMO_Simulation_Outputs').glob('*')
+        *scenario_dir.joinpath('EV_Simulation', f'{ev_model_str}_Simulation_Outputs').glob('*')
     ])
-    for ev_dir in ev_dirs:
+    for ev_dir in tqdm(ev_dirs):
         dists_travelled = []
         ev_csv_files = sorted([
             *ev_dir.glob('*/battery.out.csv')])
         for ev_csv_file in ev_csv_files:
-            ev_df = pd.read_csv(ev_csv_file, sep="\\s*,\\s*", engine='python')
+            ev_df = pd.read_csv(ev_csv_file, skipinitialspace=True)
             dist_travelled = ev_df['vehicle_speed'].sum()
             dists_travelled.append(dist_travelled)
         all_dists_travelled.append(dists_travelled)
@@ -76,11 +84,11 @@ def _gen_box_plots(scenario_dir: Path,
         all_energy_diffs_grouped = all_energy_diffs
         all_energy_diffs = []
         for energy_diffs in all_energy_diffs_grouped:
-            all_energy_diffs.append(*energy_diffs)
+            all_energy_diffs.extend(energy_diffs)
         all_dists_travelled_grouped = all_dists_travelled
         all_dists_travelled = []
         for dists_travelled in all_dists_travelled_grouped:
-            all_dists_travelled.append(*dists_travelled)
+            all_dists_travelled.extend(dists_travelled)
         ev_names_bak = ev_names
         ev_names = ['Fleet']
         kwh_p_km = (np.array(all_energy_diffs) /
@@ -125,7 +133,7 @@ def _gen_box_plots(scenario_dir: Path,
     return fig, df
 
 
-def plot_ev_energy_boxes(scenario_dir: Path, **kwargs):
+def plot_ev_energy_boxes(scenario_dir: Path, ev_model: dpr.EV_MODELS, **kwargs):
 
     _ = input("Would you like to plot the box-plots of the fleet's energy " +
               "usage? [y]/n  ")
@@ -138,13 +146,16 @@ def plot_ev_energy_boxes(scenario_dir: Path, **kwargs):
     input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
     box_plots_dir = scenario_dir.joinpath('EV_Results', 'Outputs', 'Box_Plots')
 
-    for flatten_mode in (False, True):
+    print("Generating box-plots...")
+
+    for flatten_mode in tqdm((False, True)):
 
         dir_name = 'flattened' if flatten_mode else 'non_flattened'
         box_plots_subdir = box_plots_dir.joinpath(dir_name)
         box_plots_subdir.mkdir(parents=True, exist_ok=True)
 
-        fig, df = _gen_box_plots(scenario_dir, flatten_mode, input_data_fmt)
+        fig, df = _gen_box_plots(scenario_dir, ev_model,
+                flatten_mode, input_data_fmt)
 
         # As png:
         fig_dir = box_plots_subdir.joinpath("Energy_usage_box_plots.png")
