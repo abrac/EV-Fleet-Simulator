@@ -333,11 +333,19 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat],
         hull_ev_simulation.simulate(scenario_dir, integration_mthd, **kwargs)
     if 6 in steps or 6.1 in steps:
         """Generate Plots and Statistics from EV Simulation Results"""
-        ev_results_analysis.run_ev_results_analysis(scenario_dir, **kwargs)
+
+        # TODO TODO: Allow the user to choose their preferred model earlier, on in the
+        # process. Write the chosen model to a metadata file. Allow the model to be
+        # chosen in the configs.
+        _ = input("Which EV model's results would you like to use in the " +
+                  "analysis? ([hull]/sumo)  ")
+        ev_model = EV_MODELS['Hull'] if _.lower() != 'SUMO' else EV_MODELS['SUMO']
+
+        ev_results_analysis.run_ev_results_analysis(scenario_dir, ev_model, **kwargs)
         # TODO: GTFS implementation of ev_box_plots should consider
         # frequencies.txt.
         ev_box_plots.plot_ev_energy_boxes(
-            scenario_dir, **kwargs)
+            scenario_dir, ev_model, **kwargs)
     if 6 in steps or 6.2 in steps:
         """Generate Plots and Statistics from PV Simulation Results"""
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:

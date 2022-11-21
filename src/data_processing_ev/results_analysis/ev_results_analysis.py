@@ -1332,14 +1332,8 @@ class Data_Analysis:
 
 
 # %% Main #####################################################################
-def run_ev_results_analysis(scenario_dir: Path, **kwargs):
-
-    # TODO TODO: Allow the user to choose their preferred model earlier, on in the
-    # process. Write the chosen model to a metadata file. Allow the model to be
-    # chosen in the configs.
-    _ = input("Which EV model's results would you like to use in the " +
-              "analysis? ([sumo]/hull)  ")
-    ev_model = dpr.EV_MODELS['SUMO'] if _.lower() != 'hull' else dpr.EV_MODELS['Hull']
+def run_ev_results_analysis(scenario_dir: Path,
+        ev_model: dpr.EV_MODELS, **kwargs):
 
     data_analysis = Data_Analysis(scenario_dir, ev_model, **kwargs)
     data_analysis.make_plots()
