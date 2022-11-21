@@ -9,8 +9,11 @@
 - [ ] Save SUMO stdout for debugging.
 - [ ] Create a sub-module which does battery-sizing estimates.
 - [ ] Automatically run steps with default options.
+- [ ] Automatically run steps with a options given in a config file.
 - [ ] Add stop-location functionality.
 - [ ] Make the Hull simulation multithreaded!
+- [ ] Make the Hull model read the vType configuration!
+- [ ] Make the Hull and SUMO models modular, so that the user can choose which one to run. Currently, both are run.
 - [x] ~~Seperate EV and BEV simulations?~~
 - [x] Merge Chris Hull's BEV/EV simulation model.
 - [x] Add MacOS instructions
