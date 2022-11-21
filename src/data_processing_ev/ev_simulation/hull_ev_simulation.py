@@ -7,6 +7,7 @@ import numpy as np
 import geopy.distance
 from pathlib import Path
 from tqdm import tqdm
+import xml.etree.ElementTree as et
 
 INTEGRATION_MTHD = {'fwd': 0, 'bwd': 1, 'ctr': 2}
 DFLT_INTEGRATION_MTHD = INTEGRATION_MTHD['ctr']
@@ -37,7 +38,7 @@ def delta_ctr(array: pd.Series):
                      name=array.name)
 
 
-def _getDistSlope(journey, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
+def _getDistSlope(journey, integration_mthd=DFLT_INTEGRATION_MTHD, geo=True, **kwargs):
     """
     Inputs:
         - dataframe with vehicle journey data
@@ -55,7 +56,6 @@ def _getDistSlope(journey, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
     Slope = np.zeros(len(journey))
     l_route = journey.shape[0]
 
-    geo = kwargs.get('geo')
     if integration_mthd == INTEGRATION_MTHD['fwd']:
         Distance[-1] = 0
         Slope[-1] = 0
@@ -118,7 +118,7 @@ def _getDistSlope(journey, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
                     journey.Coordinates.iloc[i-1],
                         # Lateral distance in meters - dist between two lat/lon
                         # coord pairs
-                    journey.Coordinates.iloc[i+1]).m)/2
+                    journey.Coordinates.iloc[i+1]).m) / 2
                         # Coordinates is list(zip(journey['Latitude'],
                         # journey['Longitude']))
             else:
@@ -126,7 +126,7 @@ def _getDistSlope(journey, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
                     (journey.Coordinates.iloc[i+1][0] -
                      journey.Coordinates.iloc[i-1][0])**2 +
                     (journey.Coordinates.iloc[i+1][1] -
-                     journey.Coordinates.iloc[i-1][1])**2))/2
+                     journey.Coordinates.iloc[i-1][1])**2)) / 2
 
             dist_3d = np.sqrt(dist_lateral**2 + elev_change**2)
                 # geodesic distance (3d = accounting for elevation), in meters
@@ -145,7 +145,7 @@ def _getDistSlope(journey, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
 
 
 # -----------------------------------------------------------------------------
-def read_file(fcd_file: Path, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
+def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
     """ This function takes the filename of a GPS trip stored in a .csv file,
     and path to the file.
 
@@ -200,7 +200,7 @@ def read_file(fcd_file: Path, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
     # Joins lat/lon Coords into one column, useful for getDist function
     journey['Coordinates'] = list(zip(journey['vehicle_x'], journey['vehicle_y']))
 
-    _getDistSlope(journey, integration_mthd, **kwargs)
+    _getDistSlope(journey, integration_mthd, geo, **kwargs)
 
     return journey
 
@@ -416,10 +416,10 @@ class Vehicle:
         return self.battery_output
 
 
-def simulate_trace(fcd_file: Path, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs) -> pd.DataFrame:
+def simulate_trace(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs) -> pd.DataFrame:
     """Simulates the Hull model on the one FCD trace."""
     # Read data
-    journey = read_file(fcd_file, integration_mthd, **kwargs)
+    journey = read_file(fcd_file, geo, integration_mthd, **kwargs)
 
     # Initialise vehicle
     vehicle = Vehicle(journey)
@@ -430,14 +430,29 @@ def simulate_trace(fcd_file: Path, integration_mthd=DFLT_INTEGRATION_MTHD, **kwa
     return battery_output
 
 
+def _check_if_geo_inputs(scenario_dir: Path) -> bool:
+    config_file = next(scenario_dir.joinpath('EV_Simulation', 'Sumocfgs_Combined').glob('*.sumocfg'))
+    config = et.parse(config_file)
+    try:
+        geo = config.getroot().find('output').find('fcd-output.geo').get('value')
+        geo = True if geo == "true" else False
+
+    except AttributeError:
+        geo = False
+
+    return geo
+
+
 def simulate(scenario_dir: Path,
         integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
 
     fcd_files = sorted([*scenario_dir.joinpath('EV_Simulation',
         'SUMO_Simulation_Outputs').glob('*/*/fcd.out.csv*')])
 
+    geo = _check_if_geo_inputs(scenario_dir)
+
     for fcd_file in tqdm(fcd_files):
-        battery_output = simulate_trace(fcd_file, integration_mthd)
+        battery_output = simulate_trace(fcd_file, geo, integration_mthd, **kwargs)
 
         # Write results
         ev_name = fcd_file.parents[1].name
