@@ -30,7 +30,16 @@ import argparse
 import time
 import subprocess
 import multiprocessing as mp
+import logging
+from importlib.metadata import version
+import sys
 
+# loggers:
+LOGGERS = {
+    'main': logging.getLogger('main'),
+    'input': logging.getLogger('input'),
+    'sumo_output': logging.getLogger('sumo_output')  # For SUMO simulation outputs only
+}
 
 DATA_FMT_ERROR_MSG = "The function has not been implemented for the " + \
                      "currently selected input data format."
@@ -50,6 +59,7 @@ SCENARIO_DIR_STRUCTURE = {
         'Configs': None,
         'Weather': None
     },
+    '_Logs': {},
     'Data_Visualisations': {
         'Maps': None,
         'Route_Animations': None
@@ -119,10 +129,15 @@ MODULES = """
 def auto_input(prompt: str, default: str, **kwargs):
     auto_run = kwargs.get('auto_run', False)
     if auto_run:
-        print(prompt, default, '\n')
+        message = prompt + default + '\n'
+        print(message)
+        logging.getLogger('input').info(message)
         return default
     else:
-        return input(prompt)
+        _selection = input(prompt)
+        message = prompt + _selection + '\n'
+        logging.getLogger('input').info(message)
+        return _selection
 
 
 def decompress_file(file: Path, **kwargs) -> Path:
@@ -250,6 +265,48 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
     kwargs['input_data_fmt'] = get_input_data_fmt(scenario_dir)
     # TODO Other important kwargs: EV_Model
 
+    if steps:
+        # Configure logging
+        for key in LOGGERS.keys():
+            if kwargs.get('debug_mode'):
+                fh_formatter = logging.Formatter(
+                    ">>> %(asctime)s - %(levelname)s - %(name)s - "
+                    "%(pathname)s - %(lineno)d:\n%(message)s\n")
+                ch_formatter = logging.Formatter(
+                    '%(levelname)s: %(message)s')
+            else:
+                fh_formatter = logging.Formatter(
+                    ">>> %(asctime)s - %(levelname)s - %(name)s - "
+                    "%(filename)s:\n%(message)s\n")
+                ch_formatter = logging.Formatter(
+                    '%(levelname)s: %(message)s')
+
+            ch_log_level = logging.WARNING
+            fh_log_level = logging.DEBUG
+
+            loggingFile = scenario_dir.joinpath('_Logs', f'{key}.log')
+            loggingFile.parent.mkdir(parents=True, exist_ok=True)
+
+            LOGGERS[key].setLevel(logging.DEBUG)
+
+            fh = logging.FileHandler(
+                loggingFile, 'a' if loggingFile.exists() else 'w')
+            fh.setLevel(fh_log_level)
+            fh.setFormatter(fh_formatter)
+
+            # console handler
+            ch = logging.StreamHandler()
+            ch.setLevel(ch_log_level)
+            ch.setFormatter(ch_formatter)
+
+            LOGGERS[key].addHandler(ch)
+            LOGGERS[key].addHandler(fh)
+
+        LOGGERS['main'].info("Starting a new log session.")
+        if kwargs.get('debug_mode'):
+            LOGGERS['main'].debug("Logger in debug mode.")
+        LOGGERS['main'].info(f"EV-Fleet-Sim version {version('ev-fleet-sim')}")
+
     if 0 in steps:
         initialise_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.1 in steps:
@@ -350,8 +407,6 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
 
 
 def main():
-    # TODO get scenario_dir via terminal arguments
-
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         'scenario_dir', nargs='?', default=None, metavar='str',
@@ -363,7 +418,7 @@ def main():
     parser.add_argument(
         '--debug', action='store_true',
         help="For developers: Starts the program with a breakpoint to help "
-        "debugging.")
+        "debugging, and also creates more detailed logging.")
     parser.add_argument(
         '--incl-weekends', action='store_true', help="Normally ev-fleet-sim "
         "discards weekend trips in the analysis (in step 2.2: Date filtering "
@@ -374,7 +429,14 @@ def main():
     parser.add_argument(
         '--ev-model', metavar='str', default=None, help="Chooses an EV "
         "model implementation. Either one of \"sumo\" or \"hull\".")
+    parser.add_argument(
+        '-v', '--version', action='store_true',
+        help="Print ev-fleet-sim's version, and quit.")
     args = parser.parse_args()
+
+    if args.version:
+        print(f"EV-Fleet-Sim version {version('ev-fleet-sim')}")
+        sys.exit(0)
 
     if args.debug:
         import pdb
@@ -435,7 +497,8 @@ def main():
                EV_MODELS['Hull']
 
     kwargs = {'auto_run': auto_run, 'input_data_fmt': None,
-              'incl_weekends': args.incl_weekends, 'ev_model': ev_model}
+              'incl_weekends': args.incl_weekends, 'ev_model': ev_model,
+              'debug_mode': args.debug}
 
     # Run all the steps
     _run(scenario_dir, steps=steps, **kwargs)

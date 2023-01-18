@@ -15,12 +15,11 @@ from tqdm import tqdm
 from multiprocessing import Pool
 from itertools import repeat
 import pickle
-import logging
 from haversine import haversine  # Calculates distance between geo coordinates.
+import data_processing_ev as dpr
 
 INPUT_TYPES = {'clustered': 'spatial_clustered_traces',
                'filtered': 'spatial_filtered_traces'}
-logging.basicConfig(level=logging.INFO)
 
 
 def _time_str2dt_old(datetime_str: str) -> dt.time:
@@ -106,7 +105,7 @@ def _gen_stop_pdfs(trace_df: pd.DataFrame, ev_name: str,
             stop_times.append(time)
         # If list of stop_times still empty, throw exception, and continue
         if stop_times == []:
-            logging.warn(f"No stop times found for cluster {cluster}.")
+            dpr.LOGGERS['main'].warn(f"No stop times found for cluster {cluster}.")
             if not auto_run:
                 input("Press any key to continue...")
             continue
@@ -121,11 +120,11 @@ def _gen_stop_pdfs(trace_df: pd.DataFrame, ev_name: str,
         try:
             grid.fit(stop_time_floats[:, None])
         except ValueError as e:
-            logging.error(e)
+            dpr.LOGGERS['main'].error(e)
             if not auto_run:
                 input('Press any key to acknowledge...')
             continue
-        logging.info(f"Best bandwidth: {grid.best_params_}")
+        dpr.LOGGERS['main'].info(f"Best bandwidth: {grid.best_params_}")
         kde = grid.best_estimator_
         pdf = np.exp(kde.score_samples(t_domain[:, None]))
 
@@ -219,7 +218,7 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
         # If list of stop_times still empty, throw exception, and continue to
             # next cluster.
         if stop_entries_and_exits == []:
-            logging.error(f"No stops found for cluster {cluster}.")
+            dpr.LOGGERS['main'].error(f"No stops found for cluster {cluster}.")
             continue
 
         # Second: Calulate stop-durations from stop-entry and -exit times.
@@ -292,7 +291,8 @@ def _gen_stop_duration_pdfs(scenario_dir: Path, trace_df: pd.DataFrame,
 
         # If all the stops were filtered out, throw warning, and continue.
         if stops_df.empty:
-            logging.warn(f"All stops filtered out for cluster {cluster}.")
+            dpr.LOGGERS['main'].warn(
+                f"All stops filtered out for cluster {cluster}.")
             continue
 
         # 2D Scatterplot of arrival_times and stop_durations
@@ -399,7 +399,7 @@ def _cluster_ev(trace_df: pd.DataFrame, ev_name: str, scenario_dir: Path,
                 **kwargs) -> pd.DataFrame:
     auto_run = kwargs.get('auto_run', False)
     # Individual time clustering:
-    logging.info(f'### Starting time-clustering of {ev_name} ###')
+    dpr.LOGGERS['main'].info(f'### Starting time-clustering of {ev_name} ###')
     output_dir = scenario_dir.joinpath('Temporal_Clusters', 'Graphs',
                                        'Stop_PDFs', ev_name)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -457,11 +457,11 @@ def _cluster_ev(trace_df: pd.DataFrame, ev_name: str, scenario_dir: Path,
         vehicle_df = pd.concat({str(ev_name): vehicle_df},
                                names=['Vehicle_Name'])
     except ValueError as e:
-        logging.error(str(e) + f"This is for vehicle {ev_name}.")
+        dpr.LOGGERS['main'].error(str(e) + f"This is for vehicle {ev_name}.")
         vehicle_df = None
         if not auto_run:
             input("Press enter to accept... ")
-    logging.info(f'    *** Finished time-clustering of {ev_name} ***')
+    dpr.LOGGERS['main'].info(f'    *** Finished time-clustering of {ev_name} ***')
     return vehicle_df
 
 
@@ -488,21 +488,6 @@ def cluster_scenario(scenario_dir: Path, input_type: str, **kwargs):
         regenerating_clusters = False if _.lower() == 'n' else True
     else:
         regenerating_clusters = True
-
-    # FIXME: The logging module is not saving the log...
-    # Setup File handler
-    file_handler = logging.FileHandler(
-            scenario_dir.joinpath('Temporal_Clusters', 'errors.log'), mode='w')
-    file_handler.setLevel(logging.INFO)
-    root_logger = logging.getLogger('root')
-    root_logger.addHandler(file_handler)
-
-    # # create console handler and set level to INFO
-    # ch = logging.StreamHandler()
-    # ch.setLevel(logging.INFO)
-
-    # app_log = logging.getLogger('root')
-    # app_log.addHandler(ch)
 
     time_clustered_df: pd.DataFrame = None
     if (regenerating_clusters):

@@ -6,7 +6,6 @@ from typing import Dict
 import json
 import data_processing_ev as dpr
 import platform
-import logging
 
 
 def initialise_scenario(scenario_dir: Path, **kwargs):
@@ -82,7 +81,8 @@ def initialise_scenario(scenario_dir: Path, **kwargs):
             if not dest_file.exists():
                 shutil.copy(src_file, dest_file)
             else:
-                logging.warning("Distination file already exists: \n\t\t " +
+                dpr.LOGGERS['main'].warning(
+                    "Distination file already exists: \n\t\t " +
                     str(dest_file.absolute()))
 
     def create_readme():

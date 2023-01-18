@@ -16,7 +16,6 @@ import itertools  # noqa
 import pandas as pd
 import numpy as np  # noqa
 from pathlib import Path
-import logging
 import typing as typ
 from tqdm import tqdm
 import scipy.integrate as integrate
@@ -122,7 +121,7 @@ class Data_Analysis:
         # If warn_nan flag is set, check if df has coordinates that are
         # NaN and delete them
         if warn_nan and True in ev_df['vehicle_x'].isna():
-            logging.warning("NaN found in ev_df")
+            dpr.LOGGERS['main'].warning("NaN found in ev_df")
             ev_df = ev_df[ev_df['vehicle_x'].notna()]
 
         # Change times from seconds to date-time objects
@@ -763,10 +762,9 @@ class Data_Analysis:
                         # strip away excess rows.
                         if (ev_df['timestep_time'].iloc[0].date() !=
                                 ev_df['timestep_time'].iloc[-1].date()):
-                            print("Warning! ev_df consists of " +
-                                  "more than one date. Deleting excess rows. " +
+                            dpr.LOGGERS['main'].warning("ev_df consists of "
+                                  "more than one date. Deleting excess rows. "
                                   f"\nCheck {str(battery_csv.absolute())}")
-                                    # FIXME Use logging module.
                             # Remove all rows with date after that of first row
                             #   Get index of first row with new date
                             first_row_date = ev_df[
@@ -885,7 +883,7 @@ class Data_Analysis:
                     # only be one day defined per trip, therefore, errors are
                     # ignored in the GTFS case.
                     if self.input_data_fmt == dpr.DATA_FMTS['GPS']:
-                        logging.warning(e)
+                        dpr.LOGGERS['main'].warning(e)
                     elif self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
                         pass
                     else:
@@ -1136,7 +1134,7 @@ class Data_Analysis:
                 energy_period_tree['mean'] = statistics.mean(energy_period)
                 energy_period_tree['stdev'] = statistics.stdev(energy_period)
             except statistics.StatisticsError as e:
-                logging.warning(e)
+                dpr.LOGGERS['main'].warning(e)
 
         # Write stat_file
         stats_path = self.graphs_dir.joinpath('Outputs', 'stats_fleet.json')

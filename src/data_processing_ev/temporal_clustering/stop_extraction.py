@@ -269,9 +269,11 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
 
                 # But first do a bit of error checking.
                 while stop_id != next_stop['stop_id']:
-                    # TODO Use logging.warn() instead of print().
-                    dpr.auto_input("\n\nWarning: A stop in the sequence in "
-                        "stop_times.txt is missing from the gps trace. "
+                    print('\n\n')
+                    dpr.LOGGERS['main'].warning("A stop in the sequence in "
+                        "stop_times.txt is missing from the gps trace. ")
+
+                    dpr.auto_input(
                         "Press enter to skip this stop, and check if "
                         "the next stop in the sequence is in the gps trace.",
                         '', **kwargs)
@@ -395,8 +397,8 @@ def _build_stops_df(trace_dfs_generator: Iterator[Tuple[pd.DataFrame, str]],
             stops_df = _filter_stop_events(stops_df, dropping=True)
             # If all the stops were filtered out, throw warning, and continue.
             if stops_df.empty:
-                print(f"Warning: all stops filtered out for EV {trip_name}.")
-                    # TODO Change to logging.warn # noqa
+                dpr.LOGGERS['main'].warning(
+                    f"Warning: all stops filtered out for EV {trip_name}.")
                 continue
 
             # Add "ev_name" as a columns to the dataframe, and then set
@@ -452,8 +454,8 @@ def _build_stops_df(trace_dfs_generator: Iterator[Tuple[pd.DataFrame, str]],
 
             # If all the stops were filtered out, throw warning, and continue.
             if stops_df.empty:
-                print(f"Warning: all stops filtered out for EV {trip_name}.")
-                    # TODO Change to logging.warn # noqa
+                dpr.LOGGERS['main'].warning(
+                    f"Warning: all stops filtered out for EV {trip_name}.")
                 continue
 
             # Add "ev_name" as a columns to the dataframe, and then set "ev_name" &

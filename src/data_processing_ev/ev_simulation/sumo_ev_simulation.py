@@ -158,7 +158,11 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
         ev_name = sumocfg.stem
 
         print(f"# Simulating {ev_name}...")
-        subprocess.run(simulation_cmd)
+        result = subprocess.run(simulation_cmd, capture_output=True)
+
+        # Save the output:
+        dpr.LOGGERS['sumo_output'].info(result.stdout)
+        dpr.LOGGERS['sumo_output'].info(result.stderr)
 
         # Compress the simulation results.
         for file_stem in ('battery', 'fcd'):

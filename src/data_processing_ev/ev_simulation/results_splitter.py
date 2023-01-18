@@ -17,7 +17,6 @@ from itertools import repeat
 import data_processing_ev as dpr
 from tqdm import tqdm
 from time import sleep
-import logging
 import subprocess
 import sys
 import typing as typ
@@ -222,8 +221,8 @@ def _create_csvs(scenario_dir, **kwargs):
                                 '-o', battery_csv, battery_xml])
                 # Warn if battery_csv *still* doesn't exist
                 if not battery_csv.exists():
-                    logging.warning("Failed to create: \n\t" +
-                                    str(battery_csv))
+                    dpr.LOGGERS['main'].warning(
+                        "Failed to create: \n\t" + str(battery_csv))
                 else:
                     # If creating the battery_csv was succesful, compress
                     # the battery_xml file.
@@ -245,8 +244,8 @@ def _create_csvs(scenario_dir, **kwargs):
                                 '-o', fcd_csv, fcd_xml])
                 # Warn if fcd_csv *still* doesn't exist
                 if not fcd_csv.exists():
-                    logging.warning("Failed to create: \n\t" +
-                                    str(fcd_csv))
+                    dpr.LOGGERS['main'].warning(
+                        "Failed to create: \n\t" + str(fcd_csv))
                 else:
                     # If creating the fcd_csv was succesful, compress
                     # the fcd_xml file.

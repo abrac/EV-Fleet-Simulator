@@ -16,7 +16,6 @@ import os
 import sys
 import xml.etree.ElementTree as et
 import typing as t
-import logging
 from xml.dom import minidom
 from pathlib import Path
 import pandas as pd
@@ -37,8 +36,6 @@ else:
     sys.exit("please declare environment variable 'SUMO_HOME'")
 import sumolib  # noqa: Must be imported after adding tools to Path.
 # import duaIterate
-
-logger = logging.getLogger('__name__')
 
 
 def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Path,
@@ -113,7 +110,7 @@ def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Pat
                     closest_dist = dists_and_lanes_of_vclass[0][0]
                     closest_lane = dists_and_lanes_of_vclass[0][1]
                     if closest_dist > LANE_LOC_RADIUS_WARN:
-                        logger.warn(f"""
+                        dpr.LOGGERS['main'].warn(f"""
                             Closest lane to <{lon}, {lat}> exceeds the warning
                             threshold: {LANE_LOC_RADIUS_WARN}.")
                         """)
@@ -202,8 +199,9 @@ def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Pat
                     route.append(route_edge.getID())
                 last_found_edge = route_edges[-1]
             else:
-                logger.error(f"{vehicle_id}: {date}: Failed to find a route " +
-                             f"between edges {waypoint_pair[0]} and {waypoint_pair[1]}")
+                dpr.LOGGERS['main'].error(
+                    f"{vehicle_id}: {date}: Failed to find a route "
+                    f"between edges {waypoint_pair[0]} and {waypoint_pair[1]}")
 
         # TODO: Below, is an alternative method to the above. It is better,
         # since it handles better the case when a route is not found, since it
@@ -228,12 +226,13 @@ def generate_route_xml(net: sumolib.net.Net, df: pd.DataFrame, xml_template: Pat
         #             route.append(route_edge.getID())
         #         last_route_edge = route_waypoint
         #     else:
-        #         logger.error(f"{vehicle_id}: {date}: Failed to find a route " +
+        #         dpr.LOGGERS['main'].error(f"{vehicle_id}: {date}: Failed to find a route " +
         #                      f"between edges {last_route_edge} and {route_waypoint}")
 
         # if chained route is empty, log an error. And skip this date.
         if len(route) < 1:
-            logger.error(f"{vehicle_id} has no edges in its route on {date}!")
+            dpr.LOGGERS['main'].error(
+                f"{vehicle_id} has no edges in its route on {date}!")
             route = []
             for stop_node in stop_nodes:
                 route.append(stop_node.get('lane').split('_')[0])
@@ -262,7 +261,8 @@ def _do_route_building(input_file: Path, output_dir: Path, xml_template: Path,
     try:
         input_data = pd.read_csv(input_file)
     except pd.errors.EmptyDataError:
-        logger.error(f"No data in file: {input_file.name}. Skipping...")
+        dpr.LOGGERS['main'].error(
+            f"No data in file: {input_file.name}. Skipping...")
         return
 
     # Create a subpath in the output directory with the name of the current
@@ -273,7 +273,7 @@ def _do_route_building(input_file: Path, output_dir: Path, xml_template: Path,
     output_subdir.mkdir(parents=True, exist_ok=True)
     export_file = output_subdir.joinpath(f"{input_file.stem}.rou.xml")
     if skip_existing and export_file.exists():
-        logger.info(f"{export_file.stem}.rou.xml exists. Skipping...")
+        dpr.LOGGERS.info(f"{export_file.stem}.rou.xml exists. Skipping...")
         return
 
     tree = generate_route_xml(net, input_data, xml_template, input_file.stem,
@@ -372,8 +372,9 @@ def _do_route_building_old(trip_file: Path, output_dir: Path, skip_existing: boo
             for route_edge in route_edges[:-1]:
                 route.append(route_edge.getID())
         else:
-            logger.error(f"{ev_name}: {date}: Failed to find a route " +
-                         f"between edges {stop_pair[0]} and {stop_pair[1]}")
+            dpr.LOGGERS.error(
+                f"{ev_name}: {date}: Failed to find a route "
+                f"between edges {stop_pair[0]} and {stop_pair[1]}")
             # Assign the last edge of the stop_pair to `route edges`, *just in-
             # case* this is the last iteration of the loop. If `route_edges` is
             # not assigned, `route_edges[-1].getID()` (see a few lines below)
@@ -381,7 +382,7 @@ def _do_route_building_old(trip_file: Path, output_dir: Path, skip_existing: boo
             route_edges = [net.getEdge(stop_pair[-1])]
     # if chained route is empty, return. Don't continue saving the xml file.
     if len(route) < 1:
-        logger.error(f"{ev_name} has no edges in its route on {date}!")
+        dpr.LOGGERS['main'].error(f"{ev_name} has no edges in its route on {date}!")
         return
     route.append(route_edges[-1].getID())
     route_str = " ".join(str(edge) for edge in route)
@@ -465,7 +466,6 @@ def build_routes(scenario_dir: Path, **kwargs):
     Run the route building procedure. The "main" function of this script
     """
 
-    auto_run = kwargs.get('auto_run', False)
     input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
 
     cluster_dir = scenario_dir.joinpath('Spatial_Clusters')
@@ -518,28 +518,15 @@ def build_routes(scenario_dir: Path, **kwargs):
                        'n', **kwargs)
     skip_existing = True if _.lower() == 'y' else False
 
-    # Configure logging
-    loggingFile = scenario_dir.joinpath('Routes', 'routing.log')
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(name)s:  ' +
-                                  '%(message)s')
-    # ch = logging.StreamHandler()
-    # ch.setLevel(logging.DEBUG)
-    # ch.setFormatter(formatter)
-    fh = logging.FileHandler(loggingFile, 'a' if skip_existing else 'w')
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(formatter)
-    # logger.addHandler(ch)
-    logger.addHandler(fh)
-
-    logger.info("Loading sumo network...")
+    dpr.LOGGERS['main'].info("Loading sumo network...")
     try:
         network_file = [
             *scenario_dir.joinpath('_Inputs', 'Map').glob('*.net.xml')
         ][0]
     except IndexError:
-        logger.error("You have not created a SUMO network in: \n\t" +
-                     str(scenario_dir.joinpath('_Inputs', 'Map')))
+        dpr.LOGGERS['main'].error(
+            "You have not created a SUMO network in: \n\t" +
+            str(scenario_dir.joinpath('_Inputs', 'Map')))
         sys.exit(1)
 
     net = sumolib.net.readNet(network_file)
