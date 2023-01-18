@@ -171,7 +171,7 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
         ev_xml_file = dpr.compress_file(ev_xml_file)
 
 
-def _create_csvs(scenario_dir):
+def _create_csvs(scenario_dir, **kwargs):
     """Convert all battery.out.xml and fcd.out.xml files to csv files and
        save them.
 
@@ -188,18 +188,20 @@ def _create_csvs(scenario_dir):
     fcd_csvs = [*scenario_dir.joinpath('EV_Simulation',
                      'SUMO_Simulation_Outputs').glob('*/*/fcd.out.csv')]
     if len(battery_csvs) == 0 or len(fcd_csvs) == 0:
-        _ = input("Would you like to convert all " +
-                  "battery.out.xml and fcd.out.xml " +
-                  "files to csv? [y]/n \n\t")
+        _ = dpr.auto_input("Would you like to convert all " +
+            "battery.out.xml and fcd.out.xml " +
+            "files to csv? [y]/n \n\t", 'y', **kwargs)
         convert = (True if _.lower() != 'n' else False)
     else:
-        _ = input("Would you like to re-convert all " +
-                  "battery.out.xml and fcd.out.xml " +
-                  "files to csv? [y]/n \n\t")
+        _ = dpr.auto_input("Would you like to re-convert all " +
+            "battery.out.xml and fcd.out.xml " +
+            "files to csv? [y]/n \n\t", 'y', **kwargs)
         convert = (True if _.lower() != 'n' else False)
 
     if convert:
-        _ = input("Would you like to skip existing csv files? y/[n] \n\t")
+        _ = dpr.auto_input(
+            "Would you like to skip existing csv files? y/[n] \n\t", 'n',
+            **kwargs)
         skipping = (True if _.lower() == 'y' else False)
 
         print("\nConverting xml files to csv...")
@@ -257,7 +259,8 @@ def split_results(scenario_dir: Path, **kwargs):
     skip_splitting = False
     if any(scenario_dir.joinpath('EV_Simulation',
             'SUMO_Simulation_Outputs').iterdir()):
-        _ = input("Would you like to skip EVs that have already been (partially) split? y/[n]")
+        _ = dpr.auto_input("Would you like to skip EVs that have already been "
+                           "(partially) split? y/[n]", 'n', **kwargs)
         skip_splitting = False if _.lower() != 'y' else True
 
     # Load xml as etree iterparse.
@@ -275,4 +278,4 @@ def split_results(scenario_dir: Path, **kwargs):
     for arg_set in args:
         _split_ev_xml(*arg_set)
 
-    _create_csvs(scenario_dir)
+    _create_csvs(scenario_dir, **kwargs)

@@ -71,8 +71,8 @@ def run_pv_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
     input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
     # Load irradiance data
     # FIXME Don't hardcode this. Don't even ask the year.
-    _ = input("For which year is the solar irradiation data? "
-              "(Leave blank for 2017.) \n\t")
+    _ = dpr.auto_input("For which year is the solar irradiation data? "
+                       "(Leave blank for 2017.) \n\t", '2017', **kwargs)
     try:
         year = int(_)
     except ValueError:
@@ -97,8 +97,9 @@ def run_pv_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
     use_existing_pv_file = False
     # If so, ask if loading it.
     if pv_potentials_file.exists():
-        _ = input(f"pv_potentials.csv found at: \n\t {pv_potentials_file} \n" +
-                  "Use this file? [Y/n]")
+        _ = dpr.auto_input(
+            f"pv_potentials.csv found at: \n\t {pv_potentials_file}"
+            "\nUse this file? [y]/n  ", 'y', **kwargs)
         use_existing_pv_file = True if _.lower() != 'n' else False
 
     # If loading it, load it, else regenerate pv_potentials.
@@ -231,9 +232,10 @@ def run_pv_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
     # Get average daily pv potential over each month.
     date_index = pv_potentials_per_day.index.get_level_values('Date')
     ev_name_index = pv_potentials_per_day.index.get_level_values('EV_Name')
-    _ = input("""Would you like to obtain the monthly average by adding the
-                 values and dividing by dates on record, or by dividing by
-                 dates in month? [RECORD/month] \n\t""")
+    _ = dpr.auto_input(
+        "Would you like to obtain the monthly average by adding the "
+        "values and dividing by dates on record, or by dividing by "
+        "dates in month?  [record]/month  \n\t", 'record', **kwargs)
     divide_by_days_in_month = False if _.lower() != 'month' else True
     if divide_by_days_in_month:
         # Get the sum of the pv potentials for each month.
@@ -315,8 +317,9 @@ def run_pv_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
     use_existing_pv_file = False
     # If so, ask if loading it.
     if pv_generated_file.exists():
-        _ = input("daily_pv_generated.csv found at: \n\t " +
-                  f"{pv_generated_file} \n Use this file? [Y/n]")
+        _ = dpr.auto_input("daily_pv_generated.csv found at: \n\t "
+            f"{pv_generated_file} \n Use this file? [y]/n",
+            'y', **kwargs)
         use_existing_pv_file = True if _.lower() != 'n' else False
 
     # If loading it, load it, else regenerate pv_potentials.
@@ -553,7 +556,9 @@ def run_pv_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
                 'dirty__monthly_charging_potential_per_taxi.fig.pickle'),
             'wb'))
 
-    plt.show()
+    auto_run = kwargs.get('auto_run', False)
+    if not auto_run:
+        plt.show()
 
 
 if __name__ == "__main__":

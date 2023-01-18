@@ -405,7 +405,9 @@ def _cluster_ev(trace_df: pd.DataFrame, ev_name: str, scenario_dir: Path,
     output_dir.mkdir(parents=True, exist_ok=True)
     # for cluster_num, pdf, fig in _gen_stop_pdfs(trace_df,
     #                                             ev_name, **kwargs):
-    #     fig.show()
+    #     auto_run = kwargs.get('auto_run', False)
+    #     if not auto_run:
+    #         fig.show()
     #     output_file = output_dir.joinpath(f'{cluster_num}.svg')
     #     fig.savefig(output_file)
 

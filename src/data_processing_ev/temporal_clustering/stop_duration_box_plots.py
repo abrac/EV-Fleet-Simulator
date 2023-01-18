@@ -88,7 +88,9 @@ def plot_stop_duration_boxes(scenario_dir: Path, plot_blotches: bool = False,
         save_dir.joinpath('stop_duration_box_plots.csv')
     )
 
-    plt.show()
+    auto_run = kwargs.get('auto_run', False)
+    if not auto_run:
+        plt.show()
 
 
 if __name__ == "__main__":

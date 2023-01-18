@@ -135,12 +135,12 @@ def _gen_box_plots(scenario_dir: Path,
 
 def plot_ev_energy_boxes(scenario_dir: Path, ev_model: dpr.EV_MODELS, **kwargs):
 
-    _ = input("Would you like to plot the box-plots of the fleet's energy " +
-              "usage? [y]/n  ")
+    _ = dpr.auto_input("Would you like to plot the box-plots of the fleet's "
+                       "energy usage? [y]/n  ", 'y', **kwargs)
     if _.lower() == 'n':
         return
 
-    # _ = input("Would youl like to flatten the box-plots? y/[n]  ")
+    # _ = dpr.auto_input("Would youl like to flatten the box-plots? y/[n]  ", 'n', **kwargs)
     # flatten_mode = False if _.lower() != 'y' else True
 
     input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
@@ -172,4 +172,6 @@ def plot_ev_energy_boxes(scenario_dir: Path, ev_model: dpr.EV_MODELS, **kwargs):
         csv_dir = box_plots_subdir.joinpath("Energy_usage.csv")
         df.to_csv(csv_dir, index=False)
 
-    plt.show()
+    auto_run = kwargs.get('auto_run', False)
+    if not auto_run:
+        plt.show()

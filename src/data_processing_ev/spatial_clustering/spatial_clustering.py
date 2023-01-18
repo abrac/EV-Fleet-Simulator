@@ -33,6 +33,7 @@ import folium
 from typing import Optional
 from multiprocessing import Pool, cpu_count
 from itertools import repeat
+import data_processing_ev as dpr
 # Deprecated imports:
 # import hdbscan  # HDBSCAN clustering algorithm. (Hopefully better.)
 # from folium.plugins import Search
@@ -263,8 +264,6 @@ def cluster_scenario(scenario_dir: Path, skip: bool = False, **kwargs):
     # # FIXME: I've temporarily implemented this in the input-traces data pre-
     # # processing step. That's probably not the best way to do it though...
 
-    auto_run = kwargs.get('auto_run', False)
-
     trace_files = sorted(
         [*scenario_dir.joinpath('_Inputs', 'Traces',
                                 'Processed').glob('*.csv')]
@@ -284,11 +283,11 @@ def cluster_scenario(scenario_dir: Path, skip: bool = False, **kwargs):
         if saved_models_exist:
             print("Model labels already found at: \n\t" +
                   str(saved_model_dir.absolute()))
-            if not auto_run:
-                _ = input("Would you like to use these files (otherwise " +
-                          "program will regenerate models)? [y]/n")
-                regenerate_model = True if _.lower() == 'n' else False
-            else:
+            _ = dpr.auto_input("Would you like to use these files (otherwise "
+                               "program will regenerate models)? [y]/n", 'y',
+                                **kwargs)
+            regenerate_model = True if _.lower() == 'n' else False
+            if not regenerate_model:
                 print("Using existing model labels...")
 
         # TODO: Deprecate the below code. Combined traces need to be manually

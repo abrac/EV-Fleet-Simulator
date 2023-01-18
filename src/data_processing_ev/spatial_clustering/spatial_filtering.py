@@ -154,7 +154,6 @@ def filter_scenario(scenario_dir: Path, **kwargs):
 
     Export the resulting dataframe as a csv file.
     """
-    auto_run = kwargs.get('auto_run', False)
     # TODO Make the below inputs function arguments.
     # TODO Make option of discarding weekends a command-line argument.
     clustered_files = sorted([*scenario_dir.joinpath(
@@ -166,8 +165,7 @@ def filter_scenario(scenario_dir: Path, **kwargs):
     if any(output_path.glob('*/*.csv')):
         print(f"Warning: Files exist in {output_path}.\n\t" +
               "You may want to delete them!")
-        if not auto_run:
-            input("Press any key to continue...")
+        dpr.auto_input("Press any key to continue...", '', **kwargs)
     num_jobs = len(clustered_files)
 
     # IF DEBUGGING:

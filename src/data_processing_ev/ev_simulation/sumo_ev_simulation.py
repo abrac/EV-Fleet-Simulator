@@ -13,6 +13,7 @@ from time import sleep
 import subprocess
 import data_processing_ev as dpr
 
+
 # TODO This is deprecated
 def get_ev_depart_time(sumocfg_file: Path) -> int:
     """Return EV's depart time in seconds.
@@ -48,26 +49,24 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
     # TODO Remove kurcheveil battery model if another custom battery model is
     # selected.
 
-    auto_run = kwargs.get('auto_run', False)
     routes_dir = scenario_dir.joinpath('Routes', 'Routes')
     combined_route_files = sorted([*scenario_dir.joinpath(
         'Routes', 'Combined_Routes').glob('*.rou.xml')])
 
-    if not auto_run:
-        _ = input("Would you like to run each simulation in sumo-gui or sumo? " +
-                  "sumo-gui/[sumo] ")
-        gui = True if _.lower() == 'sumo-gui' else False
-    else:
-        gui = False
+    _ = dpr.auto_input(
+        "Would you like to run each simulation in sumo-gui or sumo? "
+        "sumo-gui/[sumo] ", 'sumo', **kwargs)
+    gui = True if _.lower() == 'sumo-gui' else False
 
     # Check if any sumocfgs have already been generated.
     generate_sumocfgs = True
     output_sumocfg_dir = scenario_dir.joinpath('EV_Simulation', 'Sumocfgs_Combined')
     if [*output_sumocfg_dir.glob('*.sumocfg')]:
-        _ = input("SUMO configuration files already found in \n\t" +
-                  str(output_sumocfg_dir.absolute()) +
-                  "\n\nWould you like to re-generate and overwrite the " +
-                  "existing configuration files? [y]/n ")
+        _ = dpr.auto_input(
+            "SUMO configuration files already found in \n\t" +
+            str(output_sumocfg_dir.absolute()) +
+            "\n\nWould you like to re-generate and overwrite the " +
+            "existing configuration files? [y]/n  ", 'y', **kwargs)
         generate_sumocfgs = True if _.lower() != 'n' else False
 
     if generate_sumocfgs:

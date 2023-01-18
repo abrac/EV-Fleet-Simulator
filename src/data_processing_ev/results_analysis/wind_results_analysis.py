@@ -62,12 +62,12 @@ def _load_windspeed_data(scenario_dir: Path, year: int) -> tp.Callable:
 
 
 def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
-                            figsize=(4, 3), **kwargs):
+                              figsize=(4, 3), **kwargs):
     input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
     # Load windspeed data
     # FIXME Don't hardcode this. Don't even ask the year.
-    _ = input("For which year is the wind speed data? "
-              "(Leave blank for 2017.) \n\t")
+    _ = dpr.auto_input("For which year is the wind speed data? "
+                       "(Leave blank for 2017.) \n\t", '2017', **kwargs)
     try:
         year = int(_)
     except ValueError:
@@ -92,8 +92,9 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
     use_existing_wind_file = False
     # If so, ask if loading it.
     if wind_potentials_file.exists():
-        _ = input(f"wind_potentials.csv found at: \n\t {wind_potentials_file} \n" +
-                  "Use this file? [Y/n]")
+        _ = dpr.auto_input(
+            f"wind_potentials.csv found at: \n\t {wind_potentials_file} \n" +
+            "Use this file? [y]/n  ", 'y', **kwargs)
         use_existing_wind_file = True if _.lower() != 'n' else False
 
     # If loading it, load it, else regenerate wind_potentials.
@@ -217,9 +218,10 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
     # Get average daily wind potential over each month.
     date_index = wind_potentials_per_day.index.get_level_values('Date')
     ev_name_index = wind_potentials_per_day.index.get_level_values('EV_Name')
-    _ = input("""Would you like to obtain the monthly average by adding the
-                 values and dividing by dates on record, or by dividing by
-                 dates in month? [RECORD/month] \n\t""")
+    _ = dpr.auto_input(
+        "Would you like to obtain the monthly average by adding the "
+        "values and dividing by dates on record, or by dividing by "
+        "dates in month? [record]/month  \n\t", 'record', **kwargs)
     divide_by_days_in_month = False if _.lower() != 'month' else True
     if divide_by_days_in_month:
         # Get the sum of the wind potentials for each month.
@@ -301,8 +303,9 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
     use_existing_wind_file = False
     # If so, ask if loading it.
     if wind_generated_file.exists():
-        _ = input("daily_wind_generated.csv found at: \n\t " +
-                  f"{wind_generated_file} \n Use this file? [Y/n]")
+        _ = dpr.auto_input("daily_wind_generated.csv found at: \n\t " +
+                           f"{wind_generated_file} \n Use this file? [y]/n  ",
+                           'y', **kwargs)
         use_existing_wind_file = True if _.lower() != 'n' else False
 
     # If loading it, load it, else regenerate wind_potentials.
@@ -360,7 +363,7 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
     plt.bar(daily_wind_generated_p_month.index + width / 2,
             daily_wind_generated_p_month['Avg Daily wind Generation'] / 3600,
             width=width)
-    plt.ylabel('Average energy in a day (kWh)') 
+    plt.ylabel('Average energy in a day (kWh)')
     plt.xlabel('Month of year')
     plt.legend(['Energy charged directly from wind turbine',
                 'Total wind energy generated'])
@@ -450,7 +453,7 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
     # with open(csv_dir.joinpath(f'box_wind_potentials.json'),
     #         'w') as f:
     #     json.dump(box_stats, f, cls=NumpyEncoder, indent=4)
-    plt.ylabel('Charging potential per day (kWh)', fontsize='small') 
+    plt.ylabel('Charging potential per day (kWh)', fontsize='small')
     plt.xlabel('Month of year')
     if plot_blotches:
         # Plot the stop_events which make up the box-plots.
@@ -486,7 +489,7 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
             daily_wind_generated_month in daily_wind_generated_all_months]}
     with open(csv_dir.joinpath('box_wind_generated.json'), 'w') as f:
         json.dump(box_stats, f, cls=NumpyEncoder, indent=4)
-    plt.ylabel('wind energy generated per day (kWh)', fontsize='small') 
+    plt.ylabel('wind energy generated per day (kWh)', fontsize='small')
     plt.xlabel('Month of year')
     if plot_blotches:
         # Plot the stop_events which make up the box-plots.
@@ -505,7 +508,7 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
         plt.bar(df.index + (i - len(ev_names) / 2 - 0.5) * width,
                 df['wind_Charge_Pot'] / 3600, width=width)
     plt.legend(ev_names)
-    plt.ylabel('Average energy in a day (kWh)') 
+    plt.ylabel('Average energy in a day (kWh)')
     plt.xlabel('Month of year')
     plt.tight_layout()
 
@@ -539,7 +542,9 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
                 'dirty__monthly_charging_potential_per_taxi.fig.pickle'),
             'wb'))
 
-    plt.show()
+    auto_run = kwargs.get('auto_run', False)
+    if not auto_run:
+        plt.show()
 
 
 if __name__ == "__main__":

@@ -514,12 +514,9 @@ def build_routes(scenario_dir: Path, **kwargs):
         else: raise ValueError(dpr.DATA_FMT_ERROR_MSG)
 
     # Ask user if s/he wants to skip existing rou.xml files
-    # TODO Ask this in main.py and only if `configuring` = True
-    if not auto_run:
-        _ = input("Would you like to skip existing rou.xml files? y/[n]")
-        skip_existing = True if _.lower() == 'y' else False
-    else:
-        skip_existing = False
+    _ = dpr.auto_input("Would you like to skip existing rou.xml files? y/[n]",
+                       'n', **kwargs)
+    skip_existing = True if _.lower() == 'y' else False
 
     # Configure logging
     loggingFile = scenario_dir.joinpath('Routes', 'routing.log')
@@ -569,12 +566,9 @@ def build_routes(scenario_dir: Path, **kwargs):
     print("Done generating route files.")
 
     # # Ask user if s/he wants to skip existing rou.xml files
-    # # TODO Ask this in main.py and only if `configuring` = True
-    # if not auto_run:
-    #     _ = input("Would you like to skip existing rou.xml files? y/[n]")
-    #     skip_existing = True if _.lower() == 'y' else False
-    # else:
-    #     skip_existing = False
+    # _ = dpr.auto_input("Would you like to skip existing rou.xml files? y/[n]",
+    #                    'n', **kwargs)
+    # skip_existing = True if _.lower() == 'y' else False
 
     # print("Generating route files...")
     # # Do route generation
@@ -607,37 +601,29 @@ def build_routes(scenario_dir: Path, **kwargs):
     #   TODO Ask this in main.py and only if `configuring` = True
     COMBINING_METHODS = {'per_ev': 1, 'all_evs': 2, 'skip': 3}
 
-    if not auto_run:
-        print("How would you like to combine the routes for this simulation " +
-              "scenario?\n")
-        if input_data_fmt == dpr.DATA_FMTS['GPS']:
-            print("""
-[1]. Create one SUMO simulation which combines the routes for each EV.
- 2 . Create one SUMO for which combines *all* the routes across *all* EVs.
- 3 . Skip combining the routes entirely.\n""")
-        elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
-            print("""
- 1 . Create one SUMO simulation which combines the routes for each EV.
-[2]. Create one SUMO for which combines *all* the routes across *all* EVs.
- 3 . Skip combining the routes entirely.\n""")
-        else:
-            raise ValueError(dpr.DATA_FMT_ERROR_MSG)
+    print("How would you like to combine the routes for this simulation " +
+          "scenario?\n")
+    if input_data_fmt == dpr.DATA_FMTS['GPS']:
+        print(
+            "[1]. Create one SUMO simulation which combines the routes for each EV.\n"
+            " 2 . Create one SUMO for which combines *all* the routes across *all* EVs.\n"
+            " 3 . Skip combining the routes entirely.\n")
+    elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
+        print(
+            " 1 . Create one SUMO simulation which combines the routes for each EV.\n"
+            "[2]. Create one SUMO for which combines *all* the routes across *all* EVs.\n"
+            " 3 . Skip combining the routes entirely.\n")
+    else:
+        raise ValueError(dpr.DATA_FMT_ERROR_MSG)
 
-        _ = input("Enter a number:  ")
+    _ = dpr.auto_input("Enter a number:  ", '', **kwargs)
 
-        if _ == '1':
-            combining_method = COMBINING_METHODS['per_ev']
-        elif _ == '2':
-            combining_method = COMBINING_METHODS['all_evs']
-        elif _ == '3':
-            combining_method = COMBINING_METHODS['skip']
-        else:
-            if input_data_fmt == dpr.DATA_FMTS['GPS']:
-                combining_method = COMBINING_METHODS['per_ev']
-            elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
-                combining_method = COMBINING_METHODS['all_evs']
-            else:
-                raise ValueError(dpr.DATA_FMT_ERROR_MSG)
+    if _ == '1':
+        combining_method = COMBINING_METHODS['per_ev']
+    elif _ == '2':
+        combining_method = COMBINING_METHODS['all_evs']
+    elif _ == '3':
+        combining_method = COMBINING_METHODS['skip']
     else:
         if input_data_fmt == dpr.DATA_FMTS['GPS']:
             combining_method = COMBINING_METHODS['per_ev']

@@ -270,10 +270,11 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
                 # But first do a bit of error checking.
                 while stop_id != next_stop['stop_id']:
                     # TODO Use logging.warn() instead of print().
-                    input("\n\nWarning: A stop in the sequence in " +
-                          "stop_times.txt is missing from the gps trace. " +
-                          "Press enter to skip this stop, and check the if "
-                          "the next stop in the sequence is in the gps trace.")
+                    dpr.auto_input("\n\nWarning: A stop in the sequence in "
+                        "stop_times.txt is missing from the gps trace. "
+                        "Press enter to skip this stop, and check if "
+                        "the next stop in the sequence is in the gps trace.",
+                        '', **kwargs)
                     try:
                         _, next_stop = next(stops)
                     # If there are no more stop pairs:
@@ -592,7 +593,8 @@ def extract_stops(scenario_dir: Path, **kwargs):
 
     # Calculate the stop arrival-times and the stop-durations for each EV:
 
-    _ = input("Generate stop-arrivals and -durations? [y]/n ")
+    _ = dpr.auto_input("Generate stop-arrivals and -durations? [y]/n  ",
+                       'y', **kwargs)
     if _.lower() != 'n':
 
         trace_dfs_generator = _gen_trace_dfs(scenario_dir)
@@ -606,8 +608,9 @@ def extract_stops(scenario_dir: Path, **kwargs):
 
     # Create stop labels for each time-stamp:
 
-    _ = input("Generate stop-labels (a label which specifies whether the " +
-              "EV was stopped or not at a given timestamp)? [y]/n ")
+    _ = dpr.auto_input("Generate stop-labels (a label which specifies whether "
+                       "the EV was stopped or not at a given timestamp)? "
+                       "[y]/n  ", 'y', **kwargs)
     if _.lower() != 'n':
 
         trace_dfs_generator = _gen_trace_dfs(scenario_dir)

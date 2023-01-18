@@ -434,7 +434,7 @@ class Data_Analysis:
 
         return plt_fig
 
-    def make_plots(self) -> None:
+    def make_plots(self, **kwargs) -> None:
         """
         Asks a few questions and generates plots accordingly. The plots
         generated are for each sumo simulation.
@@ -446,7 +446,8 @@ class Data_Analysis:
         if self.input_data_fmt == dpr.DATA_FMTS['GPS']:
 
             print(f"\nAbout to plot {len(self.__battery_csv_paths)} results...")
-            _ = input("\nWould you like to continue? y/[n]\n\t")
+            _ = dpr.auto_input("\nWould you like to continue? y/[n]\n\t",
+                               'n', **kwargs)
             if _.lower() != 'y':
                 return
             print("\nGenerating plots...")
@@ -478,12 +479,14 @@ class Data_Analysis:
         elif self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
 
             print(f"\nAbout to process {len(self.__battery_csv_paths)} results...")
-            _ = input("\nWould you like to continue? [y]/n\n\t")
+            _ = dpr.auto_input("\nWould you like to continue? [y]/n\n\t",
+                               'y', **kwargs)
             if _.lower() == 'n':
                 return
 
-            _ = input("\n Would you like to plot the results? If not, I will " +
-                      "just compute the values/statistics. y/[n]")
+            _ = dpr.auto_input("\n Would you like to plot the results? "
+                "If not, I will just compute the values/statistics. y/[n]",
+                'n', **kwargs)
             plotting = False if _.lower() != 'y' else True
             print(f"\nGenerating statistics{' and plots' if plotting else ''}...")
 
@@ -686,10 +689,11 @@ class Data_Analysis:
         else:
             raise ValueError(dpr.DATA_FMT_ERROR_MSG)
 
-        input("\nPress Enter to continue program execution...")
+        dpr.auto_input("\nPress Enter to continue program execution...",
+                       '', **kwargs)
         plt.close('all')
 
-    def save_ev_stats(self) -> None:
+    def save_ev_stats(self, **kwargs) -> None:
         """ This function computes statistics for each EV. It generates mean
         plots and statistics across the dates that the EV operated.
 
@@ -704,12 +708,14 @@ class Data_Analysis:
         07:20--07:30, 07:40--07:50, and 08:00--08:10.  TODO: Check if GTFS
         specifies that a bus should leave at 8 am in a case like this.) """
 
-        _ = input("Would you like to compute statistics for each EV? [y]/n  ")
+        _ = dpr.auto_input("Would you like to compute statistics for each EV? "
+                           "[y]/n  ", 'y', **kwargs)
         if _.lower() == 'n':
             return
 
         print("\nGenerating individual ev stats...")
-        save_plots = input("Would you like to save the plots? [y]/n \n\t")
+        save_plots = dpr.auto_input("Would you like to save the plots? "
+                                    "[y]/n \n\t", 'y', **kwargs)
         save_plots = False if save_plots.lower() == 'n' else True
 
         for vehicle_dir in tqdm(self.__indiv_vehicle_dirs):
@@ -976,13 +982,14 @@ class Data_Analysis:
             del ev_df_mean
             del ev_day_df
 
-        input("Press Enter to continue program execution...")
+        dpr.auto_input("Press Enter to continue program execution...",
+                       '', **kwargs)
 
     # def __gen_ev_box_plots(self) -> plt.Figure:
         # Read statistics from json files
         #
 
-    def save_fleet_stats(self) -> None:
+    def save_fleet_stats(self, **kwargs) -> None:
         """
         This function computes statistics for the fleet. It generates mean
         plots and statistics across the EVs of the fleet.
@@ -994,12 +1001,14 @@ class Data_Analysis:
         # FIXME Make this function use
         # sub-functions of `save_ev_stats`
 
-        _ = input("Would you like to compute statistics for the fleet? [y]/n  ")
+        _ = dpr.auto_input("Would you like to compute statistics for the "
+                           "fleet? [y]/n  ", 'y', **kwargs)
         if _.lower() == 'n':
             return
 
         print("\nGenerating fleet stats...")
-        save_plots = input("Would you like to save the plots? [y]/n \n\t")
+        save_plots = dpr.auto_input("Would you like to save the plots? "
+                                    "[y]/n \n\t", 'y', **kwargs)
         save_plots = False if save_plots.lower() == 'n' else True
 
         def gen_ev_dfs_of_fleet() \
@@ -1145,8 +1154,9 @@ class Data_Analysis:
         use_existing_fleet_file = False
         # If so, ask if loading it.
         if fleet_mean_file.exists():
-            _ = input(f"{fleet_mean_file.name} found at: \n\t {fleet_mean_file} \n" +
-                      "Use this file? [Y]/n  ")
+            _ = dpr.auto_input(
+                f"{fleet_mean_file.name} found at: \n\t {fleet_mean_file} \n" +
+                "Use this file? [y]/n  ", 'y', **kwargs)
             use_existing_fleet_file = True if _.lower() != 'n' else False
 
         def _reformat_ev_dfs(ev_dfs: typ.List[pd.DataFrame]
@@ -1213,6 +1223,8 @@ class Data_Analysis:
         del ev_names_and_dfs
 
         if self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
+            # FIXME TODO Make this an auto_input, by reading the number of
+            # vehicles from the GTFS data.
             num_vehicles = int(input("How many vehicles are in the study? " +
                                      "(Enter an integer)  "))
             # Calculate the total number of trip instances. Multiply ev_df_mean
@@ -1249,8 +1261,8 @@ class Data_Analysis:
                         total_trip_instances += num_trips
                 else:
                     total_trip_instances += 1
-            input(f"Total trip instances: {total_trip_instances}.\n" +
-                  "Press any key to continue...")
+            dpr.auto_input(f"Total trip instances: {total_trip_instances}.\n" +
+                  "Press any key to continue...", '', **kwargs)
 
         # Create a summary mean plot of the fleet
         plt_figs = {}
@@ -1325,9 +1337,11 @@ class Data_Analysis:
                 fig_file = graphsdir.joinpath(key + '.fig.pickle')
                 pickle.dump(plt_fig, open(fig_file, 'wb'))
 
-        plt.show()
-        input("Press Enter to close plots and " +
-              "continue program execution...")
+        auto_run = kwargs.get('auto_run', False)
+        if not auto_run:
+            plt.show()
+        dpr.auto_input("Press Enter to close plots and "
+                   "continue program execution...", '', **kwargs)
         plt.close('all')
 
 
@@ -1336,9 +1350,9 @@ def run_ev_results_analysis(scenario_dir: Path,
         ev_model: dpr.EV_MODELS, **kwargs):
 
     data_analysis = Data_Analysis(scenario_dir, ev_model, **kwargs)
-    data_analysis.make_plots()
-    data_analysis.save_ev_stats()
-    data_analysis.save_fleet_stats()
+    data_analysis.make_plots(**kwargs)
+    data_analysis.save_ev_stats(**kwargs)
+    data_analysis.save_fleet_stats(**kwargs)
 
 
 if __name__ == "__main__":

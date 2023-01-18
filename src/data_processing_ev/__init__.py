@@ -116,7 +116,16 @@ MODULES = """
 """
 
 
-def decompress_file(file: Path) -> Path:
+def auto_input(prompt: str, default: str, **kwargs):
+    auto_run = kwargs.get('auto_run', False)
+    if auto_run:
+        print(prompt, default, '\n')
+        return default
+    else:
+        return input(prompt)
+
+
+def decompress_file(file: Path, **kwargs) -> Path:
     try:
         gz_index = file.name.find('.gz')
         # if the file ends with gz
@@ -130,8 +139,10 @@ def decompress_file(file: Path) -> Path:
         # If the file has already been decompressed...
         if decompressed_file.exists():
             if compressed_file.exists():
-                _ = input("Both the compressed and the decompressed " +
-                          "versions of the file exist. May I delete one? [y]/n")
+                _ = auto_input(
+                    "Both the compressed and the decompressed " +
+                    "versions of the file exist. May I delete one? [y]/n  ",
+                    'y', **kwargs)
                 delete = True if _.lower() != 'n' else False
                 if delete:
                     compressed_file.unlink()
@@ -159,12 +170,12 @@ def decompress_file(file: Path) -> Path:
               "combined XML files after it has been split!")
         global PIGZ_WARNING_ACKNOWLEDGED
         if not PIGZ_WARNING_ACKNOWLEDGED:
-            input("For now, press enter to ignore.")
+            auto_input("For now, press enter to ignore.", '', **kwargs)
             PIGZ_WARNING_ACKNOWLEDGED = True
         return None
 
 
-def compress_file(file: Path) -> Path:
+def compress_file(file: Path, **kwargs) -> Path:
     try:
         gz_index = file.name.find('.gz')
         # if the file ends with gz
@@ -177,8 +188,10 @@ def compress_file(file: Path) -> Path:
 
         if compressed_file.exists():
             if decompressed_file.exists():
-                _ = input("Both the compressed and the decompressed " +
-                          "versions of the file exist. May I delete one? [y]/n")
+                _ = auto_input(
+                    "Both the compressed and the decompressed " +
+                    "versions of the file exist. May I delete one? [y]/n  ",
+                    'y', **kwargs)
                 delete = True if _.lower() != 'n' else False
                 if delete:
                     decompressed_file.unlink()
@@ -207,7 +220,7 @@ def compress_file(file: Path) -> Path:
               "combined XML files after it has been split!")
         global PIGZ_WARNING_ACKNOWLEDGED
         if not PIGZ_WARNING_ACKNOWLEDGED:
-            input("For now, press enter to ignore.")
+            auto_input("For now, press enter to ignore.", '', **kwargs)
             PIGZ_WARNING_ACKNOWLEDGED = True
         return None
 
@@ -231,10 +244,8 @@ def get_input_data_fmt(scenario_dir: Path):
     return data_fmt
 
 
-def _run(scenario_dir: Path, steps: Iterable[SupportsFloat],
-        configuring_steps: bool = False, **kwargs):
+def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
     """Run specified steps of data_analysis."""
-    auto_run = kwargs.get('auto_run', False)
 
     kwargs['input_data_fmt'] = get_input_data_fmt(scenario_dir)
     # TODO Other important kwargs: EV_Model
@@ -242,39 +253,17 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat],
     if 0 in steps:
         initialise_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.1 in steps:
-        if configuring_steps:
-            _ = input("Plot gps points? [y]/n")
-            mapping_points = True if _.lower() != 'n' else False
-            _ = input("Plot lines connecting the points? y/[n]")
-            mapping_lines = False if _.lower() != 'y' else True
-            _ = input("Plot heatmap clustering the points? [y]/n")
-            mapping_heatmap = True if _.lower() != 'n' else False
-            # Get map features (taz boundaries, etc.)
-            geojson_filelist = scenario_dir.joinpath('0_Inputs',
-                                                     'Map').glob('*.geojson')
-            if geojson_filelist != []:
-                _ = input("Add map features from geojson? [y]/n")
-                mapping_geojson = True if _.lower() != 'n' else False
-            else:
-                mapping_geojson = False
-
-            data_visualisation.map_scenario(
-                scenario_dir, mapping_points, mapping_lines, mapping_heatmap,
-                mapping_geojson, saving=True, **kwargs)
-        else:
-            data_visualisation.map_scenario(scenario_dir, **kwargs)
+        data_visualisation.map_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.2 in steps:
         data_visualisation.animate_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.3 in steps:
         data_visualisation.get_map_size(scenario_dir, **kwargs)
     if 2 in steps or 2.1 in steps:
         """Spatial clustering"""
-        if not auto_run:
-            _ = input("Would you like to label *all* datapoints as part of " +
-                      "*one* big cluster? [y]/n ")
-            skip = False if _.lower() == 'n' else True
-        else:
-            skip = True
+        _ = auto_input(
+            "Would you like to label *all* datapoints as part of " +
+            "*one* big cluster? [y]/n  ", 'y', **kwargs)
+        skip = False if _.lower() == 'n' else True
         spatial_clustering.cluster_scenario(scenario_dir, skip=skip,
                                                 **kwargs)
     if 2 in steps or 2.2 in steps:
@@ -321,7 +310,7 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat],
     if 5 in steps or 5.3 in steps:
         integration_mthd = None
         while integration_mthd is None:
-            _ = input("Would you like to do center, forward or backward integration? [center]/forward/backward  ")
+            _ = auto_input("Would you like to do center, forward or backward integration? [center]/forward/backward  ", 'center', **kwargs)
             if _.lower() == 'center' or _ == '':
                 integration_mthd = hull_ev_simulation.INTEGRATION_MTHD['ctr']
             elif _.lower() == 'forward':
@@ -334,18 +323,12 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat],
     if 6 in steps or 6.1 in steps:
         """Generate Plots and Statistics from EV Simulation Results"""
 
-        # TODO TODO: Allow the user to choose their preferred model earlier, on in the
-        # process. Write the chosen model to a metadata file. Allow the model to be
-        # chosen in the configs.
-        _ = input("Which EV model's results would you like to use in the " +
-                  "analysis? ([hull]/sumo)  ")
-        ev_model = EV_MODELS['Hull'] if _.lower() != 'SUMO' else EV_MODELS['SUMO']
-
-        ev_results_analysis.run_ev_results_analysis(scenario_dir, ev_model, **kwargs)
+        ev_results_analysis.run_ev_results_analysis(
+            scenario_dir, kwargs.get('ev_model'), **kwargs)
         # TODO: GTFS implementation of ev_box_plots should consider
         # frequencies.txt.
         ev_box_plots.plot_ev_energy_boxes(
-            scenario_dir, ev_model, **kwargs)
+            scenario_dir, kwargs.get('ev_model'), **kwargs)
     if 6 in steps or 6.2 in steps:
         """Generate Plots and Statistics from PV Simulation Results"""
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
@@ -378,9 +361,19 @@ def main():
         help="The steps to be run on the scenario as a comma-seperated list " +
              " of floats without spaces (e.g. '1,2.2,4').")
     parser.add_argument(
-        '--debug', action='store_true')
+        '--debug', action='store_true',
+        help="For developers: Starts the program with a breakpoint to help "
+        "debugging.")
     parser.add_argument(
-        '--incl-weekends', action='store_true')
+        '--incl-weekends', action='store_true', help="Normally ev-fleet-sim "
+        "discards weekend trips in the analysis (in step 2.2: Date filtering "
+        "and seperation). Use this flag, to include weekend trips.")
+    parser.add_argument(
+        '--auto-run', action='store_true', help="Skip all prompts, "
+        "automatically selecting the default values.")
+    parser.add_argument(
+        '--ev-model', metavar='str', default=None, help="Chooses an EV "
+        "model implementation. Either one of \"sumo\" or \"hull\".")
     args = parser.parse_args()
 
     if args.debug:
@@ -414,27 +407,35 @@ def main():
             continue
         break
 
-    # TODO: Implement auto_run properly!!!
-    # TODO And delete the conf parameter!!!
+    if args.auto_run:
+        auto_run = True
+    else:
+        _ = input("Would you like to skip all prompts and use only default " +
+                  "values? y/[n] ")
+        auto_run = True if _.lower() == 'y' else False
 
-    # Hard-coding these values until they are properly implemented!
+    if args.ev_model:
+        # if cmd option specified:
+        #   choose that model.
+        #   display the prompt, and show the selected model as the input.
+        ev_model_str = args.ev_model
+        print("Which EV model would you like to use in the "
+              "analysis? (hull/[sumo])  ", ev_model_str, '\n')
+    else:
+        # TODO Write the chosen model to a metadata file.
+        # if auto_run:
+        #     choose sumo
+        #     display the prompt and show sumo as input.
+        # else:
+        #     display the promtpt and let user type input.
+        ev_model_str = auto_input("Which EV model would you like to "
+            "use in the analysis? (hull/[sumo])  ", 'sumo',
+            kwargs={auto_run: auto_run})
+    ev_model = EV_MODELS['SUMO'] if ev_model_str.lower() != 'hull' else \
+               EV_MODELS['Hull']
 
-    # _ = input("Would you like to skip all prompts and use only default " +
-    #           "values? y/[n] ")
-    # auto_run = True if _.lower() == 'y' else False
-
-    # if auto_run:
-    #     conf = False
-    # else:
-    #     _ = input("Would you like to configure the steps of the " +
-    #               "analysis? y/[n] ")
-    #     conf = True if _.lower() == 'y' else False
-
-    auto_run = False
-    conf = False
-
-    kwargs = {'auto_run': auto_run, 'input_data_fmt': None, 'incl_weekends': args.incl_weekends}
+    kwargs = {'auto_run': auto_run, 'input_data_fmt': None,
+              'incl_weekends': args.incl_weekends, 'ev_model': ev_model}
 
     # Run all the steps
-    # run(scenario_dir, steps=range(6), configuring_steps=conf)
-    _run(scenario_dir, steps=steps, configuring_steps=conf, **kwargs)
+    _run(scenario_dir, steps=steps, **kwargs)

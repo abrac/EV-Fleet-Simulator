@@ -2,18 +2,18 @@
      view this file. Just search the web for a nice markdown editor (like
      Ghostwriter). -->
 
-- [ ] Merge [fcv-fleet-sim](https://gitlab.com/eputs/fcv-fleet-sim) FCV simulation model.
 - [ ] Provide version number in each results output, as well as a copy of the configurations.
+- [ ] Make the Hull simulation multithreaded!
+- [ ] Make the Hull model read the vType configuration!
+- [ ] Make the Hull and SUMO models modular, so that the user can choose which one to run. Currently, both are run.
+- [ ] Merge [fcv-fleet-sim](https://gitlab.com/eputs/fcv-fleet-sim) FCV simulation model.
 - [ ] Make `^C` cancel more elegantly. Currently it throws useless debugging info.
 - [ ] Improve SAM Simulation documentation!
 - [ ] Save SUMO stdout for debugging.
 - [ ] Create a sub-module which does battery-sizing estimates.
-- [ ] Automatically run steps with default options.
-- [ ] Automatically run steps with a options given in a config file.
 - [ ] Add stop-location functionality.
-- [ ] Make the Hull simulation multithreaded!
-- [ ] Make the Hull model read the vType configuration!
-- [ ] Make the Hull and SUMO models modular, so that the user can choose which one to run. Currently, both are run.
+- [o] Automatically run steps with a options given in a config file. [Cancelled: There are not many options to be configured. Those options can be added as command line flags.]
+- [x] Automatically run steps with default options.
 - [x] ~~Seperate EV and BEV simulations?~~
 - [x] Merge Chris Hull's BEV/EV simulation model.
 - [x] Add MacOS instructions
