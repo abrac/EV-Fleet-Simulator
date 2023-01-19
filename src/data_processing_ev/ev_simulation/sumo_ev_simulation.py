@@ -35,7 +35,7 @@ def get_ev_depart_time(sumocfg_file: Path) -> int:
 
 
 def _seperate_battery_xml(scenario_dir: Path):
-    xml_file = scenario_dir.joinpath('EV_Simulation', 'SUMO_Simulation_Outputs',
+    xml_file = scenario_dir.joinpath('EV_Simulation', 'EV_Simulation_Outputs',
                                      'battery.out.xml')
     xml_tree = et.parse(xml_file)
     # For each ev_name, date in route_files:
@@ -49,9 +49,9 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
     # TODO Remove kurcheveil battery model if another custom battery model is
     # selected.
 
-    routes_dir = scenario_dir.joinpath('Routes', 'Routes')
+    routes_dir = scenario_dir.joinpath('Mobility_Simulation', 'Routes')
     combined_route_files = sorted([*scenario_dir.joinpath(
-        'Routes', 'Combined_Routes').glob('*.rou.xml')])
+        'Mobility_Simulation', 'Combined_Routes').glob('*.rou.xml')])
 
     _ = dpr.auto_input(
         "Would you like to run each simulation in sumo-gui or sumo? "
@@ -74,7 +74,7 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
             ev_name = route_file.stem.split('.')[0]
             output_sumocfg_file = output_sumocfg_dir.joinpath(f'{ev_name}.sumocfg')
             simulation_output_dir = scenario_dir.joinpath(
-                'EV_Simulation', 'SUMO_Simulation_Outputs_Combined', ev_name)
+                'EV_Simulation', 'EV_Simulation_Outputs_Combined', ev_name)
             output_sumocfg_dir.mkdir(parents=True, exist_ok=True)
             simulation_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -167,7 +167,7 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
         # Compress the simulation results.
         for file_stem in ('battery', 'fcd'):
             xml_file = scenario_dir.joinpath(
-                'EV_Simulation', 'SUMO_Simulation_Outputs_Combined',
+                'EV_Simulation', 'EV_Simulation_Outputs_Combined',
                 ev_name, f'{file_stem}.out.xml')
             dpr.compress_file(xml_file)
 
@@ -175,9 +175,3 @@ def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
 
     # Compressing simulation results
     print("Compressing simulation results.")
-
-
-
-    # Seperating combined battery.out.xml file into serpate files, organised
-    # by ev_name and date...
-    # print("Seperating combined battery.out.xml file")

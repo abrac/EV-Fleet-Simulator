@@ -471,7 +471,7 @@ def build_routes(scenario_dir: Path, **kwargs):
     cluster_dir = scenario_dir.joinpath('Spatial_Clusters')
     input_list = sorted(
         [*cluster_dir.joinpath("Filtered_Traces").glob("*/*.csv")])
-    output_dir = scenario_dir.joinpath("Routes", "Routes")
+    output_dir = scenario_dir.joinpath("Mobility_Simulation", "Routes")
     xml_template = scenario_dir.joinpath('_Inputs', 'Configs',
                                          'ev_template.xml')
 
@@ -560,7 +560,7 @@ def build_routes(scenario_dir: Path, **kwargs):
     # print("Generating route files...")
     # # Do route generation
     # rou_files = [*output_dir.glob('*/*.rou.xml')]
-    # output_dir = scenario_dir.joinpath("Routes", "Routes")
+    # output_dir = scenario_dir.joinpath("Mobility_Simulation", "Routes")
 
     # # OLD MULTITHREADED WAY:
     # # ----------------------
@@ -625,10 +625,10 @@ def build_routes(scenario_dir: Path, **kwargs):
         print("Combining routes into one file per EV.")
         # Combine all routes into one file per EV!
         ev_dirs = []
-        for child in [*scenario_dir.joinpath("Routes", "Routes").glob('*/')]:
+        for child in [*scenario_dir.joinpath("Mobility_Simulation", "Routes").glob('*/')]:
             if child.is_dir():
                 ev_dirs.append(child)
-        output_dir = scenario_dir.joinpath("Routes", "Combined_Routes")
+        output_dir = scenario_dir.joinpath("Mobility_Simulation", "Combined_Routes")
         output_dir.mkdir(parents=True, exist_ok=True)
         for ev_dir in tqdm(ev_dirs):
             route_files = [*ev_dir.glob('*.rou.xml')]
@@ -672,9 +672,9 @@ def build_routes(scenario_dir: Path, **kwargs):
     elif combining_method == COMBINING_METHODS['all_evs']:
         print("Combining routes into one for all EVs.")
         # Combine all routes into one file for all EVs
-        route_files = [*scenario_dir.joinpath("Routes",
+        route_files = [*scenario_dir.joinpath("Mobility_Simulation",
                                               "Routes").glob('*/*.rou.xml')]
-        output_dir = scenario_dir.joinpath("Routes", "Combined_Routes")
+        output_dir = scenario_dir.joinpath("Mobility_Simulation", "Combined_Routes")
         output_dir.mkdir(parents=True, exist_ok=True)
 
         route_files.sort()

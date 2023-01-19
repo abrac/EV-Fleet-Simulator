@@ -16,9 +16,10 @@ from .temporal_clustering import temporal_clustering
 from .temporal_clustering import stop_extraction
 from .temporal_clustering import stop_duration_box_plots
 from .routing import routing
+from .routing import fcd_conversion
 from .ev_simulation import sumo_ev_simulation
-from .ev_simulation import hull_ev_simulation
 from .ev_simulation import results_splitter
+from .ev_simulation import hull_ev_simulation
 from .results_analysis import ev_results_analysis
 from .results_analysis import ev_box_plots
 from .results_analysis import pv_results_analysis
@@ -80,19 +81,16 @@ SCENARIO_DIR_STRUCTURE = {
         'Graphs': None,
         'Stop_Labels': None
     },
-    'Routes': {
+    'Mobility_Simulation': {
         'Routes': None,
-        'Trips': None
+        'Trips': None,
+        'FCD_Data': None
     },
     'EV_Simulation': {
         'Sumocfgs': None,
-        'SUMO_Simulation_Outputs': None,
-        'Hull_Simulation_Outputs': None,
-            # Simulation outputs from our custom simulation model, developed by
-            # Christopher Hull. [TODO Cite.]
-            # TODO: Only allow one to be selected!
+        'EV_Simulation_Outputs': None,
     },
-    'SAM_Simulation': {
+    'REG_Simulation': {
         'Results': None,
         'SAM_Scenario_File': None
     },
@@ -100,25 +98,26 @@ SCENARIO_DIR_STRUCTURE = {
     }
 }
 
+# TODO Convert MODULES to a dictionary. That way, if the steps' numbers change,
+# it won't affect the rest of the code!
 MODULES = """
 0. scenario_initialisation
 1. data_visualisation
-    1. mapping
-    2. route_animation
-    3. map_size_calculation
+    1.1. mapping
+    1.2. route_animation
+    1.3. map_size_calculation
 2. spatial_analysis
-    1. spatial_clustering
-    2. date_filtering_and_separation
-    3. save_dates_remaining
+    2.1. spatial_clustering
+    2.2. date_filtering_and_separation
+    2.3. save_dates_remaining
 3. temporal_analysis
-    1. stop_extraction
-    2. stop_duration_box_plots
-    3. temporal_clustering
-4. routing
-5. ev_simulation
-    5.1. sumo_ev_simulation
-    5.2. result_splitting
-    5.3. hull_ev_simulation
+    3.1. stop_extraction
+    3.2. stop_duration_box_plots
+    3.3. temporal_clustering
+4.x. mobility_simulation
+    4.1. routing  **OR** 4.2 fcd_conversion
+5.x. ev_simulation
+    5.1. sumo_ev_simulation **OR** 5.2 hull_ev_simulation
 6. results_analysis
     6.1. ev_results_analysis
     6.2. pv_results_analysis
@@ -259,63 +258,71 @@ def get_input_data_fmt(scenario_dir: Path):
     return data_fmt
 
 
+def initialise_loggers(scenario_dir, **kwargs):
+    # Configure logging
+    for key in LOGGERS.keys():
+        if kwargs.get('debug_mode'):
+            fh_formatter = logging.Formatter(
+                ">>> %(asctime)s - %(levelname)s - %(name)s - "
+                "%(pathname)s - %(lineno)d:\n%(message)s\n")
+            ch_formatter = logging.Formatter(
+                '%(levelname)s: %(message)s')
+        else:
+            fh_formatter = logging.Formatter(
+                ">>> %(asctime)s - %(levelname)s - %(name)s - "
+                "%(filename)s:\n%(message)s\n")
+            ch_formatter = logging.Formatter(
+                '%(levelname)s: %(message)s')
+
+        ch_log_level = logging.WARNING
+        fh_log_level = logging.DEBUG
+
+        loggingFile = scenario_dir.joinpath('_Logs', f'{key}.log')
+        loggingFile.parent.mkdir(parents=True, exist_ok=True)
+
+        LOGGERS[key].setLevel(logging.DEBUG)
+
+        fh = logging.FileHandler(
+            loggingFile, 'a' if loggingFile.exists() else 'w')
+        fh.setLevel(fh_log_level)
+        fh.setFormatter(fh_formatter)
+
+        # console handler
+        ch = logging.StreamHandler()
+        ch.setLevel(ch_log_level)
+        ch.setFormatter(ch_formatter)
+
+        LOGGERS[key].addHandler(ch)
+        LOGGERS[key].addHandler(fh)
+
+    LOGGERS['main'].info("Starting a new log session.")
+    if kwargs.get('debug_mode'):
+        LOGGERS['main'].debug("Logger in debug mode.")
+    LOGGERS['main'].info(f"EV-Fleet-Sim version {version('ev-fleet-sim')}")
+
+
 def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
     """Run specified steps of data_analysis."""
 
     kwargs['input_data_fmt'] = get_input_data_fmt(scenario_dir)
-    # TODO Other important kwargs: EV_Model
 
     if steps:
-        # Configure logging
-        for key in LOGGERS.keys():
-            if kwargs.get('debug_mode'):
-                fh_formatter = logging.Formatter(
-                    ">>> %(asctime)s - %(levelname)s - %(name)s - "
-                    "%(pathname)s - %(lineno)d:\n%(message)s\n")
-                ch_formatter = logging.Formatter(
-                    '%(levelname)s: %(message)s')
-            else:
-                fh_formatter = logging.Formatter(
-                    ">>> %(asctime)s - %(levelname)s - %(name)s - "
-                    "%(filename)s:\n%(message)s\n")
-                ch_formatter = logging.Formatter(
-                    '%(levelname)s: %(message)s')
-
-            ch_log_level = logging.WARNING
-            fh_log_level = logging.DEBUG
-
-            loggingFile = scenario_dir.joinpath('_Logs', f'{key}.log')
-            loggingFile.parent.mkdir(parents=True, exist_ok=True)
-
-            LOGGERS[key].setLevel(logging.DEBUG)
-
-            fh = logging.FileHandler(
-                loggingFile, 'a' if loggingFile.exists() else 'w')
-            fh.setLevel(fh_log_level)
-            fh.setFormatter(fh_formatter)
-
-            # console handler
-            ch = logging.StreamHandler()
-            ch.setLevel(ch_log_level)
-            ch.setFormatter(ch_formatter)
-
-            LOGGERS[key].addHandler(ch)
-            LOGGERS[key].addHandler(fh)
-
-        LOGGERS['main'].info("Starting a new log session.")
-        if kwargs.get('debug_mode'):
-            LOGGERS['main'].debug("Logger in debug mode.")
-        LOGGERS['main'].info(f"EV-Fleet-Sim version {version('ev-fleet-sim')}")
+        initialise_loggers(**kwargs)
 
     if 0 in steps:
+        LOGGERS['main'].info("Running step 0: scenario_initialisation")
         initialise_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.1 in steps:
+        LOGGERS['main'].info("Running step 1.1: mapping")
         data_visualisation.map_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.2 in steps:
+        LOGGERS['main'].info("Running step 1.2: route_animation")
         data_visualisation.animate_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.3 in steps:
+        LOGGERS['main'].info("Running step 1.3: map_size_calculation")
         data_visualisation.get_map_size(scenario_dir, **kwargs)
     if 2 in steps or 2.1 in steps:
+        LOGGERS['main'].info("Running step 2.1: spatial_clustering")
         """Spatial clustering"""
         _ = auto_input(
             "Would you like to label *all* datapoints as part of " +
@@ -324,20 +331,25 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
         spatial_clustering.cluster_scenario(scenario_dir, skip=skip,
                                                 **kwargs)
     if 2 in steps or 2.2 in steps:
+        LOGGERS['main'].info("Running step 2.2: date_filtering_and_separation")
         """Spatial filtering"""
         spatial_filtering.filter_scenario(scenario_dir, **kwargs)
     if 2 in steps or 2.3 in steps:
+        LOGGERS['main'].info("Running step 2.3: save_dates_remaining")
         """List the dates which survived spatial filtering."""
         save_dates_remaining.save_dates_remaining(scenario_dir, **kwargs)
     if 3 in steps or 3.1 in steps:
+        LOGGERS['main'].info("Running step 3.1: stop_extraction")
         """Stop extraction"""
         stop_extraction.extract_stops(scenario_dir, **kwargs)
     if 3 in steps or 3.2 in steps:
+        LOGGERS['main'].info("Running step 3.2: stop_duration_box_plots")
         """Stop duration box plots"""
         # TODO: GTFS implementation should consider frequencies.txt.
         stop_duration_box_plots.plot_stop_duration_boxes(
             scenario_dir, plot_blotches=False, **kwargs)
     if 3 in steps or 3.3 in steps:
+        LOGGERS['main'].info("Running step 3.3: temporal_clustering")
         """Temporal clustering"""
         #   TODO: Disable this step by default (similar to how we disable
         # spatial_clustering).
@@ -354,17 +366,44 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
             else:
                 raise ValueError(DATA_FMT_ERROR_MSG)
 
-    if 4 in steps:
+    if True in [step >= 4 and step < 6 for step in steps]:
+        """If a step in 4 or 5 were selected, check which
+           mobility simulation was done."""
+        routing_was_done = any(scenario_dir.joinpath(
+            'Mobility_Simulation', 'Routes').iterdir())
+        fcd_conversion_was_done = any(scenario_dir.joinpath(
+            'Mobility_Simulation', 'FCD_Data').iterdir())
+        if routing_was_done and fcd_conversion_was_done:
+            error = ("Both routing and FCD Convesion were done. "
+                "Before proceeding, please discard one of their outputs from " +
+                scenario_dir.joinpath('Mobility_Simulation'))
+            LOGGERS['main'].error(error)
+            raise ValueError(error)
+
+    if 4.1 in steps:
+        LOGGERS['main'].info("Running step 4.1: routing")
         """Routing"""
         routing.build_routes(scenario_dir, **kwargs)
-    if 5 in steps or 5.1 in steps:
+    if 4.2 in steps:
+        LOGGERS['main'].info("Running step 4.2: fcd_conversion")
+        """Skipping Routing (i.e. If the original data is already at a high
+        frequency.)"""
+        fcd_conversion.convert_data(scenario_dir, **kwargs)
+    if 5.1 in steps:
+        LOGGERS['main'].info("Running step 5.1: sumo_ev_simulation")
         """Simulation"""
+        if not routing_was_done:
+            error = "Please run the routing step before proceeding."
+            LOGGERS['main'].error(error)
+            raise ValueError(error)
         sumo_ev_simulation.simulate_all_routes(
             scenario_dir, skip_existing=False, **kwargs)
-    if 5 in steps or 5.2 in steps:
         # De-combine simulation results.
         results_splitter.split_results(scenario_dir, **kwargs)
-    if 5 in steps or 5.3 in steps:
+    if 5.2 in steps:
+        LOGGERS['main'].info("Running step 5.2: hull_ev_simulation")
+        # TODO Remove this prompt, and rather make it automatically select
+        # center integration.
         integration_mthd = None
         while integration_mthd is None:
             _ = auto_input("Would you like to do center, forward or backward integration? [center]/forward/backward  ", 'center', **kwargs)
@@ -376,17 +415,33 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
                 integration_mthd = hull_ev_simulation.INTEGRATION_MTHD['bwd']
             else:
                 print("Bad input!")
-        hull_ev_simulation.simulate(scenario_dir, integration_mthd, **kwargs)
-    if 6 in steps or 6.1 in steps:
-        """Generate Plots and Statistics from EV Simulation Results"""
 
-        ev_results_analysis.run_ev_results_analysis(
-            scenario_dir, kwargs.get('ev_model'), **kwargs)
-        # TODO: GTFS implementation of ev_box_plots should consider
-        # frequencies.txt.
-        ev_box_plots.plot_ev_energy_boxes(
-            scenario_dir, kwargs.get('ev_model'), **kwargs)
+        if routing_was_done:
+            sumo_ev_simulation.simulate_all_routes(
+                scenario_dir, skip_existing=False, **kwargs)
+            results_splitter.split_results(scenario_dir, **kwargs)
+            # Backup SUMO's results, as they will be replaced by Hull's results.
+            ev_out_dir = scenario_dir.joinpath('EV_Simulation',
+                                               'EV_Simulation_Outputs')
+            ev_out_dir.rename(ev_out_dir.parent.joinpath(
+                                  ev_out_dir.name + '.sumo.bak'))
+            ev_out_dir.mkdir(parents=True, exist_ok=True)
+
+            hull_ev_simulation.simulate(scenario_dir, integration_mthd, **kwargs)
+                # TODO  Remove integration_mthd argument.
+        elif fcd_conversion_was_done:
+            hull_ev_simulation.simulate(scenario_dir, integration_mthd, **kwargs)
+        else:
+            raise ValueError("The Mobility Simulation step was not done. "
+                "Please run it before requesting an EV Simulation.")
+
+    if 6 in steps or 6.1 in steps:
+        LOGGERS['main'].info("Running step 6.1: ev_results_analysis")
+        """Generate Plots and Statistics from EV Simulation Results"""
+        ev_results_analysis.run_ev_results_analysis(scenario_dir, **kwargs)
+        ev_box_plots.plot_ev_energy_boxes(scenario_dir, **kwargs)
     if 6 in steps or 6.2 in steps:
+        LOGGERS['main'].info("Running step 6.2: pv_results_analysis")
         """Generate Plots and Statistics from PV Simulation Results"""
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
             pv_results_analysis.run_pv_results_analysis(scenario_dir, **kwargs)
@@ -396,6 +451,7 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
         else:
             raise ValueError(DATA_FMT_ERROR_MSG)
     if 6 in steps or 6.3 in steps:
+        LOGGERS['main'].info("Running step 6.3: wind_results_analysis")
         """Generate Plots and Statistics from Wind Simulation Results"""
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
             wind_results_analysis.run_wind_results_analysis(scenario_dir, **kwargs)
@@ -463,8 +519,23 @@ def main():
                               "list of floats without spaces (e.g. '1,2.2,4'): ")
         try:
             steps = [float(step) for step in steps_str.split(',')]
+            if 5 in steps:
+                step5 = float(input("You selected to run step 5. "
+                    "Would you like to run 5.1 or 5.2?  "))
+                steps.append(step5)
+                if step5 == 5.2 and 4 in steps:
+                    step4 = float(input("You selected to run step 4. "
+                        "Would you like to run 4.1 or 4.2?  "))
+                    steps.append(step4)
+            if 4 in steps:
+                step4 = float(input("You selected to run step 4. "
+                    "Would you like to run 4.1 or 4.2?  "))
+                steps.append(step4)
+            if 5.1 in steps and 4.2 in steps:
+                LOGGERS['main'].error("Steps 5.1 and 4.2 are not compatible!")
+                raise ValueError("Steps 5.1 and 4.2 are not compatible!")
         except ValueError:
-            print("Error: That is not a valid selection! Try again...")
+            LOGGERS['main'].error("Your steps selection was not valid! Try again...")
             time.sleep(1)
             continue
         break
@@ -476,29 +547,9 @@ def main():
                   "values? y/[n] ")
         auto_run = True if _.lower() == 'y' else False
 
-    if args.ev_model:
-        # if cmd option specified:
-        #   choose that model.
-        #   display the prompt, and show the selected model as the input.
-        ev_model_str = args.ev_model
-        print("Which EV model would you like to use in the "
-              "analysis? (hull/[sumo])  ", ev_model_str, '\n')
-    else:
-        # TODO Write the chosen model to a metadata file.
-        # if auto_run:
-        #     choose sumo
-        #     display the prompt and show sumo as input.
-        # else:
-        #     display the promtpt and let user type input.
-        ev_model_str = auto_input("Which EV model would you like to "
-            "use in the analysis? (hull/[sumo])  ", 'sumo',
-            kwargs={auto_run: auto_run})
-    ev_model = EV_MODELS['SUMO'] if ev_model_str.lower() != 'hull' else \
-               EV_MODELS['Hull']
-
     kwargs = {'auto_run': auto_run, 'input_data_fmt': None,
-              'incl_weekends': args.incl_weekends, 'ev_model': ev_model,
-              'debug_mode': args.debug}
+              'incl_weekends': args.incl_weekends,
+              'debug_mode': args.debug, 'scenario_dir': scenario_dir}
 
     # Run all the steps
     _run(scenario_dir, steps=steps, **kwargs)

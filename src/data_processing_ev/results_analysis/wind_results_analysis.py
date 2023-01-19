@@ -36,8 +36,8 @@ class NumpyEncoder(json.JSONEncoder):
 
 def _load_windspeed_data(scenario_dir: Path, year: int) -> tp.Callable:
     # Load irradiance data as dataframe
-    windspeed_file = scenario_dir.joinpath('SAM_Simulation', 'Results',
-                                            'POA_windspeed', 'Data',
+    windspeed_file = scenario_dir.joinpath('REG_Simulation', 'Results',
+                                           'POA_windspeed', 'Data',
                                             f'{year}.csv')
         # TODO Don't rely on just one year, maybe take the average across
         # multiple years... And maybe keep each month seperate.
@@ -74,9 +74,9 @@ def run_wind_results_analysis(scenario_dir: Path, plot_blotches: bool = False,
         year = 2017
 
     # Directories for saving CSVs and figures.
-    csv_dir = scenario_dir.joinpath('SAM_Simulation', 'csvs')
+    csv_dir = scenario_dir.joinpath('REG_Simulation', 'csvs')
     csv_dir.mkdir(parents=True, exist_ok=True)
-    fig_dir = scenario_dir.joinpath('SAM_Simulation', 'graphs')
+    fig_dir = scenario_dir.joinpath('REG_Simulation', 'graphs')
     fig_dir.mkdir(parents=True, exist_ok=True)
 
     # Load the windspeed function.

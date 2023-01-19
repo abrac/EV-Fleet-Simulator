@@ -8,10 +8,20 @@ import geopy.distance
 from pathlib import Path
 from tqdm import tqdm
 import xml.etree.ElementTree as et
+import ast
 
 INTEGRATION_MTHD = {'fwd': 0, 'bwd': 1, 'ctr': 2}
 DFLT_INTEGRATION_MTHD = INTEGRATION_MTHD['ctr']
 
+
+def tryeval(val):
+    try:
+        val = ast.literal_eval(val)
+    except ValueError:
+        if val == 'true': val = True
+        if val == 'false': val = False
+        pass
+    return val
 
 def delta_fwd(array: pd.Series):
     array_shifted_bwd = np.roll(array, -1)
@@ -248,42 +258,39 @@ class Vehicle:
     p0 - constant power intake (W)
     """
 
-    # mass=3900, c_d=0.36, c_rr=0.02, A=4, propulsion_eff=0.9, regen_eff=0.65, constant_power=100
-    def __init__(self, journey: pd.DataFrame, mass=3900, payload=0, cd=0.36,
-                 crr=0.02, A=4, eff=0.9, rgbeff=0.65, cap=1000000, p0=100,
-                 regbrake=True):
-
-    # mass=2900, c_d=0.35, c_rr=0.01, A=4, propulsion_eff=0.8, regen_eff=0.5, constant_power=100
-    # def __init__(self, journey: pd.DataFrame, mass=2900, payload=0, cd=0.35,
-    #              crr=0.01, A=4, eff=0.8, rgbeff=0.5, cap=2000000,
-    #              ini_cap=1000000, p0=100, regbrake=True):
+    def __init__(self, journey: pd.DataFrame, **kwargs):
 
         # TODO: Doesn't implement InternalMomentOfInertia, radialDragCoefficient
 
         self.journey = journey
 
-        self.regbrake = regbrake
+        scenario_dir: Path = kwargs.get('scenario_dir')
+        config_xml = et.parse(scenario_dir.joinpath('_Inputs', 'Configs', 'ev_template.xml'))
+        params_xml = config_xml.getroot().find('vType').findall('param')
+        params = {}
 
-        # TODO Read these parameters from the typ.xml file. TODO
+        for param in params_xml:
+            key = param.get('key')
+            val = param.get('value')
+            val = tryeval(val)
+            params[key] = val
 
         # Vehicle physical parameters
-        self.mass = mass  # kg
-        self.load = payload  # kg (TODO Not yet implemented.)
-        self.crr = crr  # coefficient of rolling resistance
-        self.cd = cd  # air drag coefficient
-        self.A = A  # m^2, Approximation of vehicle frontal area
-        self.eff = eff  # %, powertrain efficiency
-        self.rgbeff = rgbeff  # %, regen brake efficiency
-        self.capacity = cap  # The total battery capacity (Wh)
-        self.battery = cap  # Initial battery energy (Wh)
-        self.p0 = p0  # constant power loss in W (to run the vehicle besides driving)
+        self.mass = params['vehicleMass']  # kg
+        self.crr = params['rollDragCoefficient']  # coefficient of rolling resistance
+        self.cd = params['airDragCoefficient']  # air drag coefficient
+        self.A = params['frontsurfacearea']  # m^2, Approximation of vehicle frontal area
+        self.eff = params['propulsionEfficiency']  # %, powertrain efficiency
+        self.rgbeff = params['recuperationEfficiency']  # %, regen brake efficiency
+        self.capacity = params['maximumBatteryCapacity']  # The total battery capacity (Wh)
+        self.battery = self.capacity / 2  # Initial battery energy (Wh)
+        self.p0 = params['constantPowerIntake']  # constant power loss in W (to run the vehicle besides driving)
 
     def getEnergyExpenditure(self) -> pd.DataFrame:
 
         # computes energy expenditure from the journey dataframe
 
         journey = self.journey
-        regbrake = self.regbrake
 
         v = journey['Velocity']  # m/s
         s = journey['slope_rad']  # rad
@@ -292,10 +299,7 @@ class Vehicle:
         dv = journey['DeltaV']  # m/s
 
         # TODO Do this in the init.
-        if regbrake:
-            RGBeff = self.rgbeff  # static regen coeff
-        else:
-            RGBeff = 0
+        RGBeff = self.rgbeff  # static regen coeff
 
         # ---------------------------------------------------------------------
 
@@ -416,13 +420,14 @@ class Vehicle:
         return self.battery_output
 
 
-def simulate_trace(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs) -> pd.DataFrame:
+def simulate_trace(fcd_file: Path, geo: bool,
+        integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs) -> pd.DataFrame:
     """Simulates the Hull model on the one FCD trace."""
     # Read data
     journey = read_file(fcd_file, geo, integration_mthd, **kwargs)
 
     # Initialise vehicle
-    vehicle = Vehicle(journey)
+    vehicle = Vehicle(journey, **kwargs)
 
     # Execute EV simulation
     battery_output = vehicle.getEnergyExpenditure()
@@ -446,8 +451,8 @@ def _check_if_geo_inputs(scenario_dir: Path) -> bool:
 def simulate(scenario_dir: Path,
         integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
 
-    fcd_files = sorted([*scenario_dir.joinpath('EV_Simulation',
-        'SUMO_Simulation_Outputs').glob('*/*/fcd.out.csv*')])
+    fcd_files = sorted([*scenario_dir.joinpath('Mobility_Simulation', 'FCD_Data').\
+            glob('*/*/fcd.out.csv*')])
 
     geo = _check_if_geo_inputs(scenario_dir)
 
@@ -458,7 +463,7 @@ def simulate(scenario_dir: Path,
         ev_name = fcd_file.parents[1].name
         date = fcd_file.parent.name
         output_file = scenario_dir.joinpath(
-            'EV_Simulation', 'Hull_Simulation_Outputs',
-            ev_name, date, 'battery.out.csv')
+                'EV_Simulation', 'EV_Simulation_Outputs',
+                ev_name, date, 'battery.out.csv')
         output_file.parent.mkdir(parents=True, exist_ok=True)
         battery_output.to_csv(output_file, index=False)

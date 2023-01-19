@@ -4,7 +4,7 @@ This scripts generates box plots from the stats.json files. The script must be
 executed from the within the scenario's simulation-outputs directory.
 """
 
-# FIXME Incorporate this into "Results Analysis" module of code repository.
+# TODO: GTFS implementation of ev_box_plots should consider frequencies.txt.
 
 from pathlib import Path
 import json
@@ -61,13 +61,9 @@ def _gen_box_plots(scenario_dir: Path,
     # Calculating the distance travelled on each day.
     all_dists_travelled = []
 
-    ev_model_str = ('SUMO' if ev_model == dpr.EV_MODELS['SUMO'] else
-                    'Hull' if ev_model == dpr.EV_MODELS['Hull'] else None)
-    if ev_model_str is None:
-        raise ValueError("EV Model not supported.")
-
     ev_dirs = sorted([
-        *scenario_dir.joinpath('EV_Simulation', f'{ev_model_str}_Simulation_Outputs').glob('*')
+        *scenario_dir.joinpath('EV_Simulation',
+            'EV_Simulation_Outputs').glob('*/')
     ])
     for ev_dir in tqdm(ev_dirs):
         dists_travelled = []

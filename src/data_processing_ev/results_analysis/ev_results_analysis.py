@@ -66,8 +66,7 @@ def _y_fmt(y, pos):
 # %% Analysis Class ###########################################################
 class Data_Analysis:
 
-    def __init__(self, scenario_dir: Path,
-                 ev_model: dpr.EV_MODELS, **kwargs) -> None:
+    def __init__(self, scenario_dir: Path, **kwargs) -> None:
         """
         Create a data_analysis class.
         """
@@ -77,27 +76,19 @@ class Data_Analysis:
                                          dpr.DATA_FMTS['GPS'])
         self.graphs_dir = scenario_dir.joinpath('EV_Results')
 
-        if ev_model == dpr.EV_MODELS['SUMO']:
-            ev_model_str = 'SUMO'
-        else:
-            ev_model_str = 'Hull'
-
         # Convert all battery.out.xml files to csv files
         # with Pool() as p:
         #    p.map(self.__create_csvs, ev_sim_dirs)
 
         ev_sim_dirs = sorted([*scenario_dir.joinpath(
-            'EV_Simulation', f'{ev_model_str}_Simulation_Outputs').glob('*/*/')])
-
-        for ev_sim_dir in ev_sim_dirs:
-            ev_name = ev_sim_dir.parents[1].name
+            'EV_Simulation', 'EV_Simulation_Outputs').glob('*/*/')])
 
         self.__battery_csv_paths = sorted(
             [ev_sim_dir.joinpath('battery.out.csv') for
              ev_sim_dir in ev_sim_dirs]
         )
         self.__agg_vehicle_dir = scenario_dir.joinpath('EV_Simulation',
-                                                       f'{ev_model_str}_Simulation_Outputs')
+                                                       'EV_Simulation_Outputs')
         self.__indiv_vehicle_dirs = sorted(
             [x for x in self.__agg_vehicle_dir.glob('*/') if x.is_dir()]
         )
@@ -1344,10 +1335,9 @@ class Data_Analysis:
 
 
 # %% Main #####################################################################
-def run_ev_results_analysis(scenario_dir: Path,
-        ev_model: dpr.EV_MODELS, **kwargs):
+def run_ev_results_analysis(scenario_dir: Path, **kwargs):
 
-    data_analysis = Data_Analysis(scenario_dir, ev_model, **kwargs)
+    data_analysis = Data_Analysis(scenario_dir, **kwargs)
     data_analysis.make_plots(**kwargs)
     data_analysis.save_ev_stats(**kwargs)
     data_analysis.save_fleet_stats(**kwargs)

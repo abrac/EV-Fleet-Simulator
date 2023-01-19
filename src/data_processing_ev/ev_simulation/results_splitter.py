@@ -35,7 +35,7 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
     print(f"### {ev_name} ###")
 
     output_dir = scenario_dir.joinpath(
-        'EV_Simulation', 'SUMO_Simulation_Outputs', ev_name)
+        'EV_Simulation', 'EV_Simulation_Outputs', ev_name)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # If there is something in the directory and you are skipping non-empty
@@ -113,7 +113,7 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
                     ev_name = '_'.join(prev_id.split('_')[:-1])
                     date = prev_id.split('_')[-1]
                     output_file = scenario_dir.joinpath('EV_Simulation',
-                                                        'SUMO_Simulation_Outputs',
+                                                        'EV_Simulation_Outputs',
                                                         ev_name, date,
                                                         f'{file_stem}.out.xml')
                     output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -153,7 +153,7 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
         ev_name = '_'.join(prev_id.split('_')[:-1])
         date = prev_id.split('_')[-1]
         output_file = scenario_dir.joinpath('EV_Simulation',
-                                            'SUMO_Simulation_Outputs', ev_name, date,
+                                            'EV_Simulation_Outputs', ev_name, date,
                                             f'{file_stem}.out.xml')
         output_file.parent.mkdir(parents=True, exist_ok=True)
         tmp_tree = et.ElementTree(tmp_root)
@@ -175,17 +175,20 @@ def _create_csvs(scenario_dir, **kwargs):
        save them.
 
     They will be saved in a corresponding folder in
-    {Scenario_Dir}/EV_Simulation/SUMO_Simulation_Outputs/
+    {Scenario_Dir}/EV_Simulation/EV_Simulation_Outputs/
     """
 
     ev_sim_dirs = sorted([*scenario_dir.joinpath(
-        'EV_Simulation', 'SUMO_Simulation_Outputs').glob('*/*/')])
+        'EV_Simulation', 'EV_Simulation_Outputs').glob('*/*/')])
 
-    # TODO Implement auto_run mode.
-    battery_csvs = [*scenario_dir.joinpath('EV_Simulation',
-                     'SUMO_Simulation_Outputs').glob('*/*/battery.out.csv')]
-    fcd_csvs = [*scenario_dir.joinpath('EV_Simulation',
-                     'SUMO_Simulation_Outputs').glob('*/*/fcd.out.csv')]
+    fcd_sim_dirs = sorted([*scenario_dir.joinpath(
+        'Mobility_Simulation', 'FCD_Data').glob('*/*/')])
+
+    battery_csvs = sorted([*scenario_dir.joinpath('EV_Simulation',
+            'EV_Simulation_Outputs').glob('*/*/battery.out.csv')])
+    fcd_csvs = sorted([*scenario_dir.joinpath('Mobility_Simulation', 'FCD_Data').\
+            glob('*/*/fcd.out.csv*')])
+
     if len(battery_csvs) == 0 or len(fcd_csvs) == 0:
         _ = dpr.auto_input("Would you like to convert all " +
             "battery.out.xml and fcd.out.xml " +
@@ -228,11 +231,11 @@ def _create_csvs(scenario_dir, **kwargs):
                     # the battery_xml file.
                     dpr.compress_file(battery_xml)
 
-        for ev_sim_dir in tqdm(ev_sim_dirs):
+        for fcd_sim_dir in tqdm(fcd_sim_dirs):
             # Try create ev_csv if it doesn't exist
-            fcd_csv_gz = ev_sim_dir.joinpath('fcd.out.csv.gz')
-            fcd_csv = ev_sim_dir.joinpath('fcd.out.csv')
-            fcd_xml_gz = ev_sim_dir.joinpath('fcd.out.xml.gz')
+            fcd_csv_gz = fcd_sim_dir.joinpath('fcd.out.csv.gz')
+            fcd_csv = fcd_sim_dir.joinpath('fcd.out.csv')
+            fcd_xml_gz = fcd_sim_dir.joinpath('fcd.out.xml.gz')
             fcd_xml = dpr.decompress_file(fcd_xml_gz)
             if not fcd_xml.exists():
                 continue
@@ -257,14 +260,14 @@ def split_results(scenario_dir: Path, **kwargs):
 
     skip_splitting = False
     if any(scenario_dir.joinpath('EV_Simulation',
-            'SUMO_Simulation_Outputs').iterdir()):
+            'EV_Simulation_Outputs').iterdir()):
         _ = dpr.auto_input("Would you like to skip EVs that have already been "
                            "(partially) split? y/[n]", 'n', **kwargs)
         skip_splitting = False if _.lower() != 'y' else True
 
     # Load xml as etree iterparse.
     xmls = sorted([*scenario_dir.joinpath(
-        'EV_Simulation', 'SUMO_Simulation_Outputs_Combined').glob(
+        'EV_Simulation', 'EV_Simulation_Outputs_Combined').glob(
         '*/*.out.xml*')])
 
     args = zip(xmls, repeat(scenario_dir, len(xmls)),
@@ -276,5 +279,11 @@ def split_results(scenario_dir: Path, **kwargs):
 
     for arg_set in args:
         _split_ev_xml(*arg_set)
+
+    # Moving the split FCD files to the mobility simulation folder.
+    for fcd_file in scenario_dir.joinpath('EV_Simulation',
+            'EV_Simulation_Outputs').glob('*/*/fcd.out.xml*'):
+        fcd_file.rename(scenario_dir.joinpath('Mobility_Simulation', 'FCD_Data',
+            fcd_file.parents[1].name, fcd_file.parent.name, fcd_file.name))
 
     _create_csvs(scenario_dir, **kwargs)
