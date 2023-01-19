@@ -19,7 +19,6 @@ from tqdm import tqdm
 
 
 def _gen_box_plots(scenario_dir: Path,
-                  ev_model: dpr.EV_MODELS,
                   flatten_mode: bool = False,
                   input_data_fmt=dpr.DATA_FMTS['GPS'],
                   figsize=(4, 3),
@@ -129,7 +128,7 @@ def _gen_box_plots(scenario_dir: Path,
     return fig, df
 
 
-def plot_ev_energy_boxes(scenario_dir: Path, ev_model: dpr.EV_MODELS, **kwargs):
+def plot_ev_energy_boxes(scenario_dir: Path, **kwargs):
 
     _ = dpr.auto_input("Would you like to plot the box-plots of the fleet's "
                        "energy usage? [y]/n  ", 'y', **kwargs)
@@ -150,8 +149,7 @@ def plot_ev_energy_boxes(scenario_dir: Path, ev_model: dpr.EV_MODELS, **kwargs):
         box_plots_subdir = box_plots_dir.joinpath(dir_name)
         box_plots_subdir.mkdir(parents=True, exist_ok=True)
 
-        fig, df = _gen_box_plots(scenario_dir, ev_model,
-                flatten_mode, input_data_fmt)
+        fig, df = _gen_box_plots(scenario_dir, flatten_mode, input_data_fmt)
 
         # As png:
         fig_dir = box_plots_subdir.joinpath("Energy_usage_box_plots.png")

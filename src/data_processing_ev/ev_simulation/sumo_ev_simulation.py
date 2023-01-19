@@ -44,7 +44,8 @@ def _seperate_battery_xml(scenario_dir: Path):
     # TODO TODO FIXME FIXME XXX XXX
 
 
-def simulate_all_routes(scenario_dir: Path, skip_existing: bool, **kwargs):
+def simulate_all_routes(scenario_dir: Path,
+        skip_existing: bool = False, **kwargs):
 
     # TODO Remove kurcheveil battery model if another custom battery model is
     # selected.

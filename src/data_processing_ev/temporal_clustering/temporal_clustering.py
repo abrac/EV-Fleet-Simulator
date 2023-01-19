@@ -465,7 +465,7 @@ def _cluster_ev(trace_df: pd.DataFrame, ev_name: str, scenario_dir: Path,
     return vehicle_df
 
 
-def cluster_scenario(scenario_dir: Path, input_type: str, **kwargs):
+def cluster_scenario(input_type: str, scenario_dir: Path, **kwargs):
     """cluster.
 
     :param scenario_dir Path:
