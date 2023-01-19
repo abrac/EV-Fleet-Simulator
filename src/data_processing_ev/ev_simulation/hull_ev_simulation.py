@@ -258,13 +258,12 @@ class Vehicle:
     p0 - constant power intake (W)
     """
 
-    def __init__(self, journey: pd.DataFrame, **kwargs):
+    def __init__(self, scenario_dir, journey: pd.DataFrame, **kwargs):
 
         # TODO: Doesn't implement InternalMomentOfInertia, radialDragCoefficient
 
         self.journey = journey
 
-        scenario_dir: Path = kwargs.get('scenario_dir')
         config_xml = et.parse(scenario_dir.joinpath('_Inputs', 'Configs', 'ev_template.xml'))
         params_xml = config_xml.getroot().find('vType').findall('param')
         params = {}
@@ -420,14 +419,14 @@ class Vehicle:
         return self.battery_output
 
 
-def simulate_trace(fcd_file: Path, geo: bool,
+def simulate_trace(scenario_dir: Path, fcd_file: Path, geo: bool,
         integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs) -> pd.DataFrame:
     """Simulates the Hull model on the one FCD trace."""
     # Read data
     journey = read_file(fcd_file, geo, integration_mthd, **kwargs)
 
     # Initialise vehicle
-    vehicle = Vehicle(journey, **kwargs)
+    vehicle = Vehicle(scenario_dir, journey, **kwargs)
 
     # Execute EV simulation
     battery_output = vehicle.getEnergyExpenditure()
@@ -452,18 +451,18 @@ def simulate(scenario_dir: Path,
         integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
 
     fcd_files = sorted([*scenario_dir.joinpath('Mobility_Simulation', 'FCD_Data').\
-            glob('*/*/fcd.out.csv*')])
+        glob('*/*/fcd.out.csv*')])
 
     geo = _check_if_geo_inputs(scenario_dir)
 
     for fcd_file in tqdm(fcd_files):
-        battery_output = simulate_trace(fcd_file, geo, integration_mthd, **kwargs)
+        battery_output = simulate_trace(scenario_dir, fcd_file, geo, integration_mthd, **kwargs)
 
         # Write results
         ev_name = fcd_file.parents[1].name
         date = fcd_file.parent.name
         output_file = scenario_dir.joinpath(
-                'EV_Simulation', 'EV_Simulation_Outputs',
-                ev_name, date, 'battery.out.csv')
+            'EV_Simulation', 'EV_Simulation_Outputs',
+            ev_name, date, 'battery.out.csv')
         output_file.parent.mkdir(parents=True, exist_ok=True)
         battery_output.to_csv(output_file, index=False)

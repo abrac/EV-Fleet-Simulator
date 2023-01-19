@@ -239,7 +239,7 @@ def compress_file(file: Path, **kwargs) -> Path:
         return None
 
 
-def get_input_data_fmt(scenario_dir: Path, **kwargs):
+def get_input_data_fmt(scenario_dir: Path):
     """
     Identifies the input data format by analysing the
     `scenario_dir`/_Inputs/Traces directory.
@@ -301,26 +301,26 @@ def initialise_loggers(scenario_dir, **kwargs):
     LOGGERS['main'].info(f"EV-Fleet-Sim version {version('ev-fleet-sim')}")
 
 
-def _run(steps: Iterable[SupportsFloat], scenario_dir: Path, **kwargs):
+def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
     """Run specified steps of data_analysis."""
 
-    kwargs['input_data_fmt'] = get_input_data_fmt(**kwargs)
+    kwargs['input_data_fmt'] = get_input_data_fmt(scenario_dir)
 
     if steps:
-        initialise_loggers(**kwargs)
+        initialise_loggers(scenario_dir, **kwargs)
 
     if 0 in steps:
         LOGGERS['main'].info("Running step 0: scenario_initialisation")
-        initialise_scenario(**kwargs)
+        initialise_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.1 in steps:
         LOGGERS['main'].info("Running step 1.1: mapping")
-        data_visualisation.map_scenario(**kwargs)
+        data_visualisation.map_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.2 in steps:
         LOGGERS['main'].info("Running step 1.2: route_animation")
-        data_visualisation.animate_scenario(**kwargs)
+        data_visualisation.animate_scenario(scenario_dir, **kwargs)
     if 1 in steps or 1.3 in steps:
         LOGGERS['main'].info("Running step 1.3: map_size_calculation")
-        data_visualisation.get_map_size(**kwargs)
+        data_visualisation.get_map_size(scenario_dir, **kwargs)
     if 2 in steps or 2.1 in steps:
         LOGGERS['main'].info("Running step 2.1: spatial_clustering")
         """Spatial clustering"""
@@ -328,25 +328,26 @@ def _run(steps: Iterable[SupportsFloat], scenario_dir: Path, **kwargs):
             "Would you like to label *all* datapoints as part of " +
             "*one* big cluster? [y]/n  ", 'y', **kwargs)
         skip = False if _.lower() == 'n' else True
-        spatial_clustering.cluster_scenario(skip=skip, **kwargs)
+        spatial_clustering.cluster_scenario(scenario_dir, skip=skip,
+                                                **kwargs)
     if 2 in steps or 2.2 in steps:
         LOGGERS['main'].info("Running step 2.2: date_filtering_and_separation")
         """Spatial filtering"""
-        spatial_filtering.filter_scenario(**kwargs)
+        spatial_filtering.filter_scenario(scenario_dir, **kwargs)
     if 2 in steps or 2.3 in steps:
         LOGGERS['main'].info("Running step 2.3: save_dates_remaining")
         """List the dates which survived spatial filtering."""
-        save_dates_remaining.save_dates_remaining(**kwargs)
+        save_dates_remaining.save_dates_remaining(scenario_dir, **kwargs)
     if 3 in steps or 3.1 in steps:
         LOGGERS['main'].info("Running step 3.1: stop_extraction")
         """Stop extraction"""
-        stop_extraction.extract_stops(**kwargs)
+        stop_extraction.extract_stops(scenario_dir, **kwargs)
     if 3 in steps or 3.2 in steps:
         LOGGERS['main'].info("Running step 3.2: stop_duration_box_plots")
         """Stop duration box plots"""
         # TODO: GTFS implementation should consider frequencies.txt.
         stop_duration_box_plots.plot_stop_duration_boxes(
-            plot_blotches=False, **kwargs)
+            scenario_dir, plot_blotches=False, **kwargs)
     if 3 in steps or 3.3 in steps:
         LOGGERS['main'].info("Running step 3.3: temporal_clustering")
         """Temporal clustering"""
@@ -357,7 +358,8 @@ def _run(steps: Iterable[SupportsFloat], scenario_dir: Path, **kwargs):
         if temporal_clustering_enabled:
             if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
                 clustering_type = 'spatial_filtered_traces'
-                temporal_clustering.cluster_scenario(clustering_type, **kwargs)
+                temporal_clustering.cluster_scenario(scenario_dir, clustering_type,
+                                                         **kwargs)
             elif kwargs['input_data_fmt'] == DATA_FMTS['GTFS']:
                 print("Warning: Temporal clustering is not implemented for GTFS " +
                       "scenarios yet.")
@@ -381,12 +383,12 @@ def _run(steps: Iterable[SupportsFloat], scenario_dir: Path, **kwargs):
     if 4.1 in steps:
         LOGGERS['main'].info("Running step 4.1: routing")
         """Routing"""
-        routing.build_routes(**kwargs)
+        routing.build_routes(scenario_dir, **kwargs)
     if 4.2 in steps:
         LOGGERS['main'].info("Running step 4.2: fcd_conversion")
         """Skipping Routing (i.e. If the original data is already at a high
         frequency.)"""
-        fcd_conversion.convert_data(**kwargs)
+        fcd_conversion.convert_data(scenario_dir, **kwargs)
     if 5.1 in steps:
         LOGGERS['main'].info("Running step 5.1: sumo_ev_simulation")
         """Simulation"""
@@ -395,9 +397,9 @@ def _run(steps: Iterable[SupportsFloat], scenario_dir: Path, **kwargs):
             LOGGERS['main'].error(error)
             raise ValueError(error)
         sumo_ev_simulation.simulate_all_routes(
-            skip_existing=False, **kwargs)
+            scenario_dir, skip_existing=False, **kwargs)
         # De-combine simulation results.
-        results_splitter.split_results(**kwargs)
+        results_splitter.split_results(scenario_dir, **kwargs)
     if 5.2 in steps:
         LOGGERS['main'].info("Running step 5.2: hull_ev_simulation")
         # TODO Remove this prompt, and rather make it automatically select
@@ -416,8 +418,8 @@ def _run(steps: Iterable[SupportsFloat], scenario_dir: Path, **kwargs):
 
         if routing_was_done:
             sumo_ev_simulation.simulate_all_routes(
-                skip_existing=False, **kwargs)
-            results_splitter.split_results(**kwargs)
+                scenario_dir, skip_existing=False, **kwargs)
+            results_splitter.split_results(scenario_dir, **kwargs)
             # Backup SUMO's results, as they will be replaced by Hull's results.
             ev_out_dir = scenario_dir.joinpath('EV_Simulation',
                                                'EV_Simulation_Outputs')
@@ -425,12 +427,10 @@ def _run(steps: Iterable[SupportsFloat], scenario_dir: Path, **kwargs):
                                   ev_out_dir.name + '.sumo.bak'))
             ev_out_dir.mkdir(parents=True, exist_ok=True)
 
-            hull_ev_simulation.simulate(
-                integration_mthd=integration_mthd, **kwargs)
+            hull_ev_simulation.simulate(scenario_dir, integration_mthd, **kwargs)
                 # TODO  Remove integration_mthd argument.
         elif fcd_conversion_was_done:
-            hull_ev_simulation.simulate(
-                integration_mthd=integration_mthd, **kwargs)
+            hull_ev_simulation.simulate(scenario_dir, integration_mthd, **kwargs)
         else:
             raise ValueError("The Mobility Simulation step was not done. "
                 "Please run it before requesting an EV Simulation.")
@@ -438,13 +438,13 @@ def _run(steps: Iterable[SupportsFloat], scenario_dir: Path, **kwargs):
     if 6 in steps or 6.1 in steps:
         LOGGERS['main'].info("Running step 6.1: ev_results_analysis")
         """Generate Plots and Statistics from EV Simulation Results"""
-        ev_results_analysis.run_ev_results_analysis(**kwargs)
-        ev_box_plots.plot_ev_energy_boxes(**kwargs)
+        ev_results_analysis.run_ev_results_analysis(scenario_dir, **kwargs)
+        ev_box_plots.plot_ev_energy_boxes(scenario_dir, **kwargs)
     if 6 in steps or 6.2 in steps:
         LOGGERS['main'].info("Running step 6.2: pv_results_analysis")
         """Generate Plots and Statistics from PV Simulation Results"""
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
-            pv_results_analysis.run_pv_results_analysis(**kwargs)
+            pv_results_analysis.run_pv_results_analysis(scenario_dir, **kwargs)
         elif kwargs['input_data_fmt'] == DATA_FMTS['GTFS']:
             print("Warning: PV Results Analysis is not implemented for GTFS " +
                   "scenarios yet.")
@@ -454,7 +454,7 @@ def _run(steps: Iterable[SupportsFloat], scenario_dir: Path, **kwargs):
         LOGGERS['main'].info("Running step 6.3: wind_results_analysis")
         """Generate Plots and Statistics from Wind Simulation Results"""
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
-            wind_results_analysis.run_wind_results_analysis(**kwargs)
+            wind_results_analysis.run_wind_results_analysis(scenario_dir, **kwargs)
         elif kwargs['input_data_fmt'] == DATA_FMTS['GTFS']:
             print("Warning: Wind Results Analysis is not implemented for GTFS" +
                   "scenarios yet.")
@@ -546,8 +546,7 @@ def main():
 
     kwargs = {'auto_run': auto_run, 'input_data_fmt': None,
               'incl_weekends': args.incl_weekends,
-              'debug_mode': args.debug, 'scenario_dir': scenario_dir}
+              'debug_mode': args.debug}
 
     # Run all the steps
-    breakpoint()  # XXX
-    _run(steps, **kwargs)
+    _run(scenario_dir, steps, **kwargs)
