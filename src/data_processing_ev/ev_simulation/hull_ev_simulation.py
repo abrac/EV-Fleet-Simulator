@@ -23,19 +23,16 @@ def tryeval(val):
         pass
     return val
 
+
 def delta_fwd(array: pd.Series):
-    array_shifted_bwd = np.roll(array, -1)
-    array_shifted_bwd[-1] = 0
-    array_cpy = np.copy(array)
-    array_cpy[-1] = 0
+    array_shifted_bwd = array.shift(-1)
+    array_cpy = pd.Series.copy(array)
     return pd.Series(array_shifted_bwd - array_cpy, name=array.name)
 
 
 def delta_bwd(array: pd.Series):
-    array_shifted_fwd = np.roll(array, 1)
-    array_shifted_fwd[0] = 0
-    array_cpy = np.copy(array)
-    array_cpy[0] = 0
+    array_shifted_fwd = array.shift(1)
+    array_cpy = pd.Series.copy(array)
     return pd.Series(array_cpy - array_shifted_fwd, name=array.name)
 
 
@@ -318,7 +315,7 @@ class Vehicle:
 
         # ---------------------------------------------------------------------
 
-        for slope,vel,acc,delta_t,delta_v in zip(s,v,a,dt, dv):
+        for slope,vel,acc,delta_t,delta_v in zip(s, v, a, dt, dv):
 
             if vel == 0:
                 force, frr, fa, fhc = 0,0,0,0
@@ -389,10 +386,10 @@ class Vehicle:
                 bat_state,
                 Er_charged,
                 Er_batt,
-                journey['vehicle_id'],
-                journey['vehicle_lane'],
+                # journey['vehicle_id'],
+                # journey['vehicle_lane'],
                 [self.capacity]*len(Er),
-                journey['vehicle_pos'],
+                # journey['vehicle_pos'],
                 journey['Velocity'],
                 journey['vehicle_x'],
                 journey['vehicle_y'],
@@ -403,10 +400,10 @@ class Vehicle:
             'vehicle_actualBatteryCapacity',
             'vehicle_energyCharged',
             'vehicle_energyConsumed',
-            'vehicle_id',
-            'vehicle_lane',
+            # 'vehicle_id',
+            # 'vehicle_lane',
             'vehicle_maximumBatteryCapacity',
-            'vehicle_posOnLane',
+            # 'vehicle_posOnLane',
             'vehicle_speed',
             'longitude',
             'latitude'
@@ -448,12 +445,21 @@ def _check_if_geo_inputs(scenario_dir: Path) -> bool:
 
 
 def simulate(scenario_dir: Path,
-        integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
+        integration_mthd=DFLT_INTEGRATION_MTHD,
+        routing_was_done=False, **kwargs):
 
     fcd_files = sorted([*scenario_dir.joinpath('Mobility_Simulation', 'FCD_Data').\
         glob('*/*/fcd.out.csv*')])
 
-    geo = _check_if_geo_inputs(scenario_dir)
+    if routing_was_done:
+        # If we used SUMO's routing and mobility simulation to generate the FCD
+        # data, check if the coordinates are geographical (as opposed to
+        # cartesian).
+        geo = _check_if_geo_inputs(scenario_dir)
+    else:
+        # We assume that the FCD-converted 1 Hz data contains geographical
+        # coordinates.
+        geo = True
 
     for fcd_file in tqdm(fcd_files):
         battery_output = simulate_trace(scenario_dir, fcd_file, geo, integration_mthd, **kwargs)

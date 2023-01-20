@@ -99,7 +99,7 @@ def generate_bad_dates(clustered_trace: pd.DataFrame, boundary: pd.DataFrame,
 ###############################################################################
 def filter_cluster(cluster_file: Path, pid: int, boundary_file: Path,
                    output_path: Path, **kwargs):
-    ev_name = cluster_file.stem  # e.g. T1000
+    ev_name = cluster_file.stem.replace(' ', '_')  # e.g. T1000
     clustered_trace = pd.read_csv(cluster_file)
     # Remove outliers from data.
     clustered_trace = clustered_trace[clustered_trace['Cluster'] != -1]
@@ -118,14 +118,14 @@ def filter_cluster(cluster_file: Path, pid: int, boundary_file: Path,
         #   and clear the dataframe.
         if (date != prev_date and not output_list == []):
             # Create folder for this taxi if it doesn't exist
-            output_subpath = output_path.joinpath(f"{cluster_file.stem}")
+            output_subpath = output_path.joinpath(f"{ev_name}")
             output_subpath.mkdir(parents=True, exist_ok=True)
             output_df = pd.DataFrame(output_list)
             output_df.to_csv(
                 output_subpath.joinpath(
-                    "{0}_{1}.csv".format(cluster_file.stem,
-                                         # change yy/mm/dd to yy_mm_dd
-                                         prev_date.replace('/', '_'))),
+                    "{0}_{1}.csv".format(ev_name,
+                                         # change yy/mm/dd to yy-mm-dd
+                                         prev_date.replace('/', '-'))),
                 index=False)
             del output_list[:]  # clear the list
         if (date not in bad_dates):
@@ -135,14 +135,14 @@ def filter_cluster(cluster_file: Path, pid: int, boundary_file: Path,
     # If there are still data remaining that hasn't been written:
     if not output_list == []:
         # Create folder for this taxi if it doesn't exist
-        output_subpath = output_path.joinpath(f"{cluster_file.stem}")
+        output_subpath = output_path.joinpath(f"{ev_name}")
         output_subpath.mkdir(parents=True, exist_ok=True)
         output_df = pd.DataFrame(output_list)
         output_df.to_csv(
             output_subpath.joinpath(
-                "{0}_{1}.csv".format(cluster_file.stem,
-                                     # change yy/mm/dd to yy_mm_dd
-                                     prev_date.replace('/', '_'))),
+                "{0}_{1}.csv".format(ev_name,
+                                     # change yy/mm/dd to yy-mm-dd
+                                     prev_date.replace('/', '-'))),
             index=False)
         del output_list[:]  # clear the list
 

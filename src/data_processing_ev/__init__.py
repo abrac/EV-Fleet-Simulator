@@ -125,6 +125,15 @@ MODULES = """
 """
 
 
+def _check_routing_status(scenario_dir: Path, **kwargs):
+    """If a step in 4 or 5 were selected, check which
+       mobility simulation was done."""
+    routing_was_done = any(scenario_dir.joinpath(
+        'Mobility_Simulation', 'Routes').iterdir())
+    fcd_conversion_was_done = any(scenario_dir.joinpath(
+        'Mobility_Simulation', 'FCD_Data').iterdir())
+    return routing_was_done, fcd_conversion_was_done
+
 def auto_input(prompt: str, default: str, **kwargs):
     auto_run = kwargs.get('auto_run', False)
     if auto_run:
@@ -366,20 +375,6 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
             else:
                 raise ValueError(DATA_FMT_ERROR_MSG)
 
-    if True in [step >= 4 and step < 6 for step in steps]:
-        """If a step in 4 or 5 were selected, check which
-           mobility simulation was done."""
-        routing_was_done = any(scenario_dir.joinpath(
-            'Mobility_Simulation', 'Routes').iterdir())
-        fcd_conversion_was_done = any(scenario_dir.joinpath(
-            'Mobility_Simulation', 'FCD_Data').iterdir())
-        if routing_was_done and fcd_conversion_was_done:
-            error = ("Both routing and FCD Convesion were done. "
-                "Before proceeding, please discard one of their outputs from " +
-                scenario_dir.joinpath('Mobility_Simulation'))
-            LOGGERS['main'].error(error)
-            raise ValueError(error)
-
     if 4.1 in steps:
         LOGGERS['main'].info("Running step 4.1: routing")
         """Routing"""
@@ -389,6 +384,10 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
         """Skipping Routing (i.e. If the original data is already at a high
         frequency.)"""
         fcd_conversion.convert_data(scenario_dir, **kwargs)
+
+    if 5.1 in steps or 5.2 in steps:
+        routing_was_done, fcd_conversion_was_done = \
+            _check_routing_status(scenario_dir)
     if 5.1 in steps:
         LOGGERS['main'].info("Running step 5.1: sumo_ev_simulation")
         """Simulation"""
@@ -424,13 +423,12 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
             ev_out_dir = scenario_dir.joinpath('EV_Simulation',
                                                'EV_Simulation_Outputs')
             ev_out_dir.rename(ev_out_dir.parent.joinpath(
-                                  ev_out_dir.name + '.sumo.bak'))
+                              ev_out_dir.name + '.sumo.bak'))
             ev_out_dir.mkdir(parents=True, exist_ok=True)
-
-            hull_ev_simulation.simulate(scenario_dir, integration_mthd, **kwargs)
+            hull_ev_simulation.simulate(scenario_dir, integration_mthd, routing_was_done, **kwargs)
                 # TODO  Remove integration_mthd argument.
         elif fcd_conversion_was_done:
-            hull_ev_simulation.simulate(scenario_dir, integration_mthd, **kwargs)
+            hull_ev_simulation.simulate(scenario_dir, integration_mthd, routing_was_done, **kwargs)
         else:
             raise ValueError("The Mobility Simulation step was not done. "
                 "Please run it before requesting an EV Simulation.")

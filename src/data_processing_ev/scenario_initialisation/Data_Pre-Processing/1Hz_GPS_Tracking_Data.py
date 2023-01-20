@@ -28,7 +28,7 @@ def _generate_traces(traces_dir: Path):
 
     # For each vehicle_id:
     for original_file in tqdm(original_files):
-        output_file = traces_dir.joinpath('Processed_Temp', original_file.name)
+        output_file = traces_dir.joinpath('Processed_1Hz', original_file.name)
         # Write the header row.
         header_row = ("GPSID,Time,Latitude,Longitude,Altitude,Heading,Satellites,HDOP,AgeOfReading,DistanceSinceReading,Velocity")
         output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -100,7 +100,7 @@ def _generate_traces(traces_dir: Path):
 
 
 def _generate_minute_data(traces_dir: Path):
-    original_files = sorted([*traces_dir.joinpath('Processed_Temp').glob('*.csv')])
+    original_files = sorted([*traces_dir.joinpath('Processed_1Hz').glob('*.csv')])
 
     for original_file in tqdm(original_files):
         output_file = traces_dir.joinpath('Processed', original_file.name)
@@ -156,9 +156,9 @@ def main(scenario_dir: Path):
     # Create a list of csv files found in the traces directory.
     traces_dir = scenario_dir.joinpath('_Inputs', 'Traces')
 
-    traces_dir.joinpath('Processed_Temp').mkdir(parents=True, exist_ok=True)
+    traces_dir.joinpath('Processed_1Hz').mkdir(parents=True, exist_ok=True)
 
-    if not traces_dir.joinpath('Processed').glob('*.csv'):
+    if not any(traces_dir.joinpath('Processed').glob('*.csv')):
         _generate_traces(traces_dir)
     else:
         # Else (if there are aleardy processed csv files):

@@ -1145,8 +1145,8 @@ class Data_Analysis:
         if fleet_mean_file.exists():
             _ = dpr.auto_input(
                 f"{fleet_mean_file.name} found at: \n\t {fleet_mean_file} \n" +
-                "Use this file? [y]/n  ", 'y', **kwargs)
-            use_existing_fleet_file = True if _.lower() != 'n' else False
+                "Use this file? (y/[n])  ", 'n', **kwargs)
+            use_existing_fleet_file = False if _.lower() != 'y' else True
 
         def _reformat_ev_dfs(ev_dfs: typ.List[pd.DataFrame]
                 ) -> typ.List[pd.DataFrame]:

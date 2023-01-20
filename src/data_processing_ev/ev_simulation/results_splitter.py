@@ -283,7 +283,9 @@ def split_results(scenario_dir: Path, **kwargs):
     # Moving the split FCD files to the mobility simulation folder.
     for fcd_file in scenario_dir.joinpath('EV_Simulation',
             'EV_Simulation_Outputs').glob('*/*/fcd.out.xml*'):
-        fcd_file.rename(scenario_dir.joinpath('Mobility_Simulation', 'FCD_Data',
-            fcd_file.parents[1].name, fcd_file.parent.name, fcd_file.name))
+        new_location = scenario_dir.joinpath('Mobility_Simulation', 'FCD_Data',
+            fcd_file.parents[1].name, fcd_file.parent.name, fcd_file.name)
+        new_location.parent.mkdir(parents=True, exist_ok=True)
+        fcd_file.rename(new_location)
 
     _create_csvs(scenario_dir, **kwargs)

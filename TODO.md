@@ -2,6 +2,8 @@
      view this file. Just search the web for a nice markdown editor (like
      Ghostwriter). -->
 
+- [ ] Standardise input file format to use m/s as it's velocity unit, rather than km/h. SI units, please!
+- [ ] Compress csv outputs!
 - [ ] Update the docs to describe what inputs are required, in various simulation configurations.
 - [ ] Make the Hull simulation multithreaded!
 - [ ] Merge [fcv-fleet-sim](https://gitlab.com/eputs/fcv-fleet-sim) FCV simulation model.
