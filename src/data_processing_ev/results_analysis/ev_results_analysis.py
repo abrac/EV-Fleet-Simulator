@@ -84,7 +84,7 @@ class Data_Analysis:
             'EV_Simulation', 'EV_Simulation_Outputs').glob('*/*/')])
 
         self.__battery_csv_paths = sorted(
-            [ev_sim_dir.joinpath('battery.out.csv') for
+            [next(ev_sim_dir.glob('battery.out.csv*')) for
              ev_sim_dir in ev_sim_dirs]
         )
         self.__agg_vehicle_dir = scenario_dir.joinpath('EV_Simulation',
@@ -106,9 +106,11 @@ class Data_Analysis:
                          to timedeltas.
         """
         # Read the csv
+        dpr.decompress_file(ev_csv)
         ev_df = pd.read_csv(ev_csv, sep=delim,
                             dtype={"vehicle_id": "category",
                                    "vehicle_lane": "category"})
+        dpr.compress_file(ev_csv)
         # If warn_nan flag is set, check if df has coordinates that are
         # NaN and delete them
         if warn_nan and True in ev_df['vehicle_x'].isna():

@@ -9,6 +9,7 @@ from pathlib import Path
 from tqdm import tqdm
 import xml.etree.ElementTree as et
 import ast
+import data_processing_ev as dpr
 
 INTEGRATION_MTHD = {'fwd': 0, 'bwd': 1, 'ctr': 2}
 DFLT_INTEGRATION_MTHD = INTEGRATION_MTHD['ctr']
@@ -160,7 +161,9 @@ def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD,
     kinetic model, and returns the file in a pandas dataframe. """
 
     # Load journey.
+    dpr.decompress_file(fcd_file)
     journey = pd.read_csv(fcd_file)
+    dpr.decompress_file(fcd_file)
 
     # Set up dataframe for energy consumption estimations
     journey['Velocity'] = journey['vehicle_speed']
@@ -472,3 +475,5 @@ def simulate(scenario_dir: Path,
             ev_name, date, 'battery.out.csv')
         output_file.parent.mkdir(parents=True, exist_ok=True)
         battery_output.to_csv(output_file, index=False)
+        dpr.compress_file(output_file)
+

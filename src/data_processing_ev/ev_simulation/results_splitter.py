@@ -228,8 +228,9 @@ def _create_csvs(scenario_dir, **kwargs):
                         "Failed to create: \n\t" + str(battery_csv))
                 else:
                     # If creating the battery_csv was succesful, compress
-                    # the battery_xml file.
+                    # the battery_xml and battery_csv files.
                     dpr.compress_file(battery_xml)
+                    dpr.compress_file(battery_csv)
 
         for fcd_sim_dir in tqdm(fcd_sim_dirs):
             # Try create ev_csv if it doesn't exist
@@ -251,8 +252,9 @@ def _create_csvs(scenario_dir, **kwargs):
                         "Failed to create: \n\t" + str(fcd_csv))
                 else:
                     # If creating the fcd_csv was succesful, compress
-                    # the fcd_xml file.
+                    # the fcd_xml and fcd_csv files.
                     dpr.compress_file(fcd_xml)
+                    dpr.compress_file(fcd_csv)
 
 
 def split_results(scenario_dir: Path, **kwargs):

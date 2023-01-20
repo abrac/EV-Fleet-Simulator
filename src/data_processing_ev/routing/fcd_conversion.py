@@ -65,6 +65,7 @@ def convert_data(scenario_dir: Path, **kwargs):
                 trace_path.stem.split('_')[-1], 'fcd.out.csv')
             output_file.parent.mkdir(parents=True, exist_ok=True)
             trace_new.to_csv(output_file)
+            dpr.compress_file(output_file)
 
 
 if __name__ == '__main__':
