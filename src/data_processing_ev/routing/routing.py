@@ -472,8 +472,8 @@ def build_routes(scenario_dir: Path, **kwargs):
     input_list = sorted(
         [*cluster_dir.joinpath("Filtered_Traces").glob("*/*.csv")])
     output_dir = scenario_dir.joinpath("Mobility_Simulation", "Routes")
-    xml_template = scenario_dir.joinpath('_Inputs', 'Configs',
-                                         'ev_template.xml')
+    xml_template = next(
+        scenario_dir.joinpath('_Inputs', 'Configs').glob('*.vtype.xml'))
 
     # Load stop_labels
     stop_labels_dir = scenario_dir.joinpath('Temporal_Clusters', 'Stop_Labels')

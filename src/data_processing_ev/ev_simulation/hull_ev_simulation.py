@@ -264,7 +264,7 @@ class Vehicle:
 
         self.journey = journey
 
-        config_xml = et.parse(scenario_dir.joinpath('_Inputs', 'Configs', 'ev_template.xml'))
+        config_xml = et.parse(next(scenario_dir.joinpath('_Inputs', 'Configs').glob('*vtype.xml')))
         params_xml = config_xml.getroot().find('vType').findall('param')
         params = {}
 

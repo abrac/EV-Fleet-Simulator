@@ -29,9 +29,9 @@ def initialise_scenario(scenario_dir: Path, **kwargs):
 
         # copy ev_template
         src_files.append(Path(__file__).parent.joinpath('Initialisation_Files',
-                                                        'ev_template.xml'))
+                                                        'ev_template.vtype.xml'))
         dest_files.append(scenario_dir.joinpath('_Inputs', 'Configs',
-                                                'ev_template.xml'))
+                                                'ev_template.vtype.xml'))
 
         # copy custom_osm_test.template.sumocfg
         src_files.append(Path(__file__).parent.joinpath(

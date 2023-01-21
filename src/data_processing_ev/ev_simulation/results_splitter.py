@@ -28,8 +28,8 @@ else:
              "point to the root directory of the SUMO program.")
 
 
-def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
-        input_data_fmt: int, skipping: bool, **kwargs):
+def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path, skipping: bool,
+        **kwargs):
 
     ev_name = ev_xml_file.parent.name
     print(f"### {ev_name} ###")
@@ -273,7 +273,6 @@ def split_results(scenario_dir: Path, **kwargs):
         '*/*.out.xml*')])
 
     args = zip(xmls, repeat(scenario_dir, len(xmls)),
-               repeat(input_data_fmt, len(xmls)),
                repeat(skip_splitting, len(xmls)))
 
     # with mp.Pool(mp.cpu_count() - 1) as p:
