@@ -313,8 +313,8 @@ def initialise_loggers(scenario_dir, **kwargs):
 def print_running_step(step: str):
     LOGGERS['main'].info(f"Running step {step}")
     message = f"Running step {step}"
-    print("\n\n{message}")
-    print('='*len(message)+'\n')
+    print(f"\n\n{message}")
+    print('=' * len(message) + '\n')
 
 
 def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
