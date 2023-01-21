@@ -94,7 +94,7 @@ class Data_Analysis:
         )
 
     def __ev_csv_to_df(self, ev_csv: Path, warn_nan: bool = False,
-                       secs_to_dts: bool = False, delim=',') -> pd.DataFrame:
+                       secs_to_dts: bool = False, delim=',', **kwargs) -> pd.DataFrame:
         """
         Inputs:
             secs_to_dts: True if function must convert seconds to
@@ -106,11 +106,11 @@ class Data_Analysis:
                          to timedeltas.
         """
         # Read the csv
-        dpr.decompress_file(ev_csv)
+        ev_csv = dpr.decompress_file(ev_csv, **kwargs)
         ev_df = pd.read_csv(ev_csv, sep=delim,
                             dtype={"vehicle_id": "category",
                                    "vehicle_lane": "category"})
-        dpr.compress_file(ev_csv)
+        ev_csv = dpr.compress_file(ev_csv, **kwargs)
         # If warn_nan flag is set, check if df has coordinates that are
         # NaN and delete them
         if warn_nan and True in ev_df['vehicle_x'].isna():
@@ -449,7 +449,8 @@ class Data_Analysis:
                 date = ev_csv.parent.name
 
                 # Get parent directory
-                trip_segment = self.__ev_csv_to_df(ev_csv, secs_to_dts=True)
+                trip_segment = self.__ev_csv_to_df(ev_csv,
+                    secs_to_dts=True, **kwargs)
                 # Plot
                 plt_fig = self.__plot_summary_graph(
                     trip_segment, plt_title="Simulation Output of experiment: "
@@ -518,7 +519,8 @@ class Data_Analysis:
                 trip_segment = trip_csv.parent.name
 
                 # Find the times that the trip applies.
-                trip_df = self.__ev_csv_to_df(trip_csv, secs_to_dts=True)
+                trip_df = self.__ev_csv_to_df(trip_csv,
+                    secs_to_dts=True, **kwargs)
 
                 if frequencies_defined:
                     frequency_definitions = frequencies_df[
@@ -742,13 +744,14 @@ class Data_Analysis:
                         # Obtain a dataframe for day
                         if self.input_data_fmt == dpr.DATA_FMTS['GPS']:
                             ev_df = self.__ev_csv_to_df(
-                                battery_csv, secs_to_dts=True).iloc[:-1]
+                                battery_csv, secs_to_dts=True,
+                                **kwargs).iloc[:-1]
                                 # FIXME Why is final_energy NaN? Making it  # noqa
                                 # 2nd last for now.                         # noqa
                         elif self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
                             ev_df = self.__ev_csv_to_df(
                                 battery_csv, secs_to_dts=False,
-                                delim=',').iloc[:-1]
+                                delim=',', **kwargs).iloc[:-1]
                         else:
                             raise ValueError(dpr.DATA_FMT_ERROR_MSG)
                         # If ev_df ends on a different date than it started,
@@ -1014,7 +1017,7 @@ class Data_Analysis:
                 ev_csv = ev_dir.joinpath('Outputs', f'{ev_dir.name}.csv')
                 if ev_csv.exists():
                     ev_df = self.__ev_csv_to_df(
-                        ev_csv, secs_to_dts=False, delim=',')
+                        ev_csv, secs_to_dts=False, delim=',', **kwargs)
                 else:
                     continue
                 yield (ev_dir.name, ev_df)

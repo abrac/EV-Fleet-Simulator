@@ -161,9 +161,9 @@ def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD,
     kinetic model, and returns the file in a pandas dataframe. """
 
     # Load journey.
-    dpr.decompress_file(fcd_file)
+    fcd_file = dpr.decompress_file(fcd_file, **kwargs)
     journey = pd.read_csv(fcd_file)
-    dpr.decompress_file(fcd_file)
+    fcd_file = dpr.compress_file(fcd_file, **kwargs)
 
     # Set up dataframe for energy consumption estimations
     journey['Velocity'] = journey['vehicle_speed']
@@ -475,5 +475,5 @@ def simulate(scenario_dir: Path,
             ev_name, date, 'battery.out.csv')
         output_file.parent.mkdir(parents=True, exist_ok=True)
         battery_output.to_csv(output_file, index=False)
-        dpr.compress_file(output_file)
+        output_file = dpr.compress_file(output_file, **kwargs)
 

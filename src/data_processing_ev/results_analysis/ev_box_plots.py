@@ -67,9 +67,11 @@ def _gen_box_plots(scenario_dir: Path,
     for ev_dir in tqdm(ev_dirs):
         dists_travelled = []
         ev_csv_files = sorted([
-            *ev_dir.glob('*/battery.out.csv')])
+            *ev_dir.glob('*/battery.out.csv*')])
         for ev_csv_file in ev_csv_files:
+            ev_csv_file = dpr.decompress_file(ev_csv_file, **kwargs)
             ev_df = pd.read_csv(ev_csv_file, skipinitialspace=True)
+            ev_csv_file = dpr.compress_file(ev_csv_file, **kwargs)
             dist_travelled = ev_df['vehicle_speed'].sum()
             dists_travelled.append(dist_travelled)
         all_dists_travelled.append(dists_travelled)

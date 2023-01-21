@@ -170,7 +170,7 @@ def simulate_all_routes(scenario_dir: Path,
             xml_file = scenario_dir.joinpath(
                 'EV_Simulation', 'EV_Simulation_Outputs_Combined',
                 ev_name, f'{file_stem}.out.xml')
-            dpr.compress_file(xml_file)
+            xml_file = dpr.compress_file(xml_file, **kwargs)
 
     print("Simulations complete.")
 

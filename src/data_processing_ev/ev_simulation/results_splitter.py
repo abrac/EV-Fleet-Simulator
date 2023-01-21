@@ -29,7 +29,7 @@ else:
 
 
 def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
-        input_data_fmt: int, skipping: bool):
+        input_data_fmt: int, skipping: bool, **kwargs):
 
     ev_name = ev_xml_file.parent.name
     print(f"### {ev_name} ###")
@@ -42,12 +42,12 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
     # directories, then exit. Otherwise, split the SUMO outputs.
     if any(output_dir.iterdir()) and skipping:
         print("Skipping {ev_name}, as it has already been split...")
-        ev_xml_file = dpr.compress_file(ev_xml_file)
+        ev_xml_file = dpr.compress_file(ev_xml_file, **kwargs)
         return
 
     else:
         print("Decompressing the xml file...")
-        ev_xml_file = dpr.decompress_file(ev_xml_file)
+        ev_xml_file = dpr.decompress_file(ev_xml_file, **kwargs)
 
         file_stem = ev_xml_file.stem
         file_stem = file_stem[:file_stem.find('.out')]
@@ -123,7 +123,7 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
                         tmp_tree.write(f, encoding='UTF-8')
                     # Clear the temp root
                     root.clear()
-                    dpr.compress_file(output_file)
+                    output_file = dpr.compress_file(output_file, **kwargs)
 
                 tmp_root = et.Element(f'{file_stem}-export')
                 # Append current node, if it's not the last node.
@@ -162,12 +162,12 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path,
             tmp_tree.write(f, encoding='UTF-8')
         # Clear the temp root
         root.clear()
-        dpr.compress_file(output_file)
+        output_file = dpr.compress_file(output_file, **kwargs)
 
         # Compress the combined XML file.
 
         print("Compressing combined XML file.")
-        ev_xml_file = dpr.compress_file(ev_xml_file)
+        ev_xml_file = dpr.compress_file(ev_xml_file, **kwargs)
 
 
 def _create_csvs(scenario_dir, **kwargs):
@@ -213,7 +213,7 @@ def _create_csvs(scenario_dir, **kwargs):
             battery_csv_gz = ev_sim_dir.joinpath('battery.out.csv.gz')
             battery_csv = ev_sim_dir.joinpath('battery.out.csv')
             battery_xml_gz = ev_sim_dir.joinpath('battery.out.xml.gz')
-            battery_xml = dpr.decompress_file(battery_xml_gz)
+            battery_xml = dpr.decompress_file(battery_xml_gz, **kwargs)
             if not battery_xml.exists():
                 continue
             if skipping and (battery_csv.exists() or battery_csv_gz.exists()):
@@ -229,15 +229,15 @@ def _create_csvs(scenario_dir, **kwargs):
                 else:
                     # If creating the battery_csv was succesful, compress
                     # the battery_xml and battery_csv files.
-                    dpr.compress_file(battery_xml)
-                    dpr.compress_file(battery_csv)
+                    battery_xml = dpr.compress_file(battery_xml, **kwargs)
+                    battery_xml = dpr.compress_file(battery_csv, **kwargs)
 
         for fcd_sim_dir in tqdm(fcd_sim_dirs):
             # Try create ev_csv if it doesn't exist
             fcd_csv_gz = fcd_sim_dir.joinpath('fcd.out.csv.gz')
             fcd_csv = fcd_sim_dir.joinpath('fcd.out.csv')
             fcd_xml_gz = fcd_sim_dir.joinpath('fcd.out.xml.gz')
-            fcd_xml = dpr.decompress_file(fcd_xml_gz)
+            fcd_xml = dpr.decompress_file(fcd_xml_gz, **kwargs)
             if not fcd_xml.exists():
                 continue
             if skipping and (fcd_csv.exists() or fcd_csv_gz.exists()):
@@ -253,8 +253,8 @@ def _create_csvs(scenario_dir, **kwargs):
                 else:
                     # If creating the fcd_csv was succesful, compress
                     # the fcd_xml and fcd_csv files.
-                    dpr.compress_file(fcd_xml)
-                    dpr.compress_file(fcd_csv)
+                    fcd_xml = dpr.compress_file(fcd_xml, **kwargs)
+                    fcd_csv = dpr.compress_file(fcd_csv, **kwargs)
 
 
 def split_results(scenario_dir: Path, **kwargs):
@@ -280,7 +280,7 @@ def split_results(scenario_dir: Path, **kwargs):
     #     p.starmap(_split_ev_xml, args)
 
     for arg_set in args:
-        _split_ev_xml(*arg_set)
+        _split_ev_xml(*arg_set, **kwargs)
 
     # Moving the split FCD files to the mobility simulation folder.
     for fcd_file in scenario_dir.joinpath('EV_Simulation',
