@@ -9,13 +9,13 @@ executed from the within the scenario's simulation-outputs directory.
 from pathlib import Path
 import json
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import numpy as np
 import pandas as pd
 from itertools import repeat
 import pickle
 import data_processing_ev as dpr
 from tqdm import tqdm
+import scipy.integrate as integrate
 
 
 def _gen_box_plots(scenario_dir: Path,
@@ -72,7 +72,8 @@ def _gen_box_plots(scenario_dir: Path,
             ev_csv_file = dpr.decompress_file(ev_csv_file, **kwargs)
             ev_df = pd.read_csv(ev_csv_file, skipinitialspace=True)
             ev_csv_file = dpr.compress_file(ev_csv_file, **kwargs)
-            dist_travelled = ev_df['vehicle_speed'].sum()
+            t = ev_df['timestep_time'] - ev_df['timestep_time'][0]
+            dist_travelled = integrate.cumtrapz(ev_df['vehicle_speed'], t)[-1]
             dists_travelled.append(dist_travelled)
         all_dists_travelled.append(dists_travelled)
 
@@ -100,7 +101,8 @@ def _gen_box_plots(scenario_dir: Path,
     # Generate a box-plot from the values in all_energy_diffs.
     plt.boxplot(kwh_p_km,
                 medianprops={'color': 'black'},
-                flierprops={'marker': '.'})
+                flierprops={'marker': '.'},
+                showmeans=True)
     plt.ylabel("Daily energy usage (kWh/km)")
     plt.xticks(range(1, len(ev_names) + 1), ev_names, rotation=30,
                fontsize='small')

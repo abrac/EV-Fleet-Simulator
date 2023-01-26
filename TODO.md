@@ -2,6 +2,7 @@
      view this file. Just search the web for a nice markdown editor (like
      Ghostwriter). -->
 
+- [ ] (De-)Compressing those battery.out.csv files one by one is too slow. Perhaps we can rather do them all in bulk at the beginning and end of the data analysis script... It is also impacting the speed fo Hull's EV model.
 - [ ] Standardise input file format to use m/s as it's velocity unit, rather than km/h. SI units, please!
 - [ ] Compress csv outputs!
 - [ ] Update the docs to describe what inputs are required, in various simulation configurations.

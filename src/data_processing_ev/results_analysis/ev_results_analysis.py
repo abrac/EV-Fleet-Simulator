@@ -4,8 +4,6 @@
 # - [ ] Refactor "indiv_ev" and "indiv_vehicle" to ev.
 # - [ ] Refactor "agg_ev" and "agg_vehicle" to fleet.
 # - [ ] Save pickled versions of plots. *
-# XXX:
-# - [ ] Remove breakpoints scattered everywhere.
 
 # %% Imports ##################################################################
 
@@ -33,6 +31,7 @@ import gc
 import statsmodels.api as sm
 import data_processing_ev as dpr
 from matplotlib.ticker import FuncFormatter
+from data_processing_ev.results_analysis import analysis_functions
 
 # plt.ion()
 plt.style.use('default')
@@ -187,9 +186,10 @@ class Data_Analysis:
 
         for ev_df in ev_dfs:
             if plt_type == 'Distance':
-                # Approx_distance in km. Note: `ev_df['vehicle_speed']`
-                # is in m/s.
-                dist = integrate.cumtrapz(ev_df['vehicle_speed'], dx=1)
+                # Approx_distance in meters.
+                # Note: `ev_df['vehicle_speed']` is in m/s.
+                t = ev_df['timestep_time'] - ev_df['timestep_time'][0]
+                dist = integrate.cumtrapz(ev_df['vehicle_speed'], t)
 
             # Get the column for plot_type
             plt_df_func = {
@@ -239,7 +239,8 @@ class Data_Analysis:
         for ev_df in ev_dfs:
             power_df = ev_df['vehicle_energyConsumed'] * 3.6 * 1000
 
-            dist = integrate.cumtrapz(ev_df['vehicle_speed'], dx=1)
+            t = ev_df['timestep_time'] - ev_df['timestep_time'][0]
+            dist = integrate.cumtrapz(ev_df['vehicle_speed'], t)
             dist_df = pd.Series(dist / 1000)
             dist_dfs.append(dist_df)
 
@@ -314,7 +315,8 @@ class Data_Analysis:
 
         # Variables needed in plots
         # Approx_distance in km. Note: `ev_df['vehicle_speed']` is in m/s.
-        dist = integrate.cumtrapz(ev_df['vehicle_speed'], dx=1) / 1000
+        t = ev_df['timestep_time'] - ev_df['timestep_time'][0]
+        dist = integrate.cumtrapz(ev_df['vehicle_speed'], t) / 1000
         # TODO: Make `rolling_window` function argument
         rolling_window = 3600  # seconds
 
@@ -653,7 +655,7 @@ class Data_Analysis:
 
                 # Save aggregated trip_instances dataframe
                 trip_mean_profile.to_csv(graphdir.joinpath(
-                    'battery.out.aggregated.csv'))  # XXX FIXME Make sure that
+                    'battery.out.aggregated.csv'))  # TODO FIXME Make sure that
                     # `ev_fleet_stats` reads *this* csv file in the case of
                     # GTFS mode.
 
@@ -926,7 +928,7 @@ class Data_Analysis:
                 ev_df = ev_df.reindex(pd.date_range(earliest_time, latest_time,
                                                     freq='s'))
                 # fill nan values
-                # XXX I am commenting out ones that I don't need.
+                # FIXME I am commenting out ones that I don't need.
                 # ev_df['vehicle_acceleration'] = \
                 #    ev_df['vehicle_acceleration'].fillna(0)
                 # ev_df['vehicle_energyCharged'] = \
@@ -1164,7 +1166,7 @@ class Data_Analysis:
                 ev_df = ev_df.reindex(pd.date_range(earliest_time, latest_time,
                                                     freq='s'))
                 # fill nan values
-                # XXX I am commenting out ones that I don't need.
+                # FIXME I am commenting out ones that I don't need.
                 # ev_df['vehicle_acceleration'] = \
                 #    ev_df['vehicle_acceleration'].fillna(0)
                 # ev_df['vehicle_energyCharged'] = \
@@ -1202,7 +1204,7 @@ class Data_Analysis:
             _reformat_ev_dfs(ev_dfs)
 
             # Create a mean dataframe
-            # XXX: TODO: Find a more memory efficient way of doing this.
+            # TODO: Find a more memory efficient way of doing this.
             # `pd.concat` seems to duplicate everything in memory...
             ev_dfs_combined = pd.concat(ev_dfs)
             ev_df_mean = ev_dfs_combined.groupby(['timestep_time']).mean()

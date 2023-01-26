@@ -422,7 +422,10 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
             else:
                 print("Bad input!")
 
-        if routing_was_done:
+        if fcd_conversion_was_done:
+            hull_ev_simulation.simulate(scenario_dir, integration_mthd,
+                routing_was_done, **kwargs)
+        elif routing_was_done:
             sumo_ev_simulation.simulate_all_routes(
                 scenario_dir, skip_existing=False, **kwargs)
             results_splitter.split_results(scenario_dir, **kwargs)
@@ -435,9 +438,6 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
             hull_ev_simulation.simulate(scenario_dir, integration_mthd,
                 routing_was_done, **kwargs)
                 # TODO  Remove integration_mthd argument.
-        elif fcd_conversion_was_done:
-            hull_ev_simulation.simulate(scenario_dir, integration_mthd,
-                routing_was_done, **kwargs)
         else:
             raise ValueError("The Mobility Simulation step was not done. "
                 "Please run it before requesting an EV Simulation.")

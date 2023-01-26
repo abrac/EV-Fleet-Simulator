@@ -2,17 +2,19 @@
 columns with the geodesic distance and slope angles between consecutive
 observations"""
 
+INTEGRATION_MTHD = {'fwd': 0, 'bwd': 1, 'ctr': 2}
+DFLT_INTEGRATION_MTHD = INTEGRATION_MTHD['ctr']
+
+
 import pandas as pd
 import numpy as np
-import geopy.distance
 from pathlib import Path
 from tqdm import tqdm
 import xml.etree.ElementTree as et
 import ast
 import data_processing_ev as dpr
-
-INTEGRATION_MTHD = {'fwd': 0, 'bwd': 1, 'ctr': 2}
-DFLT_INTEGRATION_MTHD = INTEGRATION_MTHD['ctr']
+from scipy import integrate
+from data_processing_ev.results_analysis import analysis_functions
 
 
 def tryeval(val):
@@ -46,112 +48,6 @@ def delta_ctr(array: pd.Series):
                      name=array.name)
 
 
-def _getDistSlope(journey, integration_mthd=DFLT_INTEGRATION_MTHD, geo=True, **kwargs):
-    """
-    Inputs:
-        - dataframe with vehicle journey data
-        - geo: If true, then the coordinates are interpreted as latitude and
-            longitude. If false, then the coordinates are interpreted as coordinates in
-            meters (with respect to some reference).
-
-    Calculates distance between each successive pair of coordinates,
-    accounting also for elevation difference.
-
-    Calculates slope angle faced by vehicle at each timestamp.
-    """
-
-    Distance = np.zeros(len(journey))
-    Slope = np.zeros(len(journey))
-    l_route = journey.shape[0]
-
-    if integration_mthd == INTEGRATION_MTHD['fwd']:
-        Distance[-1] = 0
-        Slope[-1] = 0
-        for i in range(0,l_route-1):  # end before i + 1 out of range
-            elev_change = journey.Altitude.iloc[i+1] - journey.Altitude.iloc[i]
-            if geo:
-                dist_lateral = geopy.distance.geodesic(
-                    journey.Coordinates.iloc[i],
-                        # Lateral distance in meters - dist between two lat/lon
-                        # coord pairs
-                    journey.Coordinates.iloc[i+1]).m
-                        # Coordinates is list(zip(journey['Latitude'],
-                        # journey['Longitude']))
-            else:
-                dist_lateral = np.sqrt(
-                    (journey.Coordinates.iloc[i+1][0] - journey.Coordinates.iloc[i][0])**2 +
-                    (journey.Coordinates.iloc[i+1][1] - journey.Coordinates.iloc[i][1])**2)
-
-            dist_3d = np.sqrt(dist_lateral**2 + elev_change**2)
-                # geodesic distance (3d = accounting for elevation), in meters
-            Distance[i] = dist_3d
-            if Distance[i] != 0 and elev_change != 0:
-                Slope[i] = np.arcsin(elev_change/dist_3d)
-                    # calculate slope angle in radians from opposite/hypotenuse
-
-    elif integration_mthd == INTEGRATION_MTHD['bwd']:
-        Distance[0] = 0
-        Slope[0] = 0
-        for i in range(1,l_route):  # Start after i-1 out of range
-            elev_change = journey.Altitude.iloc[i] - journey.Altitude.iloc[i-1]
-            if geo:
-                dist_lateral = geopy.distance.geodesic(
-                    journey.Coordinates.iloc[i-1],
-                        # Lateral distance in meters - dist between two lat/lon
-                        # coord pairs
-                    journey.Coordinates.iloc[i]).m
-                        # Coordinates is list(zip(journey['Latitude'],
-                        # journey['Longitude']))
-            else:
-                dist_lateral = np.sqrt(
-                    (journey.Coordinates.iloc[i][0] - journey.Coordinates.iloc[i-1][0])**2 +
-                    (journey.Coordinates.iloc[i][1] - journey.Coordinates.iloc[i-1][1])**2)
-
-            dist_3d = np.sqrt(dist_lateral**2 + elev_change**2)
-                # geodesic distance (3d = accounting for elevation), in meters
-            Distance[i] = dist_3d
-            if Distance[i] != 0 and elev_change != 0:
-                Slope[i] = np.arcsin(elev_change/dist_3d)
-                    # calculate slope angle in radians from opposite/hypotenuse
-
-    elif integration_mthd == INTEGRATION_MTHD['ctr']:
-        Distance[0] = 0
-        Distance[-1] = 0
-        Slope[0] = 0
-        Slope[-1] = 0
-        for i in range(1, l_route-1):  # Start after i-1 out of range
-            elev_change = (journey.Altitude.iloc[i+1] - journey.Altitude.iloc[i-1])/2
-            if geo:
-                dist_lateral = (geopy.distance.geodesic(
-                    journey.Coordinates.iloc[i-1],
-                        # Lateral distance in meters - dist between two lat/lon
-                        # coord pairs
-                    journey.Coordinates.iloc[i+1]).m) / 2
-                        # Coordinates is list(zip(journey['Latitude'],
-                        # journey['Longitude']))
-            else:
-                dist_lateral = (np.sqrt(
-                    (journey.Coordinates.iloc[i+1][0] -
-                     journey.Coordinates.iloc[i-1][0])**2 +
-                    (journey.Coordinates.iloc[i+1][1] -
-                     journey.Coordinates.iloc[i-1][1])**2)) / 2
-
-            dist_3d = np.sqrt(dist_lateral**2 + elev_change**2)
-                # geodesic distance (3d = accounting for elevation), in meters
-            Distance[i] = dist_3d
-            if Distance[i] != 0 and elev_change != 0:
-                Slope[i] = np.arcsin(elev_change / dist_3d)
-                    # calculate slope angle in radians from opposite/hypotenuse
-
-    else:
-        raise ValueError("Integration method not supported.")
-
-    journey['Displacement_m'] = list(Distance)  # add displacement to dataframe
-    journey['slope_rad'] = list(Slope)  # add slope in radians to dataframe
-    journey['slope_deg'] = journey['slope_rad'] * 180/np.pi
-        # calculate slope angle in degrees
-
-
 # -----------------------------------------------------------------------------
 def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
     """ This function takes the filename of a GPS trip stored in a .csv file,
@@ -168,20 +64,13 @@ def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD,
     # Set up dataframe for energy consumption estimations
     journey['Velocity'] = journey['vehicle_speed']
     journey.drop(columns=['vehicle_speed', 'vehicle_x', 'vehicle_y'])
-    if 'vehicle_z' in journey.columns:
-        journey['Altitude'] = journey['vehicle_z']
-        journey.drop(columns=['vehicle_z'])
-    else:
-        journey['Altitude'] = 0
+    if 'vehicle_z' not in journey.columns:
+        journey['vehicle_z'] = 0
 
     # Convert speed in km/h to m/s.
     # journey['Velocity'] = journey['Velocity']/3.6
     # OR: Observations less than 0.5 m/s are set to 0, due to GPS noise
     # journey['Velocity'] = np.where(journey['Velocity'] >= 0.5, journey['Velocity']/3.6, 0)
-
-    # Calculate elevation change
-    elev_change = - journey['Altitude'] + journey['Altitude'].shift(-1)
-    journey['ElevChange'] = np.where(abs(elev_change) >= 0.2, elev_change, 0)
 
     if integration_mthd == INTEGRATION_MTHD['fwd']:
         # Calculate time between samples. Useful for kinetic model.
@@ -208,9 +97,9 @@ def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD,
     journey['Acceleration'] = np.where(journey['DeltaT'] > 0, journey['DeltaV']/journey['DeltaT'], 0)
 
     # Joins lat/lon Coords into one column, useful for getDist function
-    journey['Coordinates'] = list(zip(journey['vehicle_x'], journey['vehicle_y']))
+    journey['Coordinates'] = list(zip(journey['vehicle_y'], journey['vehicle_x']))
 
-    _getDistSlope(journey, integration_mthd, geo, **kwargs)
+    analysis_functions.getDistSlope(journey, integration_mthd, geo, **kwargs)
 
     return journey
 
@@ -284,6 +173,11 @@ class Vehicle:
         self.capacity = params['maximumBatteryCapacity']  # The total battery capacity (Wh)
         self.battery = self.capacity / 2  # Initial battery energy (Wh)
         self.p0 = params['constantPowerIntake']  # constant power loss in W (to run the vehicle besides driving)
+        self.Inertia = params['internalMomentOfInertia']  # Internal moment of inertia in kg·m⁴.
+        if 'wheelRadius' in params.keys():
+            self.r_wheel = params['wheelRadius']
+        else:
+            self.r_wheel = 0.68 / 2
 
     def getEnergyExpenditure(self) -> pd.DataFrame:
 
@@ -317,7 +211,6 @@ class Vehicle:
         bat_state = []  # The battery state for each timestep.
 
         # ---------------------------------------------------------------------
-
         for slope,vel,acc,delta_t,delta_v in zip(s, v, a, dt, dv):
 
             if vel == 0:
@@ -333,21 +226,18 @@ class Vehicle:
 
             force = frr + fa + fhc  # (N + N + N)  - total drag force
 
-            exp_speed_delta = force * delta_t / self.mass  # (N) * (s) / (kg)
+            exp_speed_delta = force * delta_t / (self.mass + self.Inertia / self.r_wheel**2)  # (N) * (s) / (kg)
 
             unexp_speed_delta = delta_v - exp_speed_delta  # (m/s) - (m/s)
 
             try:
-                prop_brake_force = unexp_speed_delta / delta_t * self.mass
+                prop_brake_force = unexp_speed_delta / delta_t * self.mass + unexp_speed_delta / delta_t * self.Inertia / self.r_wheel**2
                     # (m/s) / (s) * (kg) = N
 
                 kinetic_power = prop_brake_force * vel  # (N) * (m/s) = (W)
 
                 propulsion_work = kinetic_power * delta_t
                     # (W) * (s) -- kinetic energy
-
-                # TODO: No internal moment of inertia used to calculate
-                # propulsion work...
 
             except ZeroDivisionError:
                 prop_brake_force = 0
@@ -362,22 +252,23 @@ class Vehicle:
 
         Er = [Er_i / (3600) for Er_i in Er]  # Converting Ws to Wh
         Er_batt = [0.0]*len(Er)
-        Er_charged = [0.0]*len(Er)  # Energy charged from charging stations.
-                                    # Not yet implemented! Haven't added
-                                    # charging stations to SUMO yet. Perhaps,
-                                    # if Chris Hull does that, we can implement
-                                    # it here too.
-        offtake_power = [0.0]*len(Er)
+
+        # TODO
+        # Er_charged = [0.0]*len(Er)  # Energy charged from charging stations.
+                                      # Not yet implemented! Haven't added
+                                      # charging stations to SUMO yet. Perhaps,
+                                      # if Chris Hull does that, we can implement
+                                      # it here too.
 
         cur_bat_state = self.battery  # Current battery state.
         for i in range(len(Er)):
-            offtake_power[i] = self.p0  # constant offtake TODO Add this to the battery energy, right?
-
             if Er[i] > 0:  # energy that is used for propulsion
                 Er_batt[i] = Er[i]/self.eff
 
             elif Er[i] < 0:  # energy that is regen'd back into the battery
                 Er_batt[i] = Er[i] * RGBeff
+
+            Er_batt[i] += dt[i] * self.p0 / 3600  # Ws to Wh
 
             cur_bat_state -= Er_batt[i]
 
@@ -387,12 +278,13 @@ class Vehicle:
                 journey['timestep_time'].values,
                 journey['Acceleration'],
                 bat_state,
-                Er_charged,
+                # Er_charged,
                 Er_batt,
                 # journey['vehicle_id'],
                 # journey['vehicle_lane'],
                 [self.capacity]*len(Er),
                 # journey['vehicle_pos'],
+                journey['displacement'],
                 journey['Velocity'],
                 journey['vehicle_x'],
                 journey['vehicle_y'],
@@ -401,19 +293,20 @@ class Vehicle:
             'timestep_time',
             'vehicle_acceleration',
             'vehicle_actualBatteryCapacity',
-            'vehicle_energyCharged',
+            # 'vehicle_energyCharged',
             'vehicle_energyConsumed',
             # 'vehicle_id',
             # 'vehicle_lane',
             'vehicle_maximumBatteryCapacity',
             # 'vehicle_posOnLane',
+            'displacement',
             'vehicle_speed',
             'longitude',
             'latitude'
         ]
 
         # TODO Add to a dictionary and save as property.
-        Fa, Frr, Fhc, Fr, Frpb, Er, Er_batt, offtake_power
+        Fa, Frr, Fhc, Fr, Frpb, Er, Er_batt
             # N,N,N,N,N,m/s,ms,N,Wh,Wh,Wh,Wh
 
         return self.battery_output
@@ -464,8 +357,12 @@ def simulate(scenario_dir: Path,
         # coordinates.
         geo = True
 
+    battery_outputs = []
+
     for fcd_file in tqdm(fcd_files):
         battery_output = simulate_trace(scenario_dir, fcd_file, geo, integration_mthd, **kwargs)
+
+        battery_outputs.append(battery_output)
 
         # Write results
         ev_name = fcd_file.parents[1].name
@@ -477,3 +374,16 @@ def simulate(scenario_dir: Path,
         battery_output.to_csv(output_file, index=False)
         output_file = dpr.compress_file(output_file, **kwargs)
 
+    print("EV Simulation completed. Basic stats:")
+    energy_consumption = []
+    for journey_df in battery_outputs:
+        dist = journey_df['displacement'].sum()
+        # Alternative way of calculating dist:
+        # t = journey_df['timestep_time'] - journey_df['timestep_time'][0]
+        # dist = integrate.cumtrapz(journey_df['vehicle_speed'], t)[-1]
+        energy_consumption.append(journey_df['vehicle_energyConsumed'].sum()/dist)
+
+    summ_df = pd.DataFrame({'Energy efficiency (kWh/km)': pd.Series(energy_consumption)})
+
+    print(round(summ_df.describe(),2))
+    summ_df.boxplot(showmeans=True)
