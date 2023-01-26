@@ -1,6 +1,7 @@
 # TODO Maybe convert the dir structure to format in
 # https://stackoverflow.com/a/62570479/10462623 OR Create the dir structure in
 # the file system, and store it using Path.glob('**')
+# PYTHON_ARGCOMPLETE_OK
 
 DATA_FMTS = {'GPS': 0, 'GTFS': 1}
 
@@ -28,6 +29,7 @@ from .results_analysis import wind_results_analysis
 from pathlib import Path
 from typing import Iterable, SupportsFloat
 import argparse
+import argcomplete
 import time
 import subprocess
 import multiprocessing as mp
@@ -492,6 +494,7 @@ def main():
     parser.add_argument(
         '-v', '--version', action='store_true',
         help="Print ev-fleet-sim's version, and quit.")
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     if args.version:

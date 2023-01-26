@@ -262,13 +262,16 @@ class Vehicle:
 
         cur_bat_state = self.battery  # Current battery state.
         for i in range(len(Er)):
-            if Er[i] > 0:  # energy that is used for propulsion
+            if Er[i] >= 0:  # energy that is used for propulsion
                 Er_batt[i] = Er[i]/self.eff
 
-            elif Er[i] < 0:  # energy that is regen'd back into the battery
+            else:  # energy that is regen'd back into the battery
                 Er_batt[i] = Er[i] * RGBeff
 
             Er_batt[i] += dt[i] * self.p0 / 3600  # Ws to Wh
+
+            if np.isnan(Er_batt[i]):
+                Er_batt[i] = 0
 
             cur_bat_state -= Er_batt[i]
 
