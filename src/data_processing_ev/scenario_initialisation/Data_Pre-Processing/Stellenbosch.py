@@ -74,7 +74,7 @@ def main(scenario_dir: Path):
     # Create a list of csv files found in the traces directory.
     traces_dir = scenario_dir.joinpath('_Inputs', 'Traces')
 
-    if not traces_dir.joinpath('Processed').glob('*.csv'):
+    if not any(traces_dir.joinpath('Processed').glob('*.csv')):
         _generate_traces(traces_dir)
     else:
         # Else (if there are aleardy processed csv files):

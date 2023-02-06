@@ -158,7 +158,10 @@ def simulate_all_routes(scenario_dir: Path,
     for simulation_cmd, sumocfg in tqdm(zip(simulation_cmds, sumocfgs)):
         ev_name = sumocfg.stem
 
-        print(f"# Simulating {ev_name}...")
+        msg_simulating = f"# Simulating {ev_name}..."
+        print(msg_simulating)
+        dpr.LOGGERS['sumo_output'].info(msg_simulating)
+
         result = subprocess.run(simulation_cmd, capture_output=True)
 
         # Save the output:
