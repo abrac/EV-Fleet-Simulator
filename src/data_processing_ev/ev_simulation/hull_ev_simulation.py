@@ -13,7 +13,6 @@ from tqdm import tqdm
 import xml.etree.ElementTree as et
 import ast
 import data_processing_ev as dpr
-from scipy import integrate
 from data_processing_ev.results_analysis import analysis_functions
 
 
@@ -77,18 +76,24 @@ def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD,
         journey['DeltaT'] = delta_fwd(journey['timestep_time'])
         # Calculate change in velocity between each timestep
         journey['DeltaV'] = delta_fwd(journey['Velocity'])
+        # Change in heading between each timestep (in radians)
+        journey['Deltaθ'] = delta_fwd(journey['vehicle_angle']) * np.pi / 180
 
     elif integration_mthd == INTEGRATION_MTHD['bwd']:
         # Calculate time between samples. Useful for kinetic model.
         journey['DeltaT'] = delta_bwd(journey['timestep_time'])
         # Calculate change in velocity between each timestep
         journey['DeltaV'] = delta_bwd(journey['Velocity'])
+        # Change in heading between each timestep (in radians)
+        journey['Deltaθ'] = delta_bwd(journey['vehicle_angle']) * np.pi / 180
 
     elif integration_mthd == INTEGRATION_MTHD['ctr']:
         # Calculate time between samples. Useful for kinetic model.
         journey['DeltaT'] = delta_ctr(journey['timestep_time'])
         # Calculate change in velocity between each timestep
         journey['DeltaV'] = delta_ctr(journey['Velocity'])
+        # Change in heading between each timestep (in radians)
+        journey['Deltaθ'] = delta_ctr(journey['vehicle_angle']) * np.pi / 180
 
     else:
         raise ValueError("Unknown integration method.")
@@ -125,10 +130,32 @@ def getAerodynamicDrag(c_d, A, vel, rho=1.184):
     return -0.50 * rho * c_d * A * vel**2
 
 
-# -----------------------------------------------------------------------------
 def getRoadSlopeDrag(mass, slope, grav=9.81):
     """ Road Slope Force (N) """
     return -mass * grav * np.sin(slope)
+
+
+def getRadialDrag(mass, c_rad, delta_θ, dist, vel):
+    """ Radial drag (N) """
+    # If the vehicle has gone further than 1 meter in one second, and the
+    # vehicle has made a turn:
+    if dist > 0.1 and delta_θ != 0:
+        radius = dist/abs(delta_θ)
+        # If the radius is tiny, limit F_rad so that it doesn't become too much:
+        if radius < 0.0001:
+            dpr.LOGGERS['main'].error("The turning radius is extremely tiny! "
+                "There could be an issue with the input data...")
+            radius = 0.0001
+        # If the turning radius is large, ignore F_rad:
+        elif radius > 10000:
+            radius = None
+        if radius is not None:
+            F_rad = -c_rad * mass * vel**2 / radius
+        else:
+            F_rad = 0
+    else:
+        F_rad = 0
+    return F_rad
 
 
 # -----------------------------------------------------------------------------
@@ -147,9 +174,15 @@ class Vehicle:
     p0 - constant power intake (W)
     """
 
-    def __init__(self, scenario_dir, journey: pd.DataFrame, **kwargs):
-
-        # TODO: Doesn't implement InternalMomentOfInertia, radialDragCoefficient
+    def __init__(self, scenario_dir, journey: pd.DataFrame,
+                 name: str = 'unknown_vehicle', **kwargs):
+        """
+        Optional keyworded arguments:
+            internalMomentOfInertia_is_mass:
+                If this is true, the units of the internalMomentOfInertia will
+                be taken as kg, instead of kg·m^2. Therefore, it will be
+                multiplied by the radius of the wheel squared.
+        """
 
         self.journey = journey
 
@@ -171,13 +204,21 @@ class Vehicle:
         self.eff = params['propulsionEfficiency']  # %, powertrain efficiency
         self.rgbeff = params['recuperationEfficiency']  # %, regen brake efficiency
         self.capacity = params['maximumBatteryCapacity']  # The total battery capacity (Wh)
+        self.max_power = params['maximumPower']  # The maximum power that the vehicle can output.
         self.battery = self.capacity / 2  # Initial battery energy (Wh)
         self.p0 = params['constantPowerIntake']  # constant power loss in W (to run the vehicle besides driving)
-        self.Inertia = params['internalMomentOfInertia']  # Internal moment of inertia in kg·m⁴.
+        self.Inertia = params['internalMomentOfInertia']  # Internal moment of inertia in kg·m².
         if 'wheelRadius' in params.keys():
             self.r_wheel = params['wheelRadius']
         else:
             self.r_wheel = 0.68 / 2
+        if kwargs.get('internalMomentOfInertia_is_mass'):
+            self.c_rad = params['radialDragCoefficient'] * self.r_wheel**2  # Radial drag coefficient.
+        else:
+            self.c_rad = params['radialDragCoefficient']  # Radial drag coefficient.
+
+        self.name = name
+
 
     def getEnergyExpenditure(self) -> pd.DataFrame:
 
@@ -185,11 +226,14 @@ class Vehicle:
 
         journey = self.journey
 
+        timesteps = journey['timestep_time']
         v = journey['Velocity']  # m/s
         s = journey['slope_rad']  # rad
         a = journey['Acceleration']  # m/s^2
         dt = journey['DeltaT']  # s
         dv = journey['DeltaV']  # m/s
+        dθ = journey['Deltaθ']  # rad
+        dists = journey['displacement']  # m
 
         # TODO Do this in the init.
         RGBeff = self.rgbeff  # static regen coeff
@@ -201,30 +245,21 @@ class Vehicle:
 
         Frpb = []  # force propulsive or braking
 
-        # Drag forces
-        Fa = []  # aerodynamic drag
-        Frr = []  # rolling resistance
-        Fhc = []  # hill climb (slope drag)
-        Fr = []  # Drag force: Inertia + Friction + Aero Drag + Slope Drag (N)
-
         # Battery state
         bat_state = []  # The battery state for each timestep.
 
         # ---------------------------------------------------------------------
-        for slope,vel,acc,delta_t,delta_v in zip(s, v, a, dt, dv):
+        for timestep, slope,vel,acc,delta_t,delta_v,delta_θ,dist in zip(timesteps, s, v, a, dt, dv, dθ, dists):
 
             if vel == 0:
-                force, frr, fa, fhc = 0,0,0,0
+                force, frr, fa, fhc, frd = 0,0,0,0,0
             else:
                 frr = getRoadFriction(self.mass,self.crr, slope, vel)
                 fa = getAerodynamicDrag(self.cd, self.A, vel)
                 fhc = getRoadSlopeDrag(self.mass, slope)
+                frd = getRadialDrag(self.mass, self.c_rad, delta_θ, dist, vel)
 
-            Frr.append(frr)
-            Fa.append(fa)
-            Fhc.append(fhc)
-
-            force = frr + fa + fhc  # (N + N + N)  - total drag force
+            force = frr + fa + fhc + frd  # (N + N + N + N) Total drag force
 
             exp_speed_delta = force * delta_t / (self.mass + self.Inertia / self.r_wheel**2)  # (N) * (s) / (kg)
 
@@ -240,13 +275,22 @@ class Vehicle:
                     # (W) * (s) -- kinetic energy
 
             except ZeroDivisionError:
+                dpr.LOGGERS['main'].error(
+                    f"Zero division encountered in timestep {timestep} of "
+                    f"vehicle '{self.name}'.")
                 prop_brake_force = 0
                 kinetic_power = 0
                 propulsion_work = 0
 
             # -----------------------------------------------------------------
 
-            Fr.append(force)  # N
+            if propulsion_work > self.max_power:
+                dpr.LOGGERS['main'].error(
+                    f"Vehicle {self.name}: Timestep {timestep}: "
+                    f"Vehicle required a power of {propulsion_work} W which "
+                    f"is greater than the maximum power {self.max_power} W "
+                    "that the vehicle is able to output.")
+
             Frpb.append(prop_brake_force)  # N
             Er.append(propulsion_work)  # Ws
 
@@ -308,21 +352,18 @@ class Vehicle:
             'latitude'
         ]
 
-        # TODO Add to a dictionary and save as property.
-        Fa, Frr, Fhc, Fr, Frpb, Er, Er_batt
-            # N,N,N,N,N,m/s,ms,N,Wh,Wh,Wh,Wh
-
         return self.battery_output
 
 
 def simulate_trace(scenario_dir: Path, fcd_file: Path, geo: bool,
         integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs) -> pd.DataFrame:
     """Simulates the Hull model on the one FCD trace."""
+
     # Read data
     journey = read_file(fcd_file, geo, integration_mthd, **kwargs)
 
     # Initialise vehicle
-    vehicle = Vehicle(scenario_dir, journey, **kwargs)
+    vehicle = Vehicle(scenario_dir, journey, name=fcd_file.parent.name, **kwargs)
 
     # Execute EV simulation
     battery_output = vehicle.getEnergyExpenditure()

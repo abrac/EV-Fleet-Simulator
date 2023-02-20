@@ -59,6 +59,8 @@ def convert_data(scenario_dir: Path, **kwargs):
                     altitude_conversion = True if _.lower() != 'n' else False
                 if altitude_conversion:
                     trace_new['vehicle_z'] = trace['Altitude']
+            if 'Heading' in trace.columns:
+                trace_new['vehicle_angle'] = trace['Heading']
 
             output_file = scenario_dir.joinpath(
                 'Mobility_Simulation', 'FCD_Data', ev_dir.name,
