@@ -2,19 +2,21 @@
      view this file. Just search the web for a nice markdown editor (like
      Ghostwriter). -->
 
-- [ ] Create a setup script which automatically downloads SUMO, ev-fleet-sim, and also runs activate-global-python-argcomplete
-- [ ] (De-)Compressing those battery.out.csv files one by one is too slow. Perhaps we can rather do them all in bulk at the beginning and end of the data analysis script... It is also impacting the speed fo Hull's EV model.
-- [ ] Standardise input file format to use m/s as it's velocity unit, rather than km/h. SI units, please!
-- [ ] Compress csv outputs!
-- [ ] Update the docs to describe what inputs are required, in various simulation configurations.
+- [ ] Simulate all vehicles on one map, to massively improve simulation time!!!
 - [ ] Make the Hull simulation multithreaded!
+- [ ] Standardise input file format to use m/s as it's velocity unit, rather than km/h. SI units, please!
+- [ ] Update the docs to describe what inputs are required, in various simulation configurations.
 - [ ] Merge [fcv-fleet-sim](https://gitlab.com/eputs/fcv-fleet-sim) FCV simulation model.
 - [ ] Make `^C` cancel more elegantly. Currently it throws useless debugging info.
 - [ ] Improve SAM Simulation documentation!
-- [ ] Save SUMO stdout for debugging.
 - [ ] Create a sub-module which does battery-sizing estimates.
 - [ ] Add stop-location functionality.
+
+- [o] (De-)Compressing those battery.out.csv files one by one is too slow. Perhaps we can rather do them all in bulk at the beginning and end of the data analysis script... It is also impacting the speed fo Hull's EV model. [Cancelled: I don't observe this anymore.]
 - [o] Automatically run steps with a options given in a config file. [Cancelled: There are not many options to be configured. Those options can be added as command line flags.]
+- [o] Create a setup script which automatically downloads SUMO, ev-fleet-sim, and also runs activate-global-python-argcomplete
+- [x] Compress csv outputs!
+- [x] Save SUMO stdout for debugging.
 - [x] Provide version number in each results output, as well as a copy of the configurations.
 - [x] Make the Hull model read the vType configuration!
 - [x] Make the Hull and SUMO models modular, so that the user can choose which one to run. Currently, both are run.
