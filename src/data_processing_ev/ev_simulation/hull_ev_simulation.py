@@ -14,6 +14,7 @@ import xml.etree.ElementTree as et
 import ast
 import data_processing_ev as dpr
 from data_processing_ev.results_analysis import analysis_functions
+import math
 
 
 def tryeval(val):
@@ -47,6 +48,17 @@ def delta_ctr(array: pd.Series):
                      name=array.name)
 
 
+def correct_angles(angles: pd.Series):
+    def _correct_angle(angle):
+        while angle > math.pi:
+            angle -= 2*math.pi
+        while angle < -math.pi:
+            angle += 2*math.pi
+        return angle
+    new_angles = angles.map(_correct_angle)
+    return new_angles
+
+
 # -----------------------------------------------------------------------------
 def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD, **kwargs):
     """ This function takes the filename of a GPS trip stored in a .csv file,
@@ -78,6 +90,7 @@ def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD,
         journey['DeltaV'] = delta_fwd(journey['Velocity'])
         # Change in heading between each timestep (in radians)
         journey['Deltaθ'] = delta_fwd(journey['vehicle_angle']) * np.pi / 180
+        journey['Deltaθ'] = correct_angles(journey['Deltaθ'])
 
     elif integration_mthd == INTEGRATION_MTHD['bwd']:
         # Calculate time between samples. Useful for kinetic model.
@@ -86,6 +99,7 @@ def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD,
         journey['DeltaV'] = delta_bwd(journey['Velocity'])
         # Change in heading between each timestep (in radians)
         journey['Deltaθ'] = delta_bwd(journey['vehicle_angle']) * np.pi / 180
+        journey['Deltaθ'] = correct_angles(journey['Deltaθ'])
 
     elif integration_mthd == INTEGRATION_MTHD['ctr']:
         # Calculate time between samples. Useful for kinetic model.
@@ -94,6 +108,7 @@ def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD,
         journey['DeltaV'] = delta_ctr(journey['Velocity'])
         # Change in heading between each timestep (in radians)
         journey['Deltaθ'] = delta_ctr(journey['vehicle_angle']) * np.pi / 180
+        journey['Deltaθ'] = correct_angles(journey['Deltaθ'])
 
     else:
         raise ValueError("Unknown integration method.")
@@ -363,7 +378,7 @@ def simulate_trace(scenario_dir: Path, fcd_file: Path, geo: bool,
     journey = read_file(fcd_file, geo, integration_mthd, **kwargs)
 
     # Initialise vehicle
-    vehicle = Vehicle(scenario_dir, journey, name=fcd_file.parent.name, **kwargs)
+    vehicle = Vehicle(scenario_dir, journey, name=' - '.join([fcd_file.parents[1].name, fcd_file.parents[0].name]), **kwargs)
 
     # Execute EV simulation
     battery_output = vehicle.getEnergyExpenditure()
