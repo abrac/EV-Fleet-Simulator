@@ -166,24 +166,25 @@ def decompress_file(file: Path, **kwargs) -> Path:
             if compressed_file.exists():
                 _ = auto_input(
                     "Both the compressed and the decompressed " +
-                    "versions of the file exist. May I delete one? [y]/n  ",
+                    "versions of the file exist. May I re-decompress? [y]/n  ",
                     'y', **kwargs)
                 delete = True if _.lower() != 'n' else False
                 if delete:
-                    compressed_file.unlink()
-            return decompressed_file
-        else:
-            p = subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 2), '-d',  # '--quiet',
-                                       str(compressed_file.absolute())])
-            # Wait until the decompression is complete.
-            process_complete = False
-            while not process_complete:
-                poll = p.poll()
-                if poll is None:
-                    process_complete = False
-                else:
-                    process_complete = True
-            return decompressed_file
+                    decompressed_file.unlink()
+            else:
+                LOGGERS['main'].warning("Decompressed file already exists")
+                return decompressed_file
+        p = subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 2), '-d',  # '--quiet',
+                                   str(compressed_file.absolute())])
+        # Wait until the decompression is complete.
+        process_complete = False
+        while not process_complete:
+            poll = p.poll()
+            if poll is None:
+                process_complete = False
+            else:
+                process_complete = True
+        return decompressed_file
 
     except subprocess.CalledProcessError:
         print("Warning: Pigz failed to compress the xml file.")
@@ -215,26 +216,27 @@ def compress_file(file: Path, **kwargs) -> Path:
             if decompressed_file.exists():
                 _ = auto_input(
                     "Both the compressed and the decompressed " +
-                    "versions of the file exist. May I delete one? [y]/n  ",
+                    "versions of the file exist. May I re-compress? [y]/n  ",
                     'y', **kwargs)
                 delete = True if _.lower() != 'n' else False
                 if delete:
-                    decompressed_file.unlink()
-            return compressed_file
-        else:
-            p = subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 2),  # '--quiet',
-                                 str(decompressed_file.absolute())])
+                    compressed_file.unlink()
+            else:
+                LOGGERS['main'].warning("Compressed file already exists")
+                return compressed_file
+        p = subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 2),  # '--quiet',
+                             str(decompressed_file.absolute())])
 
-            # Wait until the compression is complete.
-            process_complete = False
-            while not process_complete:
-                poll = p.poll()
-                if poll is None:
-                    process_complete = False
-                else:
-                    process_complete = True
+        # Wait until the compression is complete.
+        process_complete = False
+        while not process_complete:
+            poll = p.poll()
+            if poll is None:
+                process_complete = False
+            else:
+                process_complete = True
 
-            return compressed_file
+        return compressed_file
 
     except subprocess.CalledProcessError:
         print("Warning: Pigz failed to compress the xml file.")
