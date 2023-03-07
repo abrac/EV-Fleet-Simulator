@@ -189,7 +189,8 @@ class Data_Analysis:
                 # Approx_distance in meters.
                 # Note: `ev_df['vehicle_speed']` is in m/s.
                 t = ev_df['timestep_time'] - ev_df['timestep_time'][0]
-                dist = integrate.cumtrapz(ev_df['vehicle_speed'], t)
+                t = t.map(lambda t: t.total_seconds())
+                dist = integrate.cumtrapz(ev_df['vehicle_speed'], t)/1000
 
             # Get the column for plot_type
             plt_df_func = {
@@ -240,7 +241,8 @@ class Data_Analysis:
             power_df = ev_df['vehicle_energyConsumed'] * 3.6 * 1000
 
             t = ev_df['timestep_time'] - ev_df['timestep_time'][0]
-            dist = integrate.cumtrapz(ev_df['vehicle_speed'], t)
+            t = t.map(lambda t: t.total_seconds())
+            dist = integrate.cumtrapz(ev_df['vehicle_speed'], t)/1000
             dist_df = pd.Series(dist / 1000)
             dist_dfs.append(dist_df)
 
@@ -316,6 +318,7 @@ class Data_Analysis:
         # Variables needed in plots
         # Approx_distance in km. Note: `ev_df['vehicle_speed']` is in m/s.
         t = ev_df['timestep_time'] - ev_df['timestep_time'][0]
+        t = t.map(lambda t: t.total_seconds())
         dist = integrate.cumtrapz(ev_df['vehicle_speed'], t) / 1000
         # TODO: Make `rolling_window` function argument
         rolling_window = 3600  # seconds
@@ -799,6 +802,14 @@ class Data_Analysis:
                     'vehicle_actualBatteryCapacity'].iloc[0] / 1000
                 final_energy = ev_day_df[
                     'vehicle_actualBatteryCapacity'].iloc[-1] / 1000
+                t = ev_day_df['timestep_time'] - ev_day_df['timestep_time'][0]
+                t = t.map(lambda t: t.total_seconds())
+                dists = integrate.cumtrapz(ev_day_df['vehicle_speed'], t) / 1000
+                ev_day_df['distance'] = [0] + dists.tolist()
+                del dists
+                initial_dist = 0
+                final_dist = ev_day_df['distance'].iloc[-1]
+
                 # `time_splits` which allow for arbitrary time-splitting
                 # of statistics.
                 time_splits_dict = ((6,0,0), (9,0,0), (12,0,0), (16,0,0),  # noqa
@@ -807,6 +818,7 @@ class Data_Analysis:
                     dt.time(
                         hour=hour, minute=minute, second=second
                     ) for (hour, minute, second) in time_splits_dict]
+
                 # get the first energy state sampled after each time_split
                 #   check if the dataframe goes to each time_split
                 time_split_energies = []
@@ -837,23 +849,66 @@ class Data_Analysis:
 
                 del time_split_energies
 
+                # get the first distance sampled after each time_split
+                #   check if the dataframe goes to each time_split
+                time_split_dists = []
+                for time_split in time_splits:
+                    if final_time < time_split:
+                        time_split_dists.append(final_dist)
+                    elif initial_time > time_split:
+                        time_split_dists.append(initial_dist)
+                    else:
+                        time_split_dist = ev_day_df[
+                            'distance'][
+                                ev_day_df.timestep_time >= dt.datetime(
+                                    date.year, date.month, date.day,
+                                    time_split.hour, time_split.minute,
+                                    time_split.second)
+                            ].iloc[0]
+                        time_split_dists.append(time_split_dist)
+                # get difference of distances between each time-split
+                dist_diffs = []
+                for idx, time_split_dist in enumerate(time_split_dists):
+                    if idx == 0:
+                        prev_dist = initial_dist
+                    dist_diff = time_split_dist - prev_dist
+                    dist_diffs.append(dist_diff)
+                    prev_dist = time_split_dist
+                #   last dist diff:
+                final_dist_diff = final_dist - time_split_dists[-1]
+
+                del time_split_dists
+
                 # Create dictionary for the date
-                keys = []
-                vals = []
-                keys.append("00:00:00 -> 23:59:59")
-                vals.append(final_energy - initial_energy)
+                energy_keys = []
+                energy_vals = []
+                energy_keys.append("00:00:00 -> 23:59:59")
+                energy_vals.append(final_energy - initial_energy)
                 prev_time = "00:00:00"
                 for time_split, energy_diff in zip(time_splits, energy_diffs):
-                    keys.append(f"{prev_time} -> {time_split}")
-                    vals.append(energy_diff)
+                    energy_keys.append(f"{prev_time} -> {time_split}")
+                    energy_vals.append(energy_diff)
                     prev_time = time_split
-                keys.append(f"{time_splits[-1]} -> 23:59:59")
-                vals.append(final_energy_diff)
+                energy_keys.append(f"{time_splits[-1]} -> 23:59:59")
+                energy_vals.append(final_energy_diff)
+
+                dist_keys = []
+                dist_vals = []
+                dist_keys.append("00:00:00 -> 23:59:59")
+                dist_vals.append(final_dist - initial_dist)
+                prev_time = "00:00:00"
+                for time_split, dist_diff in zip(time_splits, dist_diffs):
+                    dist_keys.append(f"{prev_time} -> {time_split}")
+                    dist_vals.append(dist_diff)
+                    prev_time = time_split
+                dist_keys.append(f"{time_splits[-1]} -> 23:59:59")
+                dist_vals.append(final_dist_diff)
 
                 stats_tree["stats"]["dates"].append(
                     {
                         "date": str(date),
-                        "energy diffs": dict(zip(keys, vals))
+                        "energy diffs": dict(zip(energy_keys, energy_vals)),
+                        "dist diffs": dict(zip(dist_keys, dist_vals))
                     }
                 )
 
