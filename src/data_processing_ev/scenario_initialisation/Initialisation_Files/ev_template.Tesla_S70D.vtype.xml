@@ -7,7 +7,7 @@
         <param key="maximumPower" value="100000"/> 
           <!-- Actual maxpower is ~615 kW -->
         <param key="vehicleMass" value="2240"/> 
-        <param key="frontsurfacearea" value="2.34"/> 
+        <param key="frontSurfaceArea" value="2.34"/> 
         <param key="airDragCoefficient" value="0.24"/> 
         <param key="internalMomentOfInertia" value="0.01"/> 
         <param key="radialDragCoefficient" value="0.5"/> 
