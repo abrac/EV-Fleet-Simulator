@@ -235,18 +235,18 @@ class Vehicle:
         self.max_power = params['maximumPower']  # The maximum power that the vehicle can output.
         self.battery = self.capacity / 2  # Initial battery energy (Wh)
         self.p0 = params['constantPowerIntake']  # constant power loss in W (to run the vehicle besides driving)
-        self.Inertia = params['internalMomentOfInertia']  # Internal moment of inertia in kg·m².
         if 'wheelRadius' in params.keys():
             self.r_wheel = params['wheelRadius']
         else:
             self.r_wheel = 0.68 / 2
         if kwargs.get('internalMomentOfInertia_is_mass'):
-            self.c_rad = params['radialDragCoefficient'] * self.r_wheel**2  # Radial drag coefficient.
+            self.Inertia = params['internalMomentOfInertia'] * self.r_wheel**2  # Internal moment of inertia in kg·m².
         else:
-            self.c_rad = params['radialDragCoefficient']  # Radial drag coefficient.
+            self.Inertia = params['internalMomentOfInertia']  # Internal moment of inertia in kg·m².
+
+        self.c_rad = params['radialDragCoefficient']  # Radial drag coefficient.
 
         self.name = name
-
 
     def getEnergyExpenditure(self) -> pd.DataFrame:
 
@@ -279,48 +279,33 @@ class Vehicle:
         # ---------------------------------------------------------------------
         for timestep, slope,vel,acc,delta_t,delta_v,delta_θ,dist in zip(timesteps, s, v, a, dt, dv, dθ, dists):
 
+            prev_vel = vel - acc * delta_t
+
             if vel == 0:
-                force, frr, fa, fhc, frd = 0,0,0,0,0
+                Frpb.append(0)
+                Er.append(0)
             else:
-                frr = getRoadFriction(self.mass,self.crr, slope, vel)
-                fa = getAerodynamicDrag(self.cd, self.A, vel)
-                fhc = getRoadSlopeDrag(self.mass, slope)
-                frd = getRadialDrag(self.mass, self.c_rad, delta_θ, dist, vel)
+                # TODO The below 3 drag forces use the current velocity as a
+                # parameter. Change this to the average velocity!
+                Err = -getRoadFriction(self.mass,self.crr, slope, vel) * dist
+                Ea = -getAerodynamicDrag(self.cd, self.A, vel) * dist
+                Erd = -getRadialDrag(self.mass, self.c_rad, delta_θ, dist, vel) * dist
+                Ehc = -getRoadSlopeDrag(self.mass, slope) * dist
+                Ek = 1/2 * self.mass * (vel**2 - prev_vel**2)
+                Ek_rot = 1/2 * self.Inertia / self.r_wheel**2 * (vel**2 - prev_vel**2)
 
-            force = frr + fa + fhc + frd  # (N + N + N + N) Total drag force
+                E_net = Err + Ea + Ehc + Erd + Ek + Ek_rot
+                F_net = E_net / dist
 
-            exp_speed_delta = force * delta_t / (self.mass + self.Inertia / self.r_wheel**2)  # (N) * (s) / (kg)
+                if E_net/delta_t > self.max_power:
+                    dpr.LOGGERS['main'].error(
+                        f"Vehicle {self.name}: Timestep {timestep}: "
+                        f"Vehicle required a power of {E_net/delta_t} W which "
+                        f"is greater than the maximum power {self.max_power} W "
+                        "that the vehicle is able to output.")
 
-            unexp_speed_delta = delta_v - exp_speed_delta  # (m/s) - (m/s)
-
-            try:
-                prop_brake_force = unexp_speed_delta / delta_t * self.mass + unexp_speed_delta / delta_t * self.Inertia / self.r_wheel**2
-                    # (m/s) / (s) * (kg) = N
-
-                kinetic_power = prop_brake_force * vel  # (N) * (m/s) = (W)
-
-                propulsion_work = kinetic_power * delta_t
-                    # (W) * (s) -- kinetic energy
-
-            except ZeroDivisionError:
-                dpr.LOGGERS['main'].error(
-                    f"Zero division encountered in timestep {timestep} of "
-                    f"vehicle '{self.name}'.")
-                prop_brake_force = 0
-                kinetic_power = 0
-                propulsion_work = 0
-
-            # -----------------------------------------------------------------
-
-            if propulsion_work > self.max_power:
-                dpr.LOGGERS['main'].error(
-                    f"Vehicle {self.name}: Timestep {timestep}: "
-                    f"Vehicle required a power of {propulsion_work} W which "
-                    f"is greater than the maximum power {self.max_power} W "
-                    "that the vehicle is able to output.")
-
-            Frpb.append(prop_brake_force)  # N
-            Er.append(propulsion_work)  # Ws
+                Frpb.append(F_net)  # N
+                Er.append(E_net)  # Ws
 
         Er = [Er_i / (3600) for Er_i in Er]  # Converting Ws to Wh
         Er_batt = [0.0]*len(Er)
@@ -339,6 +324,8 @@ class Vehicle:
 
             else:  # energy that is regen'd back into the battery
                 Er_batt[i] = Er[i] * RGBeff
+
+            # FIXME SUMO adds constant consumers as part of the propulsion work.
 
             # If the vehicle is not stationary, we add the energy drawn by
             # constant power auxiliary loads.

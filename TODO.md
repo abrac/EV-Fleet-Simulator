@@ -2,6 +2,7 @@
      view this file. Just search the web for a nice markdown editor (like
      Ghostwriter). -->
 
+- [ ] When calculating average energy consumption per kilometer, divide the total energy consumption by the total distance travelled (across _all_ days).
 - [ ] Simulate all vehicles on one map, to massively improve simulation time!!!
 - [ ] Standardise input file format to use m/s as it's velocity unit, rather than km/h. SI units, please!
 - [ ] Update the docs to describe what inputs are required, in various simulation configurations.
