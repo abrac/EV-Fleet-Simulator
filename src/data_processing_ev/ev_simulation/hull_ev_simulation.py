@@ -340,7 +340,10 @@ class Vehicle:
             else:  # energy that is regen'd back into the battery
                 Er_batt[i] = Er[i] * RGBeff
 
-            Er_batt[i] += dt[i] * self.p0 / 3600  # Ws to Wh
+            # If the vehicle is not stationary, we add the energy drawn by
+            # constant power auxiliary loads.
+            if v[i] != 0:
+                Er_batt[i] += dt[i] * self.p0 / 3600  # Ws to Wh
 
             if np.isnan(Er_batt[i]):
                 Er_batt[i] = 0
