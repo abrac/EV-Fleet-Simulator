@@ -3,7 +3,8 @@ columns with the geodesic distance and slope angles between consecutive
 observations"""
 
 INTEGRATION_MTHD = {'fwd': 0, 'bwd': 1, 'ctr': 2}
-DFLT_INTEGRATION_MTHD = INTEGRATION_MTHD['ctr']
+DFLT_INTEGRATION_MTHD = INTEGRATION_MTHD['bwd']
+GRAV = 9.80665
 
 
 import pandas as pd
@@ -111,7 +112,7 @@ def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD,
         # Calculate change in velocity between each timestep
         journey['DeltaV'] = delta_bwd(journey['Velocity'])
         # Change in heading between each timestep (in radians)
-        journey['Deltaθ'] = delta_bwd(journey['vehicle_angle']) * np.pi / 180
+        journey['Deltaθ'] = -delta_bwd(journey['vehicle_angle']) * np.pi / 180
         journey['Deltaθ'] = correct_angles(journey['Deltaθ'])
 
     elif integration_mthd == INTEGRATION_MTHD['ctr']:
@@ -140,17 +141,18 @@ def read_file(fcd_file: Path, geo: bool, integration_mthd=DFLT_INTEGRATION_MTHD,
 # Functions that calculate three environmental forces acting on
 # the vehicle in N.
 
-def getRoadFriction(mass, c_rr, slope, vel, grav=9.81):
+def getRoadFriction(mass, c_rr, slope, vel, grav=GRAV):
     """ Road load (friction) (N)
         Inputs:
             c_rr is coeff of rolling resistance """
-    rf = 0
-    if vel > 0.3:
-        rf = -mass * grav * c_rr * np.cos(slope)
+    # rf = 0
+    # if vel > 0.3:
+    #     rf = -mass * grav * c_rr * np.cos(slope)
+    rf = -mass * grav * c_rr * np.cos(slope)
     return rf
 
 
-def getAerodynamicDrag(c_d, A, vel, rho=1.184):
+def getAerodynamicDrag(c_d, A, vel, rho=1.2041): # rho=1.184):
     """ Aerodynamic Drag Force (N)
         Inputs:
            rho is air density 20C
@@ -158,7 +160,7 @@ def getAerodynamicDrag(c_d, A, vel, rho=1.184):
     return -0.50 * rho * c_d * A * vel**2
 
 
-def getRoadSlopeDrag(mass, slope, grav=9.81):
+def getRoadSlopeDrag(mass, slope, grav=GRAV):
     """ Road Slope Force (N) """
     return -mass * grav * np.sin(slope)
 
@@ -176,7 +178,7 @@ def getRadialDrag(mass, c_rad, delta_θ, dist, vel):
             radius = 0.0001
         # If the turning radius is large, ignore F_rad:
         elif radius > 10000:
-            radius = None
+            radius = None  # FIXME. This is 10000 in SUMO.
         if radius is not None:
             F_rad = -c_rad * mass * vel**2 / radius
         else:
@@ -228,7 +230,7 @@ class Vehicle:
         self.mass = params['vehicleMass']  # kg
         self.crr = params['rollDragCoefficient']  # coefficient of rolling resistance
         self.cd = params['airDragCoefficient']  # air drag coefficient
-        self.A = params['frontsurfacearea']  # m^2, Approximation of vehicle frontal area
+        self.A = params['frontSurfaceArea']  # m^2, Approximation of vehicle frontal area
         self.eff = params['propulsionEfficiency']  # %, powertrain efficiency
         self.rgbeff = params['recuperationEfficiency']  # %, regen brake efficiency
         self.capacity = params['maximumBatteryCapacity']  # The total battery capacity (Wh)
@@ -239,10 +241,10 @@ class Vehicle:
             self.r_wheel = params['wheelRadius']
         else:
             self.r_wheel = 0.68 / 2
-        if kwargs.get('internalMomentOfInertia_is_mass'):
-            self.Inertia = params['internalMomentOfInertia'] * self.r_wheel**2  # Internal moment of inertia in kg·m².
+        if not kwargs.get('internalMomentOfInertia_is_mass'):
+            self.Inertia = params['internalMomentOfInertia']  # Internal moment of inertia was in kg·m2.
         else:
-            self.Inertia = params['internalMomentOfInertia']  # Internal moment of inertia in kg·m².
+            self.Inertia = params['internalMomentOfInertia'] * self.r_wheel**2  # Internal moment of inertia was in kg·m4.
 
         self.c_rad = params['radialDragCoefficient']  # Radial drag coefficient.
 
@@ -261,7 +263,6 @@ class Vehicle:
         dt = journey['DeltaT']  # s
         dv = journey['DeltaV']  # m/s
         dθ = journey['Deltaθ']  # rad
-        dists = journey['displacement']  # m
 
         # TODO Do this in the init.
         RGBeff = self.rgbeff  # static regen coeff
@@ -277,24 +278,26 @@ class Vehicle:
         bat_state = []  # The battery state for each timestep.
 
         # ---------------------------------------------------------------------
-        for timestep, slope,vel,acc,delta_t,delta_v,delta_θ,dist in zip(timesteps, s, v, a, dt, dv, dθ, dists):
+        for timestep, slope,vel,acc,delta_t,delta_v,delta_θ in zip(timesteps, s, v, a, dt, dv, dθ):
 
             prev_vel = vel - acc * delta_t
+            dist = vel*delta_t
 
             if vel == 0:
                 Frpb.append(0)
                 Er.append(0)
             else:
                 # TODO The below 3 drag forces use the current velocity as a
-                # parameter. Change this to the average velocity!
+                # parameter. Change this to the average velocity! Also in SUMO.
                 Err = -getRoadFriction(self.mass,self.crr, slope, vel) * dist
                 Ea = -getAerodynamicDrag(self.cd, self.A, vel) * dist
                 Erd = -getRadialDrag(self.mass, self.c_rad, delta_θ, dist, vel) * dist
                 Ehc = -getRoadSlopeDrag(self.mass, slope) * dist
                 Ek = 1/2 * self.mass * (vel**2 - prev_vel**2)
                 Ek_rot = 1/2 * self.Inertia / self.r_wheel**2 * (vel**2 - prev_vel**2)
+                Econst = self.p0
 
-                E_net = Err + Ea + Ehc + Erd + Ek + Ek_rot
+                E_net = Err + Ea + Ehc + Erd + Ek + Ek_rot + Econst
                 F_net = E_net / dist
 
                 if E_net/delta_t > self.max_power:
@@ -325,12 +328,12 @@ class Vehicle:
             else:  # energy that is regen'd back into the battery
                 Er_batt[i] = Er[i] * RGBeff
 
-            # FIXME SUMO adds constant consumers as part of the propulsion work.
+            # # FIXME SUMO adds constant consumers as part of the propulsion work.
 
-            # If the vehicle is not stationary, we add the energy drawn by
-            # constant power auxiliary loads.
-            if v[i] != 0:
-                Er_batt[i] += dt[i] * self.p0 / 3600  # Ws to Wh
+            # # If the vehicle is not stationary, we add the energy drawn by
+            # # constant power auxiliary loads.
+            # if v[i] != 0:
+            #     Er_batt[i] += dt[i] * self.p0 / 3600  # Ws to Wh
 
             if np.isnan(Er_batt[i]):
                 Er_batt[i] = 0

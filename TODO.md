@@ -16,6 +16,7 @@
 - [o] Automatically run steps with a options given in a config file. [Cancelled: There are not many options to be configured. Those options can be added as command line flags.]
 - [o] Create a setup script which automatically downloads SUMO, ev-fleet-sim, and also runs activate-global-python-argcomplete
 
+- [x] Make the HULL model use **backward** differences by default.
 - [x] Make the Hull simulation multithreaded!
 - [x] Compress csv outputs!
 - [x] Save SUMO stdout for debugging.
