@@ -141,8 +141,7 @@ def simulate_all_routes(scenario_dir: Path,
         sumo_exe = "sumo-gui" if gui else "sumo"
         simulation_cmds.append([sumo_exe, '-c',
                                 str(sumocfg_file.absolute()),
-                                '--ignore-route-errors', 'true',
-                                '--precision', '16'])
+                                '--ignore-route-errors', 'true'])
 
     print('\n' * 3)
 
