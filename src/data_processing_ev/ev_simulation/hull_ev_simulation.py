@@ -3,7 +3,7 @@ columns with the geodesic distance and slope angles between consecutive
 observations"""
 
 INTEGRATION_MTHD = {'fwd': 0, 'bwd': 1, 'ctr': 2}
-DFLT_INTEGRATION_MTHD = INTEGRATION_MTHD['ctr']
+DFLT_INTEGRATION_MTHD = INTEGRATION_MTHD['fwd']
 
 
 import pandas as pd
