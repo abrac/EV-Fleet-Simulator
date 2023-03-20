@@ -15,6 +15,19 @@ import ast
 import data_processing_ev as dpr
 from data_processing_ev.results_analysis import analysis_functions
 import math
+import multiprocessing as mp
+from itertools import repeat
+
+
+def starmap_with_kwargs(pool, fn, args_iter, kwargs_iter):
+    # TODO Add progress bars:
+    # https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar
+    args_for_starmap = zip(repeat(fn), args_iter, kwargs_iter)
+    return pool.starmap(apply_args_and_kwargs, args_for_starmap)
+
+
+def apply_args_and_kwargs(fn, args, kwargs):
+    return fn(*args, **kwargs)
 
 
 def tryeval(val):
@@ -418,10 +431,22 @@ def simulate(scenario_dir: Path,
 
     battery_outputs = []
 
-    for fcd_file in tqdm(fcd_files):
-        battery_output = simulate_trace(scenario_dir, fcd_file, geo, integration_mthd, **kwargs)
+    args_simulation = zip(
+        repeat(scenario_dir),
+        fcd_files,
+        repeat(geo),
+        repeat(integration_mthd))
+    kwargs_simulation = repeat(kwargs)
 
-        battery_outputs.append(battery_output)
+    with mp.Pool(mp.cpu_count() - 1) as p:
+        battery_outputs = starmap_with_kwargs(p, simulate_trace,
+            args_simulation, kwargs_simulation)
+    # # OR Old multithreaded way
+    # for fcd_file in tqdm(fcd_files):
+    #     battery_output = simulate_trace(scenario_dir, fcd_file, geo, integration_mthd, **kwargs)
+    #     battery_outputs.append(battery_output)
+
+    for fcd_file, battery_output in tqdm(zip(fcd_files, battery_outputs)):
 
         # Write results
         ev_name = fcd_file.parents[1].name

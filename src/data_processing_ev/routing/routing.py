@@ -670,6 +670,7 @@ def build_routes(scenario_dir: Path, **kwargs):
             print(f"Done combining routes for {ev_dir.stem}.")
 
     elif combining_method == COMBINING_METHODS['all_evs']:
+        # TODO If a new vehicle is encountered, we shoul reset the time_offset to 0.
         print("Combining routes into one for all EVs.")
         # Combine all routes into one file for all EVs
         route_files = [*scenario_dir.joinpath("Mobility_Simulation",
