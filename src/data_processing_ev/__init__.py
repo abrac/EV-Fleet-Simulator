@@ -416,11 +416,13 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
         # center integration.
         integration_mthd = None
         while integration_mthd is None:
-            _ = auto_input("Would you like to do center, forward or backward integration? [center]/forward/backward  ", 'center', **kwargs)
-            if _.lower() == 'center' or _ == '':
-                integration_mthd = hull_ev_simulation.INTEGRATION_MTHD['ctr']
-            elif _.lower() == 'forward':
+            _ = auto_input("Would you like to do center, forward or backward "
+                           "integration? center/[forward]/backward  ",
+                           'forward', **kwargs)
+            if _.lower() == 'forward' or _ == '':
                 integration_mthd = hull_ev_simulation.INTEGRATION_MTHD['fwd']
+            elif _.lower() == 'center':
+                integration_mthd = hull_ev_simulation.INTEGRATION_MTHD['ctr']
             elif _.lower() == 'backward':
                 integration_mthd = hull_ev_simulation.INTEGRATION_MTHD['bwd']
             else:
