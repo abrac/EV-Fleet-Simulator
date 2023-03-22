@@ -228,7 +228,7 @@ class Vehicle:
         self.mass = params['vehicleMass']  # kg
         self.crr = params['rollDragCoefficient']  # coefficient of rolling resistance
         self.cd = params['airDragCoefficient']  # air drag coefficient
-        self.A = params['frontsurfacearea']  # m^2, Approximation of vehicle frontal area
+        self.A = params['frontSurfaceArea']  # m^2, Approximation of vehicle frontal area
         self.eff = params['propulsionEfficiency']  # %, powertrain efficiency
         self.rgbeff = params['recuperationEfficiency']  # %, regen brake efficiency
         self.capacity = params['maximumBatteryCapacity']  # The total battery capacity (Wh)
