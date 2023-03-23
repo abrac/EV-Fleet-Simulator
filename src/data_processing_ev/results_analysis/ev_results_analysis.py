@@ -964,6 +964,7 @@ class Data_Analysis:
             csv_path = output_vehicle_dir.joinpath(f'{ev_name}.csv')
             csv_path.parent.mkdir(parents=True, exist_ok=True)
             ev_df_mean.to_csv(csv_path, index=False)
+            csv_path = dpr.compress_file(csv_path, **kwargs)
 
             # Save the plot
             if save_plots:
@@ -1016,10 +1017,12 @@ class Data_Analysis:
             )
             for ev_dir in vehicle_result_dirs:
                 # Obtain the EV's mean dataframe
-                ev_csv = ev_dir.joinpath('Outputs', f'{ev_dir.name}.csv')
+                ev_csv = ev_dir.joinpath('Outputs', f'{ev_dir.name}.csv.gz')
                 if ev_csv.exists():
+                    ev_csv = dpr.decompress_file(ev_csv, **kwargs)
                     ev_df = self.__ev_csv_to_df(
                         ev_csv, secs_to_dts=False, delim=',', **kwargs)
+                    ev_csv = dpr.compress_file(ev_csv, **kwargs)
                 else:
                     continue
                 yield (ev_dir.name, ev_df)
