@@ -14,7 +14,13 @@ def initialise_scenario(scenario_dir: Path, **kwargs):
     def create_dir(scenario_dir: Path, sub_dirs: Dict):
             """Make scenario sub-directories if they don't exist."""
             # Make the scenario_dir.
-            scenario_dir.mkdir(parents=True, exist_ok=True)
+            try:
+                scenario_dir.mkdir(parents=True, exist_ok=True)
+            except FileExistsError:
+                dpr.LOGGERS['main'].warning("Not overwriting. Directory "
+                    "already exists (perhaps as a symlink): \n\t\t " +
+                    str(scenario_dir.absolute()))
+
             # If there are no sub_dirs, quit the function.
             if sub_dirs is None:
                 return
