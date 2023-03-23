@@ -235,18 +235,17 @@ class Vehicle:
         self.max_power = params['maximumPower']  # The maximum power that the vehicle can output.
         self.battery = self.capacity / 2  # Initial battery energy (Wh)
         self.p0 = params['constantPowerIntake']  # constant power loss in W (to run the vehicle besides driving)
-        self.Inertia = params['internalMomentOfInertia']  # Internal moment of inertia in kg·m².
         if 'wheelRadius' in params.keys():
             self.r_wheel = params['wheelRadius']
         else:
             self.r_wheel = 0.68 / 2
-        if kwargs.get('internalMomentOfInertia_is_mass'):
-            self.c_rad = params['radialDragCoefficient'] * self.r_wheel**2  # Radial drag coefficient.
+        if not kwargs.get('internalMomentOfInertia_is_mass'):
+            self.Inertia = params['internalMomentOfInertia']  # Internal moment of inertia was in kg·m2.
         else:
-            self.c_rad = params['radialDragCoefficient']  # Radial drag coefficient.
+            self.Inertia = params['internalMomentOfInertia'] * self.r_wheel**2  # Internal moment of inertia was in kg·m4.
+        self.c_rad = params['radialDragCoefficient']  # Radial drag coefficient.
 
         self.name = name
-
 
     def getEnergyExpenditure(self) -> pd.DataFrame:
 
