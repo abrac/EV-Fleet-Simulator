@@ -241,7 +241,7 @@ class Vehicle:
             self.r_wheel = params['wheelRadius']
         else:
             self.r_wheel = 0.68 / 2
-        if not kwargs.get('internalMomentOfInertia_is_mass'):
+        if not kwargs.get('internalMomentOfInertia_is_mass', True):
             self.Inertia = params['internalMomentOfInertia']  # Internal moment of inertia was in kg·m2.
         else:
             self.Inertia = params['internalMomentOfInertia'] * self.r_wheel**2  # Internal moment of inertia was in kg·m4.
