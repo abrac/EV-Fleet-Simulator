@@ -163,10 +163,8 @@ class Data_Analysis:
         # Create a dataframe `time` which spans the time of all ev_dfs
         #   Remove dates from the timestep_time column
         for ev_df in ev_dfs:
-            ev_df['timestep_time'] = pd.to_datetime(
-                ev_df['timestep_time'].dt.time,
-                format='%H:%M:%S'
-            )
+            ev_df['timestep_time'] = ev_df['timestep_time'].dt.time.map(
+                lambda x: dt.datetime(1900,1,1,x.hour,x.minute,x.second))
         # TODO: Make `rolling_window` function argument
         rolling_window = 3600  # seconds
 
@@ -226,10 +224,8 @@ class Data_Analysis:
         fill area between them. Plot area on the axis given by `ax`.
         """
         for ev_df in ev_dfs:
-            ev_df['timestep_time'] = pd.to_datetime(
-                ev_df['timestep_time'].dt.time,
-                format='%H:%M:%S'
-            )
+            ev_df['timestep_time'] = ev_df['timestep_time'].dt.time.map(
+                lambda x: dt.datetime(1900,1,1,x.hour,x.minute,x.second))
 
         # TODO: Make `rolling_window` function argument
         rolling_window = 3600  # seconds
@@ -608,10 +604,10 @@ class Data_Analysis:
 
                 # Remove dates from the timestep_time column
                 for trip_segment in trip_instances:
-                    trip_segment['timestep_time'] = pd.to_datetime(
-                        trip_segment['timestep_time'].dt.time,
-                        format='%H:%M:%S'
-                    )
+                    trip_segment['timestep_time'] = \
+                        trip_segment['timestep_time'].dt.time.map(
+                            lambda x: dt.datetime(
+                                1900,1,1,x.hour,x.minute,x.second))
 
                 # Finding the earliest start time and the lastest end time.
                 earliest_time = min([trip_instance['timestep_time'].min()
@@ -952,10 +948,10 @@ class Data_Analysis:
 
             # Remove dates from the timestep_time column
             for ev_day_df in ev_dfs:
-                ev_day_df['timestep_time'] = pd.to_datetime(
-                    ev_day_df['timestep_time'].dt.time,
-                    format='%H:%M:%S'
-                )
+                ev_day_df['timestep_time'] = \
+                    ev_day_df['timestep_time'].dt.time.map(
+                        lambda x: dt.datetime(
+                            1900,1,1,x.hour,x.minute,x.second))
 
             # TODO merge these changes into fleet_stats.
             # Create a mean dataframe
