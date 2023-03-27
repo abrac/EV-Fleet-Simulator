@@ -503,10 +503,6 @@ def main():
         print(f"EV-Fleet-Sim version {version('ev-fleet-sim')}")
         sys.exit(0)
 
-    if args.debug:
-        import pdb
-        pdb.set_trace()
-
     if args.scenario_dir:
         scenario_dir = Path(args.scenario_dir)
     else:
@@ -563,4 +559,11 @@ def main():
               'debug_mode': args.debug}
 
     # Run all the steps
-    _run(scenario_dir, steps, **kwargs)
+    if args.debug:
+        try:
+            _run(scenario_dir, steps, **kwargs)
+        except Exception:
+            import pdb
+            pdb.post_mortem()
+    else:
+        _run(scenario_dir, steps, **kwargs)
