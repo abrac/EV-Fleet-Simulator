@@ -380,7 +380,9 @@ Running renewable energy simulations
 
 Follow a similar procedure to that described in the [PV Simulations](#pv-simulations) section, except using the "Wind/No Financial Model" option of SAM.
 
+---
 
+### Footnotes
 [^1]: Horizontal Dilution of Precision. Lower is better.
 [^2]: StopID column only required for GTFS input data.
 [^3]: E.g: 2022-04-17 09:03:49
