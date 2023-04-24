@@ -103,7 +103,7 @@ def _gen_box_plots(scenario_dir: Path,
                 medianprops={'color': 'black'},
                 flierprops={'marker': '.'},
                 showmeans=True)
-    plt.ylabel("Daily energy usage (kWh/km)")
+    plt.ylabel("Energy consumption (kWh/km)")
     plt.xticks(range(1, len(ev_names) + 1), ev_names, rotation=30,
                fontsize='small')
     plt.xlabel("eMBT ID")
