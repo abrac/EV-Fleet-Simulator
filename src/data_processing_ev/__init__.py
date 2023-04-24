@@ -103,27 +103,27 @@ SCENARIO_DIR_STRUCTURE = {
 # TODO Convert MODULES to a dictionary. That way, if the steps' numbers change,
 # it won't affect the rest of the code!
 MODULES = """
-0. scenario_initialisation
-1. data_visualisation
-    1.1. mapping
-    1.2. route_animation
-    1.3. map_size_calculation
-2. spatial_analysis
-    2.1. spatial_clustering
-    2.2. date_filtering_and_separation
-    2.3. save_dates_remaining
-3. temporal_analysis
-    3.1. stop_extraction
-    3.2. stop_duration_box_plots
-    3.3. temporal_clustering
-4.x. mobility_simulation
-    4.1. routing  **OR** 4.2 fcd_conversion
-5.x. ev_simulation
-    5.1. sumo_ev_simulation **OR** 5.2 hull_ev_simulation
-6. results_analysis
-    6.1. ev_results_analysis
-    6.2. pv_results_analysis
-    6.3. wind_results_analysis
+0: scenario_initialisation
+1: data_visualisation
+    1.1: mapping
+    1.2: route_animation
+    1.3: map_size_calculation
+2: spatial_analysis
+    2.1: spatial_clustering
+    2.2: date_filtering_and_separation
+    2.3: save_dates_remaining
+3: temporal_analysis
+    3.1: stop_extraction
+    3.2: stop_duration_box_plots
+    3.3: temporal_clustering
+4.x: mobility_simulation
+    4.1: routing  **OR** 4.2: fcd_conversion
+5.x: ev_simulation
+    5.1: sumo_ev_simulation **OR** 5.2: hull_ev_simulation
+6: results_analysis
+    6.1: ev_results_analysis
+    6.2.x: reg_results_analysis
+        6.2.1: pv_results_analysis **OR** 6.2.2: wind_results_analysis
 """
 
 
@@ -386,7 +386,7 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
             else:
                 raise ValueError(DATA_FMT_ERROR_MSG)
 
-    if 4.1 in steps:
+    if 4 in steps or 4.1 in steps:
         print_running_step("4.1: routing")
         """Routing"""
         routing.build_routes(scenario_dir, **kwargs)
@@ -396,10 +396,10 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
         frequency.)"""
         fcd_conversion.convert_data(scenario_dir, **kwargs)
 
-    if 5.1 in steps or 5.2 in steps:
+    if 5 in steps or 5.1 in steps or 5.2 in steps:
         routing_was_done, fcd_conversion_was_done = \
             _check_routing_status(scenario_dir)
-    if 5.1 in steps:
+    if 5 in steps or 5.1 in steps:
         print_running_step("5.1: sumo_ev_simulation")
         """Simulation"""
         if not routing_was_done:
@@ -451,8 +451,8 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
         """Generate Plots and Statistics from EV Simulation Results"""
         ev_results_analysis.run_ev_results_analysis(scenario_dir, **kwargs)
         ev_box_plots.plot_ev_energy_boxes(scenario_dir, **kwargs)
-    if 6 in steps or 6.2 in steps:
-        print_running_step("6.2: pv_results_analysis")
+    if 6 in steps or 6.2 in steps or 6.2.1 in steps:
+        print_running_step("6.2.1: pv_results_analysis")
         """Generate Plots and Statistics from PV Simulation Results"""
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
             pv_results_analysis.run_pv_results_analysis(scenario_dir, **kwargs)
@@ -461,8 +461,8 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
                   "scenarios yet.")
         else:
             raise ValueError(DATA_FMT_ERROR_MSG)
-    if 6 in steps or 6.3 in steps:
-        print_running_step("6.3: wind_results_analysis")
+    if 6.2.2 in steps:
+        print_running_step("6.2.2: wind_results_analysis")
         """Generate Plots and Statistics from Wind Simulation Results"""
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
             wind_results_analysis.run_wind_results_analysis(scenario_dir, **kwargs)
