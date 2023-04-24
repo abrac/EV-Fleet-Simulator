@@ -6,38 +6,65 @@ Here are the steps to create your first simulation scenario:
 
 EV-Fleet-Sim requires you to create a folder for the scenario that you would like to simulate. This folder will contain the input data, and the simulation results.
 
-1. Create a folder for the scenario that you want to create. Let's call this folder `<simulation-dir>`.
+1. Create a folder for the scenario that you want to create. Let's call this folder `<scenario-dir>`.
 
-2. Open a terminal and run `ev-fleet-sim`. The program will ask you for the scenario directory. Enter in `<simulation-dir>`. Tip, you can also run `ev-fleet-sim <simulation-dir>` to skip the prompt.
+2. Open a terminal and run `ev-fleet-sim`. The program will ask you for the scenario directory. Enter in `<scenario-dir>`. Tip, you can also run `ev-fleet-sim <scenario-dir>` to skip the prompt.
 
 3. Follow the prompts. The program will ask you which "step" you want to execute. Since
    this is a new scenario, you want to run step 0, which initialises the
    scenario's directory structure. Enter `0` to initialise the scenario.
 
-4. After you have don that, you will need to follow the steps in the [below initialisation instructions](#initialisation-instructions). The instructions are quite detailed, so please take your time at this step and [contact us]({{site.baseurl}}/contact.html) if you face any difficulties!
+4. After you have done that, you will need to follow the steps in the [below initialisation instructions](#initialisation-instructions). The instructions are quite detailed, so please take your time at this step and [contact us]({{site.baseurl}}/contact.html) if you face any difficulties!
 
-5. Proceed to run the remaining steps of the program, by running again:
+5. After you have initialised the scenario, proceed to run the remaining steps of the program, by running again:
 
     ```sh
-    ev-fleet-sim <simulation-dir>
+    ev-fleet-sim <scenario-dir>
     ```
 
-    Run the script iteratively, each time selecting the next steps in the list 
-    of steps.
+    Run the script with the steps that you would like to run. Typically, you will need to run all of the steps, but it depends on your needs.
+
+    For example, if you open a terminal in `<scenario-dir>`, you can run: `ev-fleet-sim .`. This will return the following result:
+
+        Available steps: 
+        
+        0: scenario_initialisation
+        1: data_visualisation
+            1.1: mapping
+            1.2: route_animation
+            1.3: map_size_calculation
+        2: spatial_analysis
+            2.1: spatial_clustering
+            2.2: date_filtering_and_separation
+            2.3: save_dates_remaining
+        3: temporal_analysis
+            3.1: stop_extraction
+            3.2: stop_duration_box_plots
+            3.3: temporal_clustering
+        4.x: mobility_simulation
+            4.1: routing  **OR** 4.2: fcd_conversion
+        5.x: ev_simulation
+            5.1: sumo_ev_simulation **OR** 5.2: hull_ev_simulation
+        6: results_analysis
+            6.1: ev_results_analysis
+            6.2.x: reg_results_analysis
+                6.2.1: pv_results_analysis **OR** 6.2.2: wind_results_analysis
+
+        Specify steps to be run as a comma-seperated list of floats without spaces (e.g. '1,2.2,4'):       
+
+    If you look carefully, the last line asks us to specify the steps that we want to run. Typically, we will want to run all the steps. Since we already ran step 0, you can enter `1,2,3,4.1,5.1,6.1,6.2` to run the remaining steps. 
+
+    This will run the simulation, starting from step 1, and ending at step 6.2.
+
+    Some of the steps provide two options. For example, for step 4, you should either run `4.1` or `4.2`. If you simply enter `4`, then the first option (i.e. `4.1`) will be selected.
 
 Notes: 
 
-* The list of steps will be presented to you when your run `ev-fleet-sim`.
+* The list of steps are presented to you whenever your run `ev-fleet-sim`. If you already know what steps you want to run, you can skip the prompt by running: `ev-fleet-sim <scenario-dir> --steps <steps>`, where `<steps>` are the list of steps that you want to run.
 
-* After step 0, you will find a `readme.json` file in `<simulation-dir>`. This file contains a list with the directory structure of the scenario. The order of sub-directories shown in this list is the order in which the program generates its outputs. I.e. Step *1* will generate its outputs in the *1st* directory specified in the list.
+* After step 0, you will find a `readme.json` file in `<scenario-dir>`. This file contains a list with the directory structure of the scenario. The order of sub-directories shown in this list is the order in which the program generates its outputs. I.e. Step *1* will generate its outputs in the *1st* directory specified in the list.
 
-* Additional usage instructions can be found by entering 
-
-  ```sh 
-  ev-fleet-sim --help
-  ```
-
-  in a terminal.
+* Additional usage instructions can be found by entering `ev-fleet-sim --help ` in a terminal.
 
 
 Initialisation Instructions
@@ -45,16 +72,16 @@ Initialisation Instructions
 
 > Definitions: 
 > 
-> `<simulation-dir>/` refers to the root directory of the scenario.
+> `<scenario-dir>/` refers to the root directory of the scenario.
 
 Firstly, run the scenario-initialisation step of EV-Fleet-Sim to create the
-folder structure in your scenario directory (`<simulation-dir>`).
+folder structure in your scenario directory (`<scenario-dir>`).
 
 Initialising Trace Data
 -----------------------
 
 1. Copy your fleet's raw vehicle data to 
-   `<simulation-dir>/_Inputs/Traces/Original`.
+   `<scenario-dir>/_Inputs/Traces/Original`.
 
    EV-Fleet-Sim supports two data formats: [floating car data (FCD)](
    https://en.wikipedia.org/wiki/Floating_car_data) (also commonly referred to 
@@ -66,7 +93,7 @@ Initialising Trace Data
 
    If the raw data is GTFS data, it should be a zipped archive. Rename the
    archive to "GTFS_Orig.zip". Unzip the GTFS archive into: 
-   `<simulation-dir>/_Inputs/Traces/Original/GTFS`.
+   `<scenario-dir>/_Inputs/Traces/Original/GTFS`.
 
    Make sure that GTFS data complies to the following caveats:
 
@@ -95,8 +122,8 @@ Initialising Trace Data
    If your input data is of the GTFS data format, you should use the `GTFS_Convert.r` and `GTFS_Splitter.py` scripts which are also in our [Git repository](https://gitlab.com/eputs/ev-fleet-sim/-/tree/master/src/data_processing_ev/scenario_initialisation/Data_Pre-Processing). You can use them as-is. No changes should be necessary. The scripts will generate one csv file per [trip](https://gtfs.org/reference/static#dataset-files) defined in the GTFS data.
 
    First run `GTFS_Convert.r`. After running it, extract the new file:
-   `<simulation-dir>/_Inputs/Traces/Original/GTFS.zip` to 
-   `<simulation-dir>/_Inputs/Traces/Original/GTFS/`.
+   `<scenario-dir>/_Inputs/Traces/Original/GTFS.zip` to 
+   `<scenario-dir>/_Inputs/Traces/Original/GTFS/`.
 
    After this, run the `GTFS_Splitter.py` script. It will tell you the maximum
    and minimum GPS coorindates encountered. Hold onto these values. They will
@@ -120,16 +147,16 @@ Initialising Trace Data
    > 
    > If you are not using a coloumn, leave its fields blank. (i.e. Don't fill it with zeroes.)
 
-1. Copy the script(s) to the `<simulation-dir>/_Inputs/Traces/` directory and run 
+1. Copy the script(s) to the `<scenario-dir>/_Inputs/Traces/` directory and run 
    them.
 
 1. Make sure the processed traces are in 
-   `<simulation-dir>/_Inputs/Traces/Processed`.
+   `<scenario-dir>/_Inputs/Traces/Processed`.
 
 Vehicle Definition
 ------------------
 
-1. Open the `<simulation-dir>/_Inputs/Configs/ev_template.xml` file in your
+1. Open the `<scenario-dir>/_Inputs/Configs/ev_template.xml` file in your
    favourite text editor.
 
 1. Choose a [vehicle class](
@@ -177,7 +204,7 @@ Vehicle Definition
 Initialising Road Network
 -------------------------
 
-1. Go to `<simulation-dir>/_Inputs/Map/Boundary`. You will find a file called
+1. Go to `<scenario-dir>/_Inputs/Map/Boundary`. You will find a file called
    `boundary.csv`. It is a csv file with two columns. Each row represents the
    coordinates of each of the four points in the boundary box that you would
    like to create.
@@ -202,7 +229,7 @@ Initialising Road Network
    are available and more information about pbf files can be found at the [OSM
    wiki](https://wiki.openstreetmap.org/wiki/PBF_Format).
 
-1. Copy the `.osm.pbf` file to `<simulation-dir>/_Inputs/Map/Construction`. From here on, we will refer to this directory as `<construction-dir>`.
+1. Copy the `.osm.pbf` file to `<scenario-dir>/_Inputs/Map/Construction`. From here on, we will refer to this directory as `<construction-dir>`.
 
    You will find a bash script called `pbf_to_osm.sh` (`pbf_to_osm.bat` in Windows) in `<construction-dir>`. Open it in a text editor. In MacOS and Linux, find the line which has `--bbox <min_lon>,<min_lat>,<max_lon>,<max_lat>`. On Windows, find the line which has `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>`. Modify the line to correspond with the values added to `boundary.csv`. 
 
@@ -315,7 +342,7 @@ Initialising Road Network
    permissions](#setting-road-access-permissions).
 
    Once the scrpt is done running, the `.net.xml` file can be found in: 
-   `<simulation-dir>/_Inputs/Map/`, and a log of the warnings will be saved as a
+   `<scenario-dir>/_Inputs/Map/`, and a log of the warnings will be saved as a
    text file in the `Construction` directory.
 
    (Description of netconvert warnings and the recommended actions: [SUMO
@@ -332,7 +359,7 @@ Initialising Weather Data
 -------------------------
 
 Because EV-Fleet-Sim also does renewable energy calculations, you may also put
-weather data files in the `<simulation-dir>/_Inputs/Weather` directory. If you are
+weather data files in the `<scenario-dir>/_Inputs/Weather` directory. If you are
 not interested in doing renewable energy calculations, you may leave the
 directory empty.
 
@@ -365,18 +392,18 @@ Running renewable energy simulations
 
 1. Create a new project, choosing the "Photovoltaic/PVWatts/No Financial Model" option.
 1. In the "Location and Resource" tab, download the Weather file using the "Download Weather Files" panel. More information about how to do so, can be found by pressing the "Help" button.
-    1. After the file has downloaded copy it from the default download location (typically a folder called "SAM Downloaded Weather Files" in your user's home directory) to `<simulation-dir>/_Inputs/Weather`.
-    1. Alternatively, use your own data, using the information in the panel titled ["Using your own data"](#using-your-own-data). Copy the data to the `<simulation-dir>/_Inputs/Weather` directory.
+    1. After the file has downloaded copy it from the default download location (typically a folder called "SAM Downloaded Weather Files" in your user's home directory) to `<scenario-dir>/_Inputs/Weather`.
+    1. Alternatively, use your own data, using the information in the panel titled ["Using your own data"](#using-your-own-data). Copy the data to the `<scenario-dir>/_Inputs/Weather` directory.
     1. If you use your own data, ensure that the weather file is loaded in the "Weather Data Information" panel.
 1. In the "System Design" tab, input the model parameters of the desired PV plant.
-1. Click "File/Save" in order to save the file to `<simulation-dir>/REG_Simulation/SAM_Scenario_File/`
+1. Click "File/Save" in order to save the file to `<scenario-dir>/REG_Simulation/SAM_Scenario_File/`
 1. Click the "Simulate" button in SAM.
-1. In the results, click on the "Time Series" tab. Select "Plane of array irradiance (W/m2)" so that it displays on the graph. Right click on the graph, and click "Save data to CSV..." and save it to `<simulation-dir>/REG_Simulation/Results/`.
+1. In the results, click on the "Time Series" tab. Select "Plane of array irradiance (W/m2)" so that it displays on the graph. Right click on the graph, and click "Save data to CSV..." and save it to `<scenario-dir>/REG_Simulation/Results/`.
 1. Proceed to run the PV simulation from the relevant step in `ev-fleet-sim`.
 
 ### Wind Simulations 
 
-<!-- TODO -->
+<!-- TODO Complete documentation -->
 
 Follow a similar procedure to that described in the [PV Simulations](#pv-simulations) section, except using the "Wind/No Financial Model" option of SAM.
 
