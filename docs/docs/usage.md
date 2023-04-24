@@ -337,21 +337,49 @@ not interested in doing renewable energy calculations, you may leave the
 directory empty.
 
 This data can be obtained by first installing [SAM](https://sam.nrel.gov/), and
-using its user interface to download the data for the location that you need.
+using its user interface to download the data for the location that you need. This processs  is described in the section ["Running renewable energy simulations"](#running-renewable-energy-simulations).
+
 In the case of solar energy data, SAM should have data for almost any location
 around the world. In the case of wind data, they only provide data for
 locations in the USA. In case they don't have data for the location that you
 are interested in, or if you just want to use your own dataset, you will need
-to re-format the data into a format that can be read by SAM. The following
-document described the format that is readable by SAM: 
+to re-format the data into a format that can be read by SAM. 
+
+
+<details markdown='1' style="background:#EEEEEE;padding: 0.5em;"><summary><a id="using-your-own-data"></a> Using your own data:</summary><br>
+
+In case you want to use your own data, the following document describes the file format that is required for SAM weather files.
 
 - For version 2020.2.29 r1 (current version as of writing) see: 
   [this PDF](https://sam.nrel.gov/images/web_page_files/sam-help-2020-2-29-r2_weather_file_formats.pdf)
-
 - For future versions see: 
   [this webpage](https://sam.nrel.gov/weather-data/weather-data-publications.html)
 
-<!-- TODO Add more information -->
+</details>
+
+
+Running renewable energy simulations
+------------------------------------
+
+### PV Simulations 
+
+1. Create a new project, choosing the "Photovoltaic/PVWatts/No Financial Model" option.
+1. In the "Location and Resource" tab, download the Weather file using the "Download Weather Files" panel. More information about how to do so, can be found by pressing the "Help" button.
+    1. After the file has downloaded copy it from the default download location (typically a folder called "SAM Downloaded Weather Files" in your user's home directory) to `<simulation-dir>/_Inputs/Weather`.
+    1. Alternatively, use your own data, using the information in the panel titled ["Using your own data"](#using-your-own-data). Copy the data to the `<simulation-dir>/_Inputs/Weather` directory.
+    1. If you use your own data, ensure that the weather file is loaded in the "Weather Data Information" panel.
+1. In the "System Design" tab, input the model parameters of the desired PV plant.
+1. Click "File/Save" in order to save the file to `<simulation-dir>/REG_Simulation/SAM_Scenario_File/`
+1. Click the "Simulate" button in SAM.
+1. In the results, click on the "Time Series" tab. Select "Plane of array irradiance (W/m2)" so that it displays on the graph. Right click on the graph, and click "Save data to CSV..." and save it to `<simulation-dir>/REG_Simulation/Results/`.
+1. Proceed to run the PV simulation from the relevant step in `ev-fleet-sim`.
+
+### Wind Simulations 
+
+<!-- TODO -->
+
+Follow a similar procedure to that described in the [PV Simulations](#pv-simulations) section, except using the "Wind/No Financial Model" option of SAM.
+
 
 [^1]: Horizontal Dilution of Precision. Lower is better.
 [^2]: StopID column only required for GTFS input data.

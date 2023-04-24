@@ -47,7 +47,7 @@ Let's imagine that you want to add some new functionality to the program. You wa
    pip install -e <source-dir>
    ```
 
-   > Note: If you are installing the program outside of a virtual environment (not recommended) in Linux or MacOS, then use the followin command instead:
+   > Note: If you are installing the program outside of a virtual environment (not recommended) in Linux or MacOS, then use the following command instead:
    > ```sh
    > pip install --prefix ~/.local/ -e <source-dir>
    > ```
