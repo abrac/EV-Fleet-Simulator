@@ -122,8 +122,8 @@ MODULES = """
     5.1: sumo_ev_simulation **OR** 5.2: hull_ev_simulation
 6: results_analysis
     6.1: ev_results_analysis
-    6.2.x: reg_results_analysis
-        6.2.1: pv_results_analysis **OR** 6.2.2: wind_results_analysis
+    6.x: reg_results_analysis
+        6.2: pv_results_analysis **OR** 6.3: wind_results_analysis
 """
 
 
@@ -451,8 +451,8 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
         """Generate Plots and Statistics from EV Simulation Results"""
         ev_results_analysis.run_ev_results_analysis(scenario_dir, **kwargs)
         ev_box_plots.plot_ev_energy_boxes(scenario_dir, **kwargs)
-    if 6 in steps or 6.2 in steps or 6.2.1 in steps:
-        print_running_step("6.2.1: pv_results_analysis")
+    if 6 in steps or 6.2 in steps:
+        print_running_step("6.2: pv_results_analysis")
         """Generate Plots and Statistics from PV Simulation Results"""
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
             pv_results_analysis.run_pv_results_analysis(scenario_dir, **kwargs)
@@ -461,8 +461,8 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
                   "scenarios yet.")
         else:
             raise ValueError(DATA_FMT_ERROR_MSG)
-    if 6.2.2 in steps:
-        print_running_step("6.2.2: wind_results_analysis")
+    if 6.3 in steps:
+        print_running_step("6.3: wind_results_analysis")
         """Generate Plots and Statistics from Wind Simulation Results"""
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
             wind_results_analysis.run_wind_results_analysis(scenario_dir, **kwargs)
