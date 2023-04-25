@@ -2,6 +2,11 @@
      view this file. Just search the web for a nice markdown editor (like
      Ghostwriter). -->
 
+- Automate step 0 (scenario initialisation):
+    - [ ] Merge the `get_max_min_coords()` funtion of `src/data_processing_ev/scenario_initialisation/Data_Pre-Processing/max_min_coords.py` into the `scenario_initialisation` module, such that step 0 runs it if there are traces found. If there are no traces in the directory (as should be the case when running step 0 initially), then it shouldn't run `get_max_min_coords()`.
+    - [ ] Make step 0 prompt for the desired min and max coordinates, so that it automatically populates the values in `boundary.csv` and `pbf_to_osm.[bat|sh]`.
+    - [ ] Reflect in the documentation that both of these things need to happen by running step 0 twice.
+    - [ ] Get the mean location of the dataset using `get_max_min_coords()`. Prompt the user to use this location or another user-specified location for downloading the weather data (solar) automatically from SAM. Update documentation accordingly.
 - [ ] When calculating average energy consumption per kilometer, divide the total energy consumption by the total distance travelled (across _all_ days).
 - [ ] Simulate all vehicles _concurrently_ on one map, to hopefully improve simulation time!!!
 - [ ] Standardise input file format to use m/s as it's velocity unit, rather than km/h. SI units, please!
