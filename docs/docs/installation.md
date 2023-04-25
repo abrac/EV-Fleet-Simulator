@@ -22,6 +22,8 @@ Software
 
 Please install the following software before installing `EV-Fleet-Sim`. Install all the software with their default settings, except for Python on Windows.
 
+**NB: Please install the correct versions of the software. Especially for SUMO and Python.**
+
 | Name                                                                                         |                Version               | Description                                                                                                                                                                                                                                                                              |
 |----------------------------------------------------------------------------------------------|:------------------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | *[SUMO](https://www.eclipse.org/sumo/) [^1]                                                  | == 1.8.0 <!-- **OR** 1.14.1 [^7] --> | Traffic mobility simulator. Once installed, make sure that the SUMO_HOME environment variable exists. [^0]                                                                                                                                                                               |
