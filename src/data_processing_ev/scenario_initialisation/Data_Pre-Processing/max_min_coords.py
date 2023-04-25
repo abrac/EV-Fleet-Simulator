@@ -5,7 +5,7 @@ from pathlib import Path
 from tqdm import tqdm
 import math
 
-def _get_max_min_coords(traces_dir: Path):
+def get_max_min_coords(traces_dir: Path):
     # For each file, identify the vehicle_id corresponding to it and the
     # start-date of the file's data.
     processed_files = sorted([*traces_dir.joinpath('Processed').glob('*.csv')])
@@ -44,4 +44,4 @@ def _get_max_min_coords(traces_dir: Path):
 
 if __name__ == '__main__':
     traces_dir = Path(os.path.abspath(__file__)).parent
-    print(_get_max_min_coords(traces_dir))
+    print(get_max_min_coords(traces_dir))
