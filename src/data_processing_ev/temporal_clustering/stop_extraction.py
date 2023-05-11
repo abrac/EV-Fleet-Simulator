@@ -156,7 +156,6 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
                         # Make a copy of the final datapoint from the previous
                         # date, and change its time to midnight.
                         exit_datapoint = prev_datapoint.copy()
-                        exit_datapoint['GPSID'] = -exit_datapoint['GPSID']
                         exit_datapoint['Time'] = (exit_datapoint['Time'].\
                                                   split(' ')[0] + " 23:59:59")
                         exit_datapoint['Velocity'] = 0
@@ -174,7 +173,6 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
                         entry_datapoint = prev_datapoint.copy()
                         entry_datapoint['Velocity'] = 0
                         exit_datapoint = prev_datapoint.copy()
-                        exit_datapoint['GPSID'] = -exit_datapoint['GPSID']
                         exit_datapoint['Time'] = (exit_datapoint['Time'].\
                                                   split(' ')[0] + " 23:59:59")
                         exit_datapoint['Velocity'] = 0
@@ -186,7 +184,6 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
                 # Create a synthetic datapoint with the first datapoint's
                 # location, but the time set at 00h00
                 entry_datapoint = datapoint.copy()
-                entry_datapoint['GPSID'] = -entry_datapoint['GPSID']
                 entry_datapoint['Time'] = (datapoint['Time'].split(' ')[0] +
                                            " 00:00:00")
                 entry_datapoint['Velocity'] = 0
@@ -236,7 +233,6 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
             # Make a copy of the final datapoint, and change its time to
             # midnight.
             exit_datapoint = datapoint.copy()
-            exit_datapoint['GPSID'] = -exit_datapoint['GPSID']
             exit_datapoint['Time'] = (exit_datapoint['Time'].split(' ')[0] +
                                       " 23:59:59")
             exit_datapoint['Velocity'] = 0
@@ -515,21 +511,26 @@ def _build_stop_labels(
                 if not _stop_pairs_exhausted:
                     # If the datapoint is the stop-entry, or it is the first
                     # datapoint of the day.
-                    if (datapoint['GPSID'] == stop_entry['GPSID'] or
-                            datapoint['GPSID'] == -stop_entry['GPSID']):
+                    if (datapoint['Time'] == stop_entry['Time'] or
+                            datapoint['Time'] == \
+                                datapoint['Time'].split(' ')[0] +
+                                " 00:00:00"):
                         # set `_stopped`.
                         _stopped = True
 
                     # If the datapoint is the stop_exit, or it is the last
                     # datapoint of the day.
-                    if (datapoint['GPSID'] == stop_exit['GPSID'] or
-                            datapoint['GPSID'] == -stop_exit['GPSID']):
+                    if (datapoint['Time'] == stop_exit['Time'] or
+                            datapoint['Time'] == \
+                                datapoint['Time'].split(' ')[0] +
+                                " 23:59:59"):
                         # If the datapoint is the stop_exit, reset `_stopped`.
-                        if datapoint['GPSID'] == stop_exit['GPSID']:
+                        if datapoint['Time'] == stop_exit['Time']:
                             _stopped = False
                         # If the datapoint is the last datapoint of the day,
                         # set `_stopped`.
-                        if datapoint['GPSID'] == -stop_exit['GPSID']:
+                        if datapoint['Time'] == (
+                                datapoint['Time'].split(' ')[0] + " 23:59:59"):
                             _stopped = True
                         # Try to get get next stop-pair.
                         try:
@@ -538,7 +539,7 @@ def _build_stop_labels(
 
                             # If the new stop_entry is the current datapoint, set
                             # `_stopped`.
-                            if datapoint['GPSID'] == stop_entry['GPSID']:
+                            if datapoint['Time'] == stop_entry['Time']:
                                 _stopped = True
 
                         # If there are no more stop pairs:
