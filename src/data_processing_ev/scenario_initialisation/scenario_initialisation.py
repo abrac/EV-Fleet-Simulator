@@ -60,9 +60,9 @@ def initialise_scenario(scenario_dir: Path, **kwargs):
         # copy ./Initialisation_Files/Map_Construction/pbf_to_osm.sh
         if platform.system() == 'Windows':
             src_files.append(Path(__file__).parent.joinpath(
-                'Initialisation_Files', 'Map_Construction', 'pbf_to_osm.bat'))
+                'Initialisation_Files', 'Map_Construction', 'pbf_to_osm.windows.sh'))
             dest_files.append(scenario_dir.joinpath(
-                '_Inputs', 'Map', 'Construction', 'pbf_to_osm.bat'))
+                '_Inputs', 'Map', 'Construction', 'pbf_to_osm.sh'))
         else:
             src_files.append(Path(__file__).parent.joinpath(
                 'Initialisation_Files', 'Map_Construction', 'pbf_to_osm.sh'))
