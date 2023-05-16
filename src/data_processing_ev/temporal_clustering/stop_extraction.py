@@ -507,39 +507,46 @@ def _build_stop_labels(
             _stop_pairs_exhausted = False
 
             for _, datapoint in trace_df.iterrows():
-                # If the datapoint is stop_entry:
+                # If the datapoint is in between stop_entry and stop_exit:
                 if not _stop_pairs_exhausted:
+
+                    datapoint_time = dt.datetime.fromisoformat(datapoint['Time'])
+                    stp_entry_time = dt.datetime.fromisoformat(stop_entry['Time'])
+                    stp_exit_time = dt.datetime.fromisoformat(stop_exit['Time'])
+
                     # If the datapoint is the stop-entry, or it is the first
                     # datapoint of the day.
-                    if (datapoint['Time'] == stop_entry['Time'] or
-                            datapoint['Time'] == \
-                                datapoint['Time'].split(' ')[0] +
-                                " 00:00:00"):
+                    if (datapoint_time >= stp_entry_time and
+                            datapoint_time < stp_exit_time):
                         # set `_stopped`.
                         _stopped = True
 
                     # If the datapoint is the stop_exit, or it is the last
                     # datapoint of the day.
-                    if (datapoint['Time'] == stop_exit['Time'] or
-                            datapoint['Time'] == \
-                                datapoint['Time'].split(' ')[0] +
-                                " 23:59:59"):
+                    if (datapoint_time >= stp_exit_time):
                         # If the datapoint is the stop_exit, reset `_stopped`.
-                        if datapoint['Time'] == stop_exit['Time']:
+                        if datapoint_time >= stp_exit_time:
                             _stopped = False
                         # If the datapoint is the last datapoint of the day,
                         # set `_stopped`.
-                        if datapoint['Time'] == (
-                                datapoint['Time'].split(' ')[0] + " 23:59:59"):
+                        if (datapoint_time ==
+                                dt.datetime.fromisoformat(
+                                    datapoint['Time'].split(' ')[0] +
+                                    " 23:59:59")):
                             _stopped = True
                         # Try to get get next stop-pair.
                         try:
                             # Get the next stop pair.
                             (stop_entry, stop_exit) = next(stop_pairs)
+                            stp_entry_time = \
+                                dt.datetime.fromisoformat(stop_entry['Time'])
+                            stp_exit_time = \
+                                dt.datetime.fromisoformat(stop_exit['Time'])
 
                             # If the new stop_entry is the current datapoint, set
                             # `_stopped`.
-                            if datapoint['Time'] == stop_entry['Time']:
+                            if (datapoint_time >= stp_entry_time and
+                                    datapoint_time < stp_exit_time):
                                 _stopped = True
 
                         # If there are no more stop pairs:
@@ -548,10 +555,13 @@ def _build_stop_labels(
                             _stop_pairs_exhausted = True
 
                 # Append the the status of `_stopped` to the labels of this EV.
-                stop_labels_ev.append((datapoint['Time'], _stopped))
+                stop_labels_ev.append((datapoint_time, _stopped))
 
             stop_labels_ev_df = pd.DataFrame(stop_labels_ev, columns=['Time',
                                                                       'Stopped'])
+
+            # TODO Do this earlier to simplify the above code:
+
             # Convert DateTime strings into proper pandas.DateTimes.
             stop_labels_ev_df['Time'] = pd.to_datetime(stop_labels_ev_df['Time'])
 
