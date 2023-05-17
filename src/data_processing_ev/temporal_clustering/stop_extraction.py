@@ -26,12 +26,7 @@ def _reformat_time(time_str: str, **kwargs):
     """Takes a date-time string, and returns either a dt.datetime or
        dt.timedelta object for 'GPS' and 'GTFS' data formats respectively."""
     input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
-    if input_data_fmt == dpr.DATA_FMTS['GPS']:
-        date, time = time_str.split()
-        hr24, minute, sec = [int(time_old) for time_old in time.split(':')]
-        date_arr = [int(date_part) for date_part in date.split('-')]
-        formatted_time = dt.datetime(*date_arr, hr24, minute, sec)
-    elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
+    if input_data_fmt == dpr.DATA_FMTS['GTFS']:
         day_d, time = time_str.split()
         hr24, minute, sec = [int(time_old) for time_old in time.split(':')]
         days = int(day_d.split('d')[0])
@@ -84,6 +79,8 @@ def _gen_trace_dfs(scenario_dir: Path) -> Iterator[Tuple[pd.DataFrame, str]]:
             trace_dfs.append(pd.read_csv(trace_file))
         # Convert the list of dataframes to huge dataframe.
         trace_df = pd.concat(trace_dfs, ignore_index=True)
+        # Convert the time column from strings to datetime objects.
+        trace_df['Time'] = pd.to_datetime(trace_df['Time'])
         # Yield it the dataframe, along with the EV's name.
         yield (trace_df, trace_dir.stem)
 
@@ -128,7 +125,7 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
         stop_encountered = None  # Bool
         for _, datapoint in trace_df.iterrows():
 
-            curr_date = datapoint['Time'].split(' ')[0]
+            curr_date = datapoint['Time'].date()
 
             # In the first iteration, we are going to create a synthetic
             # datapoint at 00h00, with the real first datapoint's location. We
@@ -136,7 +133,7 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
             if prev_datapoint is None:
                 # If this is the first iteration of the whole dataframe:
                 first_iteration_of_date = True
-            elif curr_date != prev_datapoint['Time'].split(' ')[0]:
+            elif curr_date != prev_datapoint['Time'].date():
                 # If the current date does not match the previous date:
                 first_iteration_of_date = True
             else:
@@ -156,8 +153,9 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
                         # Make a copy of the final datapoint from the previous
                         # date, and change its time to midnight.
                         exit_datapoint = prev_datapoint.copy()
-                        exit_datapoint['Time'] = (exit_datapoint['Time'].\
-                                                  split(' ')[0] + " 23:59:59")
+                        exit_datapoint['Time'] = dt.datetime.combine(
+                            exit_datapoint['Time'].date(),
+                            dt.time(23,59,59))
                         exit_datapoint['Velocity'] = 0
                         # TODO TODO DELETE DATES WHICH ONLY HAVE ONE STOP EVENT.
                         # if entry_datapoint['GPSID'] < 0:
@@ -173,8 +171,9 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
                         entry_datapoint = prev_datapoint.copy()
                         entry_datapoint['Velocity'] = 0
                         exit_datapoint = prev_datapoint.copy()
-                        exit_datapoint['Time'] = (exit_datapoint['Time'].\
-                                                  split(' ')[0] + " 23:59:59")
+                        exit_datapoint['Time'] = dt.datetime.combine(
+                            exit_datapoint['Time'].date(),
+                            dt.time(23,59,59))
                         exit_datapoint['Velocity'] = 0
                         stop_entries_and_exits.append((entry_datapoint,
                                                        exit_datapoint))
@@ -184,8 +183,9 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
                 # Create a synthetic datapoint with the first datapoint's
                 # location, but the time set at 00h00
                 entry_datapoint = datapoint.copy()
-                entry_datapoint['Time'] = (datapoint['Time'].split(' ')[0] +
-                                           " 00:00:00")
+                entry_datapoint['Time'] = dt.datetime.combine(
+                    entry_datapoint['Time'].date(),
+                    dt.time(0,0,0))
                 entry_datapoint['Velocity'] = 0
 
                 stop_encountered = True
@@ -233,8 +233,9 @@ def _get_stop_entries_and_exits(trace_df: pd.DataFrame, ev_name: str, **kwargs
             # Make a copy of the final datapoint, and change its time to
             # midnight.
             exit_datapoint = datapoint.copy()
-            exit_datapoint['Time'] = (exit_datapoint['Time'].split(' ')[0] +
-                                      " 23:59:59")
+            exit_datapoint['Time'] = dt.datetime.combine(
+                exit_datapoint['Time'].date(),
+                dt.time(23,59,59))
             exit_datapoint['Velocity'] = 0
             stop_entries_and_exits.append((entry_datapoint, exit_datapoint))
             stop_encountered = False
@@ -360,8 +361,8 @@ def _build_stops_df(trace_dfs_generator: Iterator[Tuple[pd.DataFrame, str]],
         if input_data_fmt == dpr.DATA_FMTS['GPS']:
             stop_durations = []
             for (stop_entry, stop_exit) in stop_entries_and_exits:
-                entry_time = _reformat_time(stop_entry['Time'], **kwargs)
-                exit_time = _reformat_time(stop_exit['Time'], **kwargs)
+                entry_time = stop_entry['Time']
+                exit_time = stop_exit['Time']
                 stop_duration = (exit_time - entry_time).total_seconds() / 3600
                 if stop_duration < 0:
                     raise ValueError("Stop duration was negative!")
@@ -371,13 +372,11 @@ def _build_stops_df(trace_dfs_generator: Iterator[Tuple[pd.DataFrame, str]],
             stop_arrivals = [
                 dt.timedelta(hours=entry_time.hour, minutes=entry_time.minute,
                              seconds=entry_time.second).total_seconds() / 3600
-                for entry_time in [_reformat_time(stop_entry['Time'], **kwargs)
-                                   for (stop_entry, _) in
+                for entry_time in [stop_entry['Time'] for (stop_entry, _) in
                                    stop_entries_and_exits]]
             dates = [
                 entry_datetime.date() for
-                entry_datetime in [_reformat_time(stop_entry['Time'], **kwargs)
-                                   for (stop_entry, _) in
+                entry_datetime in [stop_entry['Time'] for (stop_entry, _) in
                                    stop_entries_and_exits]]
             cluster_nums = [stop_entry['Cluster'] for (stop_entry, _) in
                             stop_entries_and_exits]
@@ -510,43 +509,34 @@ def _build_stop_labels(
                 # If the datapoint is in between stop_entry and stop_exit:
                 if not _stop_pairs_exhausted:
 
-                    datapoint_time = dt.datetime.fromisoformat(datapoint['Time'])
-                    stp_entry_time = dt.datetime.fromisoformat(stop_entry['Time'])
-                    stp_exit_time = dt.datetime.fromisoformat(stop_exit['Time'])
-
                     # If the datapoint is the stop-entry, or it is the first
                     # datapoint of the day.
-                    if (datapoint_time >= stp_entry_time and
-                            datapoint_time < stp_exit_time):
+                    if (datapoint['Time'] >= stop_entry['Time'] and
+                            datapoint['Time'] < stop_exit['Time']):
                         # set `_stopped`.
                         _stopped = True
 
                     # If the datapoint is the stop_exit, or it is the last
                     # datapoint of the day.
-                    if (datapoint_time >= stp_exit_time):
+                    if (datapoint['Time'] >= stop_exit['Time']):
                         # If the datapoint is the stop_exit, reset `_stopped`.
-                        if datapoint_time >= stp_exit_time:
+                        if datapoint['Time'] >= stop_exit['Time']:
                             _stopped = False
                         # If the datapoint is the last datapoint of the day,
                         # set `_stopped`.
-                        if (datapoint_time ==
-                                dt.datetime.fromisoformat(
-                                    datapoint['Time'].split(' ')[0] +
-                                    " 23:59:59")):
+                        if (datapoint['Time'] == dt.datetime.combine(
+                                datapoint['Time'].date(),
+                                dt.time(23,59,59))):
                             _stopped = True
                         # Try to get get next stop-pair.
                         try:
                             # Get the next stop pair.
                             (stop_entry, stop_exit) = next(stop_pairs)
-                            stp_entry_time = \
-                                dt.datetime.fromisoformat(stop_entry['Time'])
-                            stp_exit_time = \
-                                dt.datetime.fromisoformat(stop_exit['Time'])
 
                             # If the new stop_entry is the current datapoint, set
                             # `_stopped`.
-                            if (datapoint_time >= stp_entry_time and
-                                    datapoint_time < stp_exit_time):
+                            if (datapoint['Time'] >= stop_entry['Time'] and
+                                    datapoint['Time'] < stop_exit['Time']):
                                 _stopped = True
 
                         # If there are no more stop pairs:
@@ -555,15 +545,10 @@ def _build_stop_labels(
                             _stop_pairs_exhausted = True
 
                 # Append the the status of `_stopped` to the labels of this EV.
-                stop_labels_ev.append((datapoint_time, _stopped))
+                stop_labels_ev.append((datapoint['Time'], _stopped))
 
-            stop_labels_ev_df = pd.DataFrame(stop_labels_ev, columns=['Time',
-                                                                      'Stopped'])
-
-            # TODO Do this earlier to simplify the above code:
-
-            # Convert DateTime strings into proper pandas.DateTimes.
-            stop_labels_ev_df['Time'] = pd.to_datetime(stop_labels_ev_df['Time'])
+            stop_labels_ev_df = pd.DataFrame(
+                stop_labels_ev, columns=['Time', 'Stopped'])
 
             # Append this EV's stop-labels to the list of all EVs.
             all_stop_labels.append((trip_name, stop_labels_ev_df))
