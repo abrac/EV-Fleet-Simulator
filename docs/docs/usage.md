@@ -2,6 +2,9 @@
 title: Usage
 ---
 
+Overview
+========
+
 Here are the steps to create your first simulation scenario:
 
 EV-Fleet-Sim requires you to create a folder for the scenario that you would like to simulate. This folder will contain the input data, and the simulation results.
@@ -65,6 +68,10 @@ Notes:
 * After step 0, you will find a `readme.json` file in `<scenario-dir>`. This file contains a list with the directory structure of the scenario. The order of sub-directories shown in this list is the order in which the program generates its outputs. I.e. Step *1* will generate its outputs in the *1st* directory specified in the list.
 
 * Additional usage instructions can be found by entering `ev-fleet-sim --help ` in a terminal.
+
+* When using Windows, always run `ev-fleet-sim` and all commands in this tutorial using `GIT Bash` instead of `command prompt` or `powershell`. You can always open `GIT Bash` from the start menu or by right clicking in a file explorer and selecting `GIT Bash Here`.
+
+* You can quit the program at any time by pressing `ctrl + C`. 
 
 
 Initialisation Instructions
@@ -231,12 +238,12 @@ Initialising Road Network
 
 1. Copy the `.osm.pbf` file to `<scenario-dir>/_Inputs/Map/Construction`. From here on, we will refer to this directory as `<construction-dir>`.
 
-   You will find a bash script called `pbf_to_osm.sh` (`pbf_to_osm.bat` in Windows) in `<construction-dir>`. Open it in a text editor. In MacOS and Linux, find the line which has `--bbox <min_lon>,<min_lat>,<max_lon>,<max_lat>`. On Windows, find the line which has `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>`. Modify the line to correspond with the values added to `boundary.csv`. 
+   You will find a bash script called `pbf_to_osm.sh` in `<construction-dir>`. Open it in a text editor. In MacOS and Linux, find the line which has `--bbox <min_lon>,<min_lat>,<max_lon>,<max_lat>`. On Windows, find the line which has `-b=<min_lon>,<min_lat>,<max_lon>,<max_lat>`. Modify the line to correspond with the values added to `boundary.csv`. 
 
    > E.g: `--bbox 18.6,-34.3,19.0,-33.7`<br>
    > Or in Windows: `-b=18.6,-34.3,19.0,-33.7`
 
-   Run the modified `.sh`/`.bat` file to convert the `.osm.pbf` file to a `.osm` file, while cropping to the specified boundary. This should produce a file called `square_boundary.osm`.
+   Run the modified `.sh` file to convert the `.osm.pbf` file to a `.osm` file, while cropping to the specified boundary. This should produce a file called `square_boundary.osm`.
 
 1. <a id="importing-elevation-data"></a> ***Optional step: Importing elevation data*** 
 
@@ -251,7 +258,7 @@ Initialising Road Network
 
     1.  Download and unpack [Osmosis 0.45](https://bretth.dev.openstreetmap.org/osmosis-build/osmosis-0.45.zip) in a folder in your computer. We will refer to the folder's directory as `<osmosis-dir>`.
 
-    2.  Download the pre-built [jar file](https://github.com/locked-fg/osmosis-srtm-plugin/files/8027597/srtmplugin-1.1.2.jar.zip) and place it in `<osmosis-dir>\lib\default`.
+    2.  Download the pre-built [jar file](https://github.com/locked-fg/osmosis-srtm-plugin/files/8027597/srtmplugin-1.1.2.jar.zip) and place it in `<osmosis-dir>/lib/default`.
 
         **OR:**
 
@@ -294,10 +301,10 @@ Initialising Road Network
         <osmosis-dir>/bin/osmosis --read-xml <construction-dir>/map-without-elevation.osm --write-srtm locDir=<construction-dir>/Elevation/ repExisting=true tagName=ele --write-xml <construction-dir>/map-with-elevation.osm
         ```
         
-        Windows:
+        Windows (GIT Bash):
 
-        ```
-        <osmosis-dir>/bin/osmosis.bat --read-xml <construction-dir>\map-without-elevation.osm --write-srtm locDir=<construction-dir>\Elevation\ repExisting=true tagName=ele --write-xml <construction-dir>\map-with-elevation.osm
+        ```sh
+        <osmosis-dir>/bin/osmosis.bat --read-xml <construction-dir>/map-without-elevation.osm --write-srtm locDir=<construction-dir>/Elevation/ repExisting=true tagName=ele --write-xml <construction-dir>/map-with-elevation.osm
         ```
 
     4.  Rename `map-with-elevation.osm` to `square_boundary.osm` so that it can be used in the next step in the Initialising Road Network instructions.

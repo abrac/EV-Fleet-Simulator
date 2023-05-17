@@ -80,20 +80,25 @@ Once you've installed the dependencies, you can install EV-Fleet-Sim using the c
 pip install ev-fleet-sim
 ```
 
-Note: If you develop with Python a lot, you should create a virtual environment for EV-Fleet-Sim, to protect its Python dependency versions from being changed by other Python softwares. If you don't understand a word of what I just said, you probably can ignore this.
+Notes: 
+
+* If you develop with Python a lot, you should create a virtual environment for EV-Fleet-Sim, to protect its Python dependency versions from being changed by other Python softwares. If you don't understand a word of what I just said, you probably can ignore this.
+* On Windows, please run this command and all other commands in this documentation from a `GIT Bash` terminal.
+
 
 [Optional] Creating a Virtual Environment for EV-Fleet-Sim
 ----------------------------------------------------------
 
 Simply run the command `python -m venv <venv-path>`, where `<venv-path>` is the path where you would like to save your virtual environment. Unfortunately, you will need to activate the virtual environment every time you want to run EV-Fleet-Sim. Do this by running one of the following commands, depending on your platform:
 
-| Platform    | Shell      | Command to activate virtual environment  |
-|-------------|------------|------------------------------------------|
-| Linux/MacOS | bash/zsh   | `source <venv-path>/bin/activate`        |
-| Windows     | cmd.exe    | `C:\<venv-path>\Scripts\activate.bat`    |
-|             | PowerShell | `PS C:\<venv-path>\Scripts\Activate.ps1` |
+| Platform    | Shell      | Command to activate virtual environment |
+|-------------|------------|-----------------------------------------|
+| Linux/MacOS | bash/zsh   | `source <venv-path>/bin/activate`       |
+| Windows     | GIT Bash   | `source <venv-path>/Scripts/activate`   |
 
 After you have activated the venv, you can install ev-fleet-sim into it with `pip install ev-fleet-sim`.
+
+You can deactivate your virtual environment using the `deactivate` command.
 
 ---
 
