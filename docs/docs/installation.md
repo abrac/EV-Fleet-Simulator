@@ -35,7 +35,7 @@ Please install the following software before installing `EV-Fleet-Sim`. Install 
 | +[osmium][6]                        |                > 1.13                | Software for cropping OpenStreetMap files. Compulsory on Linux and MacOS.                                                                                                                                                                                                                |
 | +[osmconvert][7]                    |                  Any                 | Alternative software for cropping OpenStreetMap files. Compulsory on **Windows**.                                                                                                                                                                                                        |
 | +[osmosis][8]                       |                  Any                 | Software used for overlaying NASA elevation data onto the OpenStreetMap files. Required if you want to consider elevation in the electric vehicle models of EV-Fleet-Sim.                                                                                                                |
-| *Pigz                               |                  Any                 | Software for compressing files using multiple cpu threads. On Linux, install pigz with your package manager. On Windows, install pigz from [here][10], and make sure it is in your system's PATH!![^3] In MacOS, install MacPorts[^4], and then install Pigz using: `sudo port install pigz` |
+| *Pigz                               |                  Any                 | Software for compressing files using multiple cpu threads. On Linux, install pigz with your package manager. On Windows, install pigz from [here][10], and make sure it is in your [system's PATH][12]!! In MacOS, [install MacPorts][11], and then install Pigz using: `sudo port install pigz` |
 | +[Microsoft Build Tools for C++][9] |                > 14.0                | Only compulsory on **Windows**. Used for compiling some Python packages.                                                                                                                                                                                                                 |
 
 [1]: https://www.eclipse.org/sumo/
@@ -48,6 +48,8 @@ Please install the following software before installing `EV-Fleet-Sim`. Install 
 [8]: https://wiki.openstreetmap.org/wiki/Osmosis
 [9]: https://visualstudio.microsoft.com/visual-cpp-build-tools/
 [10]: https://blog.kowalczyk.info/software/pigz-for-windows.html
+[11]: https://www.macports.org/install.php
+[12]: https://zwbetz.com/how-to-add-a-binary-to-your-path-on-macos-linux-windows/#windows-gui
 
 
 SUMO Compilation Dependencies
@@ -130,6 +132,7 @@ Unfortunately, Windows' search indexer slows down ev-fleet-sim drastically. In o
 ---
 
 [^0]: See: [SUMO docs](https://sumo.dlr.de/docs/Basics/Basic_Computer_Skills.html#sumo_home).
+
       In MacOS, if you installed SUMO using Homebrew, the base directory of
       the SUMO installation is: `/opt/homebrew/share/sumo/`
 
@@ -138,14 +141,8 @@ Unfortunately, Windows' search indexer slows down ev-fleet-sim drastically. In o
       other steps will work without libsumo. I think the Windows binaries 
       released by sumo are compiled together with libsumo.
 
-[^3]: [How to add binaries to your path](https://zwbetz.com/how-to-add-a-binary-to-your-path-on-macos-linux-windows/#windows-gui).
-
-[^4]: [How to install macports](https://www.macports.org/install.php).
-
 [^5]: See image:
     
       ![Python Installer]({{site.baseurl}}/assets/images/docs/python_installation.png)
 
 [^6]: Required if using GTFS data inputs. 
-
-<!-- [^7]: It is recommended to install v.1.14.1, as it includes a new and improved electric vehicle model. If you want to run the older "Kurzheivel" simulation model, install v.1.8.0. Whichever version of SUMO you install, make sure that the Python package, `libsumo` is also the same version (e.g. by running `pip install libsumo==1.14.1` if you have installed Sumo 1.14.1). -->
