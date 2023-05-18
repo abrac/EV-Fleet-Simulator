@@ -82,13 +82,12 @@ pip install ev-fleet-sim
 
 Notes: 
 
-* If you develop with Python a lot, you should create a virtual environment for EV-Fleet-Sim, to protect its Python dependency versions from being changed by other Python softwares. If you don't understand a word of what I just said, you probably can ignore this.
+* If you develop with Python a lot, you should create a virtual environment for EV-Fleet-Sim, to protect its Python dependency versions from being changed by other Python softwares. If you don't understand a word of what I just said, you probably can ignore this. For instructions, see the section: [Creating a Virtual Environment for  EV-Fleet-Sim](#venv).
 * On Windows, please run this command and all other commands in this documentation from a `GIT Bash` terminal.
 
 
-[Optional] Creating a Virtual Environment for EV-Fleet-Sim
-----------------------------------------------------------
-
+<details markdown='1' style="background:#EEEEEE;padding: 0.5em;">
+<summary><a id=venv></a>Creating a Virtual Environment for  EV-Fleet-Sim [Optional]</summary><br>
 Simply run the command `python -m venv <venv-path>`, where `<venv-path>` is the path where you would like to save your virtual environment. Unfortunately, you will need to activate the virtual environment every time you want to run EV-Fleet-Sim. Do this by running one of the following commands, depending on your platform:
 
 | Platform    | Shell      | Command to activate virtual environment |
@@ -99,6 +98,21 @@ Simply run the command `python -m venv <venv-path>`, where `<venv-path>` is the 
 After you have activated the venv, you can install ev-fleet-sim into it with `pip install ev-fleet-sim`.
 
 You can deactivate your virtual environment using the `deactivate` command.
+</details>
+
+Additional instructions for Windows
+===================================
+
+Unfortunately, Windows' search indexer slows down ev-fleet-sim drastically. In order to circumvent this, perform the following steps:
+
+1. Open `Indexing Options` from the start menu. 
+2. Click the `Advanced` button.
+3. Switch to the `File Types` tab.
+4. Un-check the `csv` and `xml` filetypes in the list.
+    1. If they are not present in the list, you can add them using the `Add` button at the bottom of the window.
+5. Click the `Ok` button.
+6. If a `Rebuild Index` window pops up, press `Cancel`.
+7. Finally, `Close` the `Indexing Options` window.
 
 ---
 
