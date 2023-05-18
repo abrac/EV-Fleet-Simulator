@@ -174,7 +174,7 @@ def decompress_file(file: Path, **kwargs) -> Path:
             else:
                 LOGGERS['main'].warning("Decompressed file already exists")
                 return decompressed_file
-        p = subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 2), '-d',  # '--quiet',
+        p = subprocess.Popen(['pigz', '-dkp', str(mp.cpu_count() - 2), # '--quiet',
                                    str(compressed_file.absolute())])
         # Wait until the decompression is complete.
         process_complete = False
@@ -183,7 +183,12 @@ def decompress_file(file: Path, **kwargs) -> Path:
             if poll is None:
                 process_complete = False
             else:
-                process_complete = True
+                if poll==0:
+                    compressed_file.unlink()
+                    process_complete = True
+                else:
+                    process_complete = True
+                    raise subprocess.CalledProcessError
         return decompressed_file
 
     except subprocess.CalledProcessError:
@@ -224,7 +229,7 @@ def compress_file(file: Path, **kwargs) -> Path:
             else:
                 LOGGERS['main'].warning("Compressed file already exists")
                 return compressed_file
-        p = subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 2),  # '--quiet',
+        p = subprocess.Popen(['pigz', '-kp', str(mp.cpu_count() - 2),  # '--quiet',
                              str(decompressed_file.absolute())])
 
         # Wait until the compression is complete.
@@ -234,7 +239,12 @@ def compress_file(file: Path, **kwargs) -> Path:
             if poll is None:
                 process_complete = False
             else:
-                process_complete = True
+                if poll==0:
+                    decompressed_file.unlink()
+                    process_complete = True
+                else:
+                    process_complete = True
+                    raise subprocess.CalledProcessError
 
         return compressed_file
 
