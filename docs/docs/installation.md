@@ -111,7 +111,7 @@ Simply run the command `python -m venv <venv-path>`, where `<venv-path>` is the 
 After you have activated the venv, you can install ev-fleet-sim into it with `pip install ev-fleet-sim`.
 
 You can deactivate your virtual environment using the `deactivate` command.
-</details>
+</details><br>
 
 Additional instructions for Windows
 ===================================
