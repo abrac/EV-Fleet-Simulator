@@ -36,6 +36,8 @@ import multiprocessing as mp
 import logging
 from importlib.metadata import version
 import sys
+import pigz_python
+import gzip
 
 # loggers:
 LOGGERS = {
@@ -46,8 +48,6 @@ LOGGERS = {
 
 DATA_FMT_ERROR_MSG = "The function has not been implemented for the " + \
                      "currently selected input data format."
-
-PIGZ_WARNING_ACKNOWLEDGED = False
 
 SCENARIO_DIR_STRUCTURE = {
     '_Inputs': {
@@ -151,105 +151,64 @@ def auto_input(prompt: str, default: str, **kwargs):
 
 
 def decompress_file(file: Path, **kwargs) -> Path:
-    try:
-        gz_index = file.name.find('.gz')
-        # if the file ends with gz
-        if gz_index != -1:
-            decompressed_file = file.parent.joinpath(file.name[:gz_index])
-            compressed_file = file
+    gz_index = file.name.find('.gz')
+    # if the file ends with gz
+    if gz_index != -1:
+        decompressed_file = file.parent.joinpath(file.name[:gz_index])
+        compressed_file = file
+    else:
+        decompressed_file = file
+        compressed_file = file.parent.joinpath(file.name + '.gz')
+
+    # If the file has already been decompressed...
+    if decompressed_file.exists():
+        if compressed_file.exists():
+            _ = auto_input(
+                "Both the compressed and the decompressed " +
+                "versions of the file exist. May I re-decompress? [y]/n  ",
+                'y', **kwargs)
+            delete = True if _.lower() != 'n' else False
+            if delete:
+                decompressed_file.unlink()
         else:
-            decompressed_file = file
-            compressed_file = file.parent.joinpath(file.name + '.gz')
+            LOGGERS['main'].warning("Decompressed file already exists")
+            return decompressed_file
 
-        # If the file has already been decompressed...
-        if decompressed_file.exists():
-            if compressed_file.exists():
-                _ = auto_input(
-                    "Both the compressed and the decompressed " +
-                    "versions of the file exist. May I re-decompress? [y]/n  ",
-                    'y', **kwargs)
-                delete = True if _.lower() != 'n' else False
-                if delete:
-                    decompressed_file.unlink()
-            else:
-                LOGGERS['main'].warning("Decompressed file already exists")
-                return decompressed_file
-        p = subprocess.Popen(['pigz', '-dp', str(mp.cpu_count() - 2), # '--quiet',
-                                   str(compressed_file.absolute())])
-        # Wait until the decompression is complete.
-        process_complete = False
-        while not process_complete:
-            poll = p.poll()
-            if poll is None:
-                process_complete = False
-            else:
-                process_complete = True
-        return decompressed_file
+    with open(compressed_file, 'rb') as cf:
+        with open(decompressed_file, 'wb') as df:
+            df.write(gzip.decompress(cf.read()))
+    compressed_file.unlink()
 
-    except subprocess.CalledProcessError:
-        print("Warning: Pigz failed to compress the xml file.")
-        return None
-
-    except OSError:
-        print("Warning: You probably haven't installed `pigz`. Install " +
-              "it if you want the script to automagically compress your " +
-              "combined XML files after it has been split!")
-        global PIGZ_WARNING_ACKNOWLEDGED
-        if not PIGZ_WARNING_ACKNOWLEDGED:
-            auto_input("For now, press enter to ignore.", '', **kwargs)
-            PIGZ_WARNING_ACKNOWLEDGED = True
-        return None
+    return decompressed_file
 
 
 def compress_file(file: Path, **kwargs) -> Path:
-    try:
-        gz_index = file.name.find('.gz')
-        # if the file ends with gz
-        if gz_index != -1:
-            decompressed_file = file.parent.joinpath(file.name[:gz_index])
-            compressed_file = file
+    gz_index = file.name.find('.gz')
+    # if the file ends with gz
+    if gz_index != -1:
+        decompressed_file = file.parent.joinpath(file.name[:gz_index])
+        compressed_file = file
+    else:
+        decompressed_file = file
+        compressed_file = file.parent.joinpath(file.name + '.gz')
+
+    if compressed_file.exists():
+        if decompressed_file.exists():
+            _ = auto_input(
+                "Both the compressed and the decompressed " +
+                "versions of the file exist. May I re-compress? [y]/n  ",
+                'y', **kwargs)
+            delete = True if _.lower() != 'n' else False
+            if delete:
+                compressed_file.unlink()
         else:
-            decompressed_file = file
-            compressed_file = file.parent.joinpath(file.name + '.gz')
+            LOGGERS['main'].warning("Compressed file already exists")
+            return compressed_file
 
-        if compressed_file.exists():
-            if decompressed_file.exists():
-                _ = auto_input(
-                    "Both the compressed and the decompressed " +
-                    "versions of the file exist. May I re-compress? [y]/n  ",
-                    'y', **kwargs)
-                delete = True if _.lower() != 'n' else False
-                if delete:
-                    compressed_file.unlink()
-            else:
-                LOGGERS['main'].warning("Compressed file already exists")
-                return compressed_file
-        p = subprocess.Popen(['pigz', '-kp', str(mp.cpu_count() - 2),  # '--quiet',
-                             str(decompressed_file.absolute())])
+    pigz_python.compress_file(decompressed_file)
+    decompressed_file.unlink()
 
-        # Wait until the compression is complete.
-        process_complete = False
-        while not process_complete:
-            poll = p.poll()
-            if poll is None:
-                process_complete = False
-            else:
-                process_complete = True
-
-        return compressed_file
-
-    except subprocess.CalledProcessError:
-        print("Warning: Pigz failed to compress the xml file.")
-        return None
-    except OSError:
-        print("Warning: You probably haven't installed `pigz`. Install " +
-              "it if you want the script to automagically compress your " +
-              "combined XML files after it has been split!")
-        global PIGZ_WARNING_ACKNOWLEDGED
-        if not PIGZ_WARNING_ACKNOWLEDGED:
-            auto_input("For now, press enter to ignore.", '', **kwargs)
-            PIGZ_WARNING_ACKNOWLEDGED = True
-        return None
+    return compressed_file
 
 
 def get_input_data_fmt(scenario_dir: Path):
