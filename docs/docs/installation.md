@@ -35,7 +35,6 @@ Please install the following software before installing `EV-Fleet-Sim`. Install 
 | +[osmium][6]                        |                > 1.13                | Software for cropping OpenStreetMap files. Compulsory on Linux and MacOS.                                                                                                                                                                                                                |
 | +[osmconvert][7]                    |                  Any                 | Alternative software for cropping OpenStreetMap files. Compulsory on **Windows**.                                                                                                                                                                                                        |
 | +[osmosis][8]                       |                  Any                 | Software used for overlaying NASA elevation data onto the OpenStreetMap files. Required if you want to consider elevation in the electric vehicle models of EV-Fleet-Sim.                                                                                                                |
-| *Pigz                               |                  Any                 | Software for compressing files using multiple cpu threads. On Linux, install pigz with your package manager. On Windows, install pigz from [here][10], and make sure it is in your [system's PATH][12]!! In MacOS, [install MacPorts][11], and then install Pigz using: `sudo port install pigz` |
 | +[Microsoft Build Tools for C++][9] |                > 14.0                | Only compulsory on **Windows**. Used for compiling some Python packages.                                                                                                                                                                                                                 |
 
 [1]: https://www.eclipse.org/sumo/
@@ -47,8 +46,6 @@ Please install the following software before installing `EV-Fleet-Sim`. Install 
 [7]: https://wiki.openstreetmap.org/wiki/Osmconvert
 [8]: https://wiki.openstreetmap.org/wiki/Osmosis
 [9]: https://visualstudio.microsoft.com/visual-cpp-build-tools/
-[10]: https://blog.kowalczyk.info/software/pigz-for-windows.html
-[11]: https://www.macports.org/install.php
 [12]: https://zwbetz.com/how-to-add-a-binary-to-your-path-on-macos-linux-windows/#windows-gui
 
 
