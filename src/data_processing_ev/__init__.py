@@ -36,8 +36,9 @@ import multiprocessing as mp
 import logging
 from importlib.metadata import version
 import sys
-import pigz_python
 import gzip
+import platform
+import datetime as dt
 
 # loggers:
 LOGGERS = {
@@ -48,6 +49,9 @@ LOGGERS = {
 
 DATA_FMT_ERROR_MSG = "The function has not been implemented for the " + \
                      "currently selected input data format."
+
+PIGZ_WARNING_ACKNOWLEDGED = False
+PIGZ_TIMEOUT = 1800
 
 SCENARIO_DIR_STRUCTURE = {
     '_Inputs': {
@@ -151,64 +155,142 @@ def auto_input(prompt: str, default: str, **kwargs):
 
 
 def decompress_file(file: Path, **kwargs) -> Path:
-    gz_index = file.name.find('.gz')
-    # if the file ends with gz
-    if gz_index != -1:
-        decompressed_file = file.parent.joinpath(file.name[:gz_index])
-        compressed_file = file
-    else:
-        decompressed_file = file
-        compressed_file = file.parent.joinpath(file.name + '.gz')
-
-    # If the file has already been decompressed...
-    if decompressed_file.exists():
-        if compressed_file.exists():
-            _ = auto_input(
-                "Both the compressed and the decompressed " +
-                "versions of the file exist. May I re-decompress? [y]/n  ",
-                'y', **kwargs)
-            delete = True if _.lower() != 'n' else False
-            if delete:
-                decompressed_file.unlink()
+    try:
+        gz_index = file.name.find('.gz')
+        # if the file ends with gz
+        if gz_index != -1:
+            decompressed_file = file.parent.joinpath(file.name[:gz_index])
+            compressed_file = file
         else:
-            LOGGERS['main'].warning("Decompressed file already exists")
-            return decompressed_file
+            decompressed_file = file
+            compressed_file = file.parent.joinpath(file.name + '.gz')
 
-    with open(compressed_file, 'rb') as cf:
-        with open(decompressed_file, 'wb') as df:
-            df.write(gzip.decompress(cf.read()))
-    compressed_file.unlink()
+        # If the file has already been decompressed...
+        if decompressed_file.exists():
+            if compressed_file.exists():
+                _ = auto_input(
+                    "Both the compressed and the decompressed " +
+                    "versions of the file exist. May I re-decompress? [y]/n  ",
+                    'y', **kwargs)
+                delete = True if _.lower() != 'n' else False
+                if delete:
+                    decompressed_file.unlink()
+            else:
+                LOGGERS['main'].warning("Decompressed file already exists")
+                return decompressed_file
 
-    return decompressed_file
+        if platform.system() == 'Windows':
+            raise OSError()
+        else:
+            # Decompress the file in Pigz.
+            p = subprocess.Popen(['pigz', '-dp', str(mp.cpu_count() - 1),
+                                  str(compressed_file.absolute())])
+            # Wait until the decompression is complete.
+            start_time = dt.datetime.now()
+            process_complete = False
+            while not process_complete:
+                poll = p.poll()
+                if poll is None:
+                    process_complete = False
+                else:
+                    process_complete = True
+                time_delta = dt.datetime.now() - start_time
+                if time_delta.total_seconds() > PIGZ_TIMEOUT:
+                    raise ValueError("Timeout reached! Pigz took longer than "
+                                     f"{PIGZ_TIMEOUT} seconds to complete.")
+                time.sleep(1)
+
+        return decompressed_file
+
+    except subprocess.CalledProcessError:
+        print("Warning: Pigz failed to compress the xml file.")
+        return None
+
+    except OSError:
+        global PIGZ_WARNING_ACKNOWLEDGED
+        if not PIGZ_WARNING_ACKNOWLEDGED:
+            dpr.LOGGERS['main'].warning(
+                  "You are either using Windows or have't installed `pigz`. "
+                  "Switch to Linux/MacOS and install Pigz for much faster "
+                  "compression times.")
+            auto_input("For now, press enter to compress files in Python. ",
+                       '', **kwargs)
+            PIGZ_WARNING_ACKNOWLEDGED = True
+        # Decompress the file in Python.
+        with open(compressed_file, 'rb') as cf:
+            with open(decompressed_file, 'wb') as df:
+                df.write(gzip.decompress(cf.read()))
+        compressed_file.unlink()
+        return decompressed_file
 
 
 def compress_file(file: Path, **kwargs) -> Path:
-    gz_index = file.name.find('.gz')
-    # if the file ends with gz
-    if gz_index != -1:
-        decompressed_file = file.parent.joinpath(file.name[:gz_index])
-        compressed_file = file
-    else:
-        decompressed_file = file
-        compressed_file = file.parent.joinpath(file.name + '.gz')
-
-    if compressed_file.exists():
-        if decompressed_file.exists():
-            _ = auto_input(
-                "Both the compressed and the decompressed " +
-                "versions of the file exist. May I re-compress? [y]/n  ",
-                'y', **kwargs)
-            delete = True if _.lower() != 'n' else False
-            if delete:
-                compressed_file.unlink()
+    try:
+        gz_index = file.name.find('.gz')
+        # if the file ends with gz
+        if gz_index != -1:
+            decompressed_file = file.parent.joinpath(file.name[:gz_index])
+            compressed_file = file
         else:
-            LOGGERS['main'].warning("Compressed file already exists")
-            return compressed_file
+            decompressed_file = file
+            compressed_file = file.parent.joinpath(file.name + '.gz')
 
-    pigz_python.compress_file(decompressed_file)
-    decompressed_file.unlink()
+        if compressed_file.exists():
+            if decompressed_file.exists():
+                _ = auto_input(
+                    "Both the compressed and the decompressed " +
+                    "versions of the file exist. May I re-compress? [y]/n  ",
+                    'y', **kwargs)
+                delete = True if _.lower() != 'n' else False
+                if delete:
+                    compressed_file.unlink()
+            else:
+                LOGGERS['main'].warning("Compressed file already exists")
+                return compressed_file
 
-    return compressed_file
+        if platform.system() == 'Windows':
+            raise OSError()
+        else:
+            # Compress the file in Pigz.
+            p = subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 1),
+                                  str(compressed_file.absolute())])
+            # Wait until the compression is complete.
+            start_time = dt.datetime.now()
+            process_complete = False
+            while not process_complete:
+                poll = p.poll()
+                if poll is None:
+                    process_complete = False
+                else:
+                    process_complete = True
+                time_delta = dt.datetime.now() - start_time
+                if time_delta.total_seconds() > PIGZ_TIMEOUT:
+                    raise ValueError("Timeout reached! Pigz took longer than "
+                                     f"{PIGZ_TIMEOUT} seconds to complete.")
+                time.sleep(1)
+
+        return compressed_file
+
+    except subprocess.CalledProcessError:
+        print("Warning: Pigz failed to compress the xml file.")
+        return None
+
+    except OSError:
+        global PIGZ_WARNING_ACKNOWLEDGED
+        if not PIGZ_WARNING_ACKNOWLEDGED:
+            dpr.LOGGERS['main'].warning(
+                  "You are either using Windows or have't installed `pigz`. "
+                  "Switch to Linux/MacOS and install Pigz for much faster "
+                  "compression times.")
+            auto_input("For now, press enter to compress files in Python. ",
+                       '', **kwargs)
+            PIGZ_WARNING_ACKNOWLEDGED = True
+        # Decompress the file in Python.
+        with open(decompressed_file, 'rb') as df:
+            with open(compressed_file, 'wb') as cf:
+                cf.write(gzip.compress(df.read()))
+        decompressed_file.unlink()
+        return compressed_file
 
 
 def get_input_data_fmt(scenario_dir: Path):
