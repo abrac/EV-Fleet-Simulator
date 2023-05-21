@@ -253,7 +253,7 @@ def compress_file(file: Path, **kwargs) -> Path:
         else:
             # Compress the file in Pigz.
             p = subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 1),
-                                  str(compressed_file.absolute())])
+                                  str(decompressed_file.absolute())])
             # Wait until the compression is complete.
             start_time = dt.datetime.now()
             process_complete = False
