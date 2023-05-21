@@ -209,7 +209,7 @@ def decompress_file(file: Path, **kwargs) -> Path:
     except OSError:
         global PIGZ_WARNING_ACKNOWLEDGED
         if not PIGZ_WARNING_ACKNOWLEDGED:
-            dpr.LOGGERS['main'].warning(
+            LOGGERS['main'].warning(
                   "You are either using Windows or have't installed `pigz`. "
                   "Switch to Linux/MacOS and install Pigz for much faster "
                   "compression times.")
@@ -278,7 +278,7 @@ def compress_file(file: Path, **kwargs) -> Path:
     except OSError:
         global PIGZ_WARNING_ACKNOWLEDGED
         if not PIGZ_WARNING_ACKNOWLEDGED:
-            dpr.LOGGERS['main'].warning(
+            LOGGERS['main'].warning(
                   "You are either using Windows or have't installed `pigz`. "
                   "Switch to Linux/MacOS and install Pigz for much faster "
                   "compression times.")
