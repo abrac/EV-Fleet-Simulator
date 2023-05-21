@@ -2,6 +2,8 @@
      view this file. Just search the web for a nice markdown editor (like
      Ghostwriter). -->
 
+- [ ] Test SUMO 1.12, so that it can be automatically installed through pip.
+- [ ] Add WSL instructions for Windows. 
 - [ ] Add RAM requirements to docs.
 - Automate step 0 (scenario initialisation):
     - [ ] Merge the `get_max_min_coords()` funtion of `src/data_processing_ev/scenario_initialisation/Data_Pre-Processing/max_min_coords.py` into the `scenario_initialisation` module, such that step 0 runs it if there are traces found. If there are no traces in the directory (as should be the case when running step 0 initially), then it shouldn't run `get_max_min_coords()`.
