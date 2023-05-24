@@ -41,7 +41,7 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path, skipping: bool,
     # If there is something in the directory and you are skipping non-empty
     # directories, then exit. Otherwise, split the SUMO outputs.
     if any(output_dir.iterdir()) and skipping:
-        print("Skipping {ev_name}, as it has already been split...")
+        print(f"Skipping {ev_name}, as it has already been split...")
         ev_xml_file = dpr.compress_file(ev_xml_file, **kwargs)
         return
 
