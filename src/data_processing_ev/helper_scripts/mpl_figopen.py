@@ -13,6 +13,9 @@ pickle.dump(fig, open(output_filepath, 'wb'))
 import pickle
 import argparse
 
+from matplotlib import pyplot
+
+pyplot.ion()
 
 def mpl_figopen():
     parser = argparse.ArgumentParser()
@@ -20,8 +23,7 @@ def mpl_figopen():
     args = parser.parse_args()
 
     figx = pickle.load(open(args.fig_pickle_file, 'rb'))
-    figx.show()  # Show the figure, edit it, etc.!
-    input('Press enter to quit... ')
+    pyplot.show(block=True)
 
 
 if __name__ == "__main__":
