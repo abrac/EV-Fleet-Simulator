@@ -39,6 +39,7 @@ import sys
 import gzip
 import platform
 import datetime as dt
+import shutil
 
 # loggers:
 LOGGERS = {
@@ -454,7 +455,7 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
     if 5.2 in steps:
         print_running_step("5.2: hull_ev_simulation")
         # TODO Remove this prompt, and rather make it automatically select
-        # center integration.
+        # backward integration.
         integration_mthd = None
         while integration_mthd is None:
             _ = auto_input("Would you like to do center, forward or backward integration? [backward]/forward/center  ", 'backward', **kwargs)
@@ -477,8 +478,11 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
             # Backup SUMO's results, as they will be replaced by Hull's results.
             ev_out_dir = scenario_dir.joinpath('EV_Simulation',
                                                'EV_Simulation_Outputs')
-            ev_out_dir.rename(ev_out_dir.parent.joinpath(
-                              ev_out_dir.name + '.sumo.bak'))
+            ev_out_dir_target = ev_out_dir.parent.joinpath(
+                                    ev_out_dir.name + '.sumo.bak')
+            if ev_out_dir_target.exists():
+                shutil.rmtree(ev_out_dir_target)  # FIXME Unsafe!!!
+            ev_out_dir.rename(ev_out_dir_target)
             ev_out_dir.mkdir(parents=True, exist_ok=True)
             hull_ev_simulation.simulate(scenario_dir, integration_mthd,
                 routing_was_done, **kwargs)
