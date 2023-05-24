@@ -184,19 +184,21 @@ def _create_csvs(scenario_dir, **kwargs):
     fcd_sim_dirs = sorted([*scenario_dir.joinpath(
         'Mobility_Simulation', 'FCD_Data').glob('*/*/')])
 
-    battery_csvs = sorted([*scenario_dir.joinpath('EV_Simulation',
-            'EV_Simulation_Outputs').glob('*/*/battery.out.csv')])
-    fcd_csvs = sorted([*scenario_dir.joinpath('Mobility_Simulation', 'FCD_Data').\
-            glob('*/*/fcd.out.csv*')])
+    battery_csvs = sorted(
+            [*scenario_dir.joinpath('EV_Simulation', 'EV_Simulation_Outputs')
+             .glob('*/*/battery.out.csv')])
+    fcd_csvs = sorted(
+            [*scenario_dir.joinpath('Mobility_Simulation', 'FCD_Data')
+             .glob('*/*/fcd.out.csv*')])
 
     if len(battery_csvs) == 0 or len(fcd_csvs) == 0:
-        _ = dpr.auto_input("Would you like to convert all " +
-            "battery.out.xml and fcd.out.xml " +
+        _ = dpr.auto_input(
+            "Would you like to convert all battery.out.xml and fcd.out.xml "
             "files to csv? [y]/n \n\t", 'y', **kwargs)
         convert = (True if _.lower() != 'n' else False)
     else:
-        _ = dpr.auto_input("Would you like to re-convert all " +
-            "battery.out.xml and fcd.out.xml " +
+        _ = dpr.auto_input(
+            "Would you like to re-convert all battery.out.xml and fcd.out.xml "
             "files to csv? [y]/n \n\t", 'y', **kwargs)
         convert = (True if _.lower() != 'n' else False)
 
@@ -238,34 +240,34 @@ def _create_csvs(scenario_dir, **kwargs):
             fcd_csv = fcd_sim_dir.joinpath('fcd.out.csv')
             fcd_xml_gz = fcd_sim_dir.joinpath('fcd.out.xml.gz')
             fcd_xml = dpr.decompress_file(fcd_xml_gz, **kwargs)
+
             if not fcd_xml.exists():
                 continue
             if skipping and (fcd_csv.exists() or fcd_csv_gz.exists()):
                 continue
+
+            fcd_csv.parent.mkdir(parents=True, exist_ok=True)
+            subprocess.run(['python', xml2csv, '-s', ',',
+                            '-o', fcd_csv, fcd_xml])
+            # Warn if fcd_csv *still* doesn't exist
+            if not fcd_csv.exists():
+                dpr.LOGGERS['main'].warning(
+                    "Failed to create: \n\t" + str(fcd_csv))
             else:
-                fcd_csv.parent.mkdir(parents=True, exist_ok=True)
-                subprocess.run(['python', xml2csv, '-s', ',',
-                                '-o', fcd_csv, fcd_xml])
-                # Warn if fcd_csv *still* doesn't exist
-                if not fcd_csv.exists():
-                    dpr.LOGGERS['main'].warning(
-                        "Failed to create: \n\t" + str(fcd_csv))
-                else:
-                    # If creating the fcd_csv was succesful, compress
-                    # the fcd_xml and fcd_csv files.
-                    fcd_xml = dpr.compress_file(fcd_xml, **kwargs)
-                    fcd_csv = dpr.compress_file(fcd_csv, **kwargs)
+                # If creating the fcd_csv was succesful, compress
+                # the fcd_xml and fcd_csv files.
+                fcd_xml = dpr.compress_file(fcd_xml, **kwargs)
+                fcd_csv = dpr.compress_file(fcd_csv, **kwargs)
 
 
 def split_results(scenario_dir: Path, **kwargs):
-    input_data_fmt = kwargs.get('input_data_fmt', dpr.DATA_FMTS['GPS'])
 
     skip_splitting = False
-    if any(scenario_dir.joinpath('EV_Simulation',
-            'EV_Simulation_Outputs').iterdir()):
+    if any(scenario_dir.joinpath(
+            'EV_Simulation', 'EV_Simulation_Outputs').iterdir()):
         _ = dpr.auto_input("Would you like to skip EVs that have already been "
                            "(partially) split? y/[n]", 'n', **kwargs)
-        skip_splitting = False if _.lower() != 'y' else True
+        skip_splitting = _.lower() == 'y'
 
     # Load xml as etree iterparse.
     xmls = sorted([*scenario_dir.joinpath(
@@ -282,10 +284,11 @@ def split_results(scenario_dir: Path, **kwargs):
         _split_ev_xml(*arg_set, **kwargs)
 
     # Moving the split FCD files to the mobility simulation folder.
-    for fcd_file in scenario_dir.joinpath('EV_Simulation',
-            'EV_Simulation_Outputs').glob('*/*/fcd.out.xml*'):
-        new_location = scenario_dir.joinpath('Mobility_Simulation', 'FCD_Data',
-            fcd_file.parents[1].name, fcd_file.parent.name, fcd_file.name)
+    for fcd_file in scenario_dir.joinpath(
+            'EV_Simulation', 'EV_Simulation_Outputs').glob('*/*/fcd.out.xml*'):
+        new_location = scenario_dir.joinpath(
+            'Mobility_Simulation', 'FCD_Data', fcd_file.parents[1].name,
+            fcd_file.parent.name, fcd_file.name)
         new_location.parent.mkdir(parents=True, exist_ok=True)
         fcd_file.rename(new_location)
 
