@@ -45,7 +45,8 @@ import shutil
 LOGGERS = {
     'main': logging.getLogger('main'),
     'input': logging.getLogger('input'),
-    'sumo_output': logging.getLogger('sumo_output')  # For SUMO simulation outputs only
+    'sumo_output': logging.getLogger('sumo_output')
+    # For SUMO simulation outputs only
 }
 
 DATA_FMT_ERROR_MSG = "The function has not been implemented for the " + \
@@ -390,8 +391,7 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
             "Would you like to label *all* datapoints as part of " +
             "*one* big cluster? [y]/n  ", 'y', **kwargs)
         skip = False if _.lower() == 'n' else True
-        spatial_clustering.cluster_scenario(scenario_dir, skip=skip,
-                                                **kwargs)
+        spatial_clustering.cluster_scenario(scenario_dir, skip=skip, **kwargs)
     if 2 in steps or 2.2 in steps:
         print_running_step("2.2: date_filtering_and_separation")
         """Spatial filtering"""
@@ -413,18 +413,18 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
     if 3 in steps or 3.3 in steps:
         print_running_step("3.3: temporal_clustering")
         """Temporal clustering"""
-        #   TODO: Disable this step by default (similar to how we disable
+        # TODO: Disable this step by default (similar to how we disable
         # spatial_clustering).
         print("Temporal clustering has been temporarily disabled.")
         temporal_clustering_enabled = False
         if temporal_clustering_enabled:
             if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
                 clustering_type = 'spatial_filtered_traces'
-                temporal_clustering.cluster_scenario(scenario_dir, clustering_type,
-                                                         **kwargs)
+                temporal_clustering.cluster_scenario(
+                        scenario_dir, clustering_type, **kwargs)
             elif kwargs['input_data_fmt'] == DATA_FMTS['GTFS']:
-                print("Warning: Temporal clustering is not implemented for GTFS " +
-                      "scenarios yet.")
+                print("Warning: Temporal clustering is not implemented for "
+                      "GTFS scenarios yet.")
             else:
                 raise ValueError(DATA_FMT_ERROR_MSG)
 
@@ -458,7 +458,9 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
         # backward integration.
         integration_mthd = None
         while integration_mthd is None:
-            _ = auto_input("Would you like to do center, forward or backward integration? [backward]/forward/center  ", 'backward', **kwargs)
+            _ = auto_input("Would you like to do center, forward or backward "
+                           "integration? [backward]/forward/center  ",
+                           'backward', **kwargs)
             if _.lower() == 'backward' or _ == '':
                 integration_mthd = hull_ev_simulation.INTEGRATION_MTHD['bwd']
             elif _.lower() == 'forward':
@@ -470,12 +472,12 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
 
         if fcd_conversion_was_done:
             hull_ev_simulation.simulate(scenario_dir, integration_mthd,
-                routing_was_done, **kwargs)
+                                        routing_was_done, **kwargs)
         elif routing_was_done:
             sumo_ev_simulation.simulate_all_routes(
                 scenario_dir, skip_existing=False, **kwargs)
             results_splitter.split_results(scenario_dir, **kwargs)
-            # Backup SUMO's results, as they will be replaced by Hull's results.
+            # Backup SUMO's results, as they will be replaced by Hull's results
             ev_out_dir = scenario_dir.joinpath('EV_Simulation',
                                                'EV_Simulation_Outputs')
             ev_out_dir_target = ev_out_dir.parent.joinpath(
@@ -485,11 +487,12 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
             ev_out_dir.rename(ev_out_dir_target)
             ev_out_dir.mkdir(parents=True, exist_ok=True)
             hull_ev_simulation.simulate(scenario_dir, integration_mthd,
-                routing_was_done, **kwargs)
-                # TODO  Remove integration_mthd argument.
+                                        routing_was_done, **kwargs)
+            # TODO  Remove integration_mthd argument.
         else:
             raise ValueError("The Mobility Simulation step was not done. "
-                "Please run it before requesting an EV Simulation.")
+                             "Please run it before requesting an EV "
+                             "Simulation.")
 
     if 6 in steps or 6.1 in steps:
         print_running_step("6.1: ev_results_analysis")
@@ -510,9 +513,10 @@ def _run(scenario_dir: Path, steps: Iterable[SupportsFloat], **kwargs):
         print_running_step("6.3: wind_results_analysis")
         """Generate Plots and Statistics from Wind Simulation Results"""
         if kwargs['input_data_fmt'] == DATA_FMTS['GPS']:
-            wind_results_analysis.run_wind_results_analysis(scenario_dir, **kwargs)
+            wind_results_analysis.run_wind_results_analysis(scenario_dir,
+                                                            **kwargs)
         elif kwargs['input_data_fmt'] == DATA_FMTS['GTFS']:
-            print("Warning: Wind Results Analysis is not implemented for GTFS" +
+            print("Warning: Wind Results Analysis is not implemented for GTFS"
                   "scenarios yet.")
         else:
             raise ValueError(DATA_FMT_ERROR_MSG)
@@ -565,27 +569,29 @@ def main():
         else:
             print("Available steps: ")
             print(MODULES)
-            steps_str = input("Specify steps to be run as a comma-seperated " +
-                              "list of floats without spaces (e.g. '1,2.2,4'): ")
+            steps_str = input(
+                "Specify steps to be run as a comma-seperated "
+                "list of floats without spaces (e.g. '1,2.2,4'): ")
         try:
             steps = [float(step) for step in steps_str.split(',')]
             if 5 in steps:
                 step5 = float(input("You selected to run step 5. "
-                    "Would you like to run 5.1 or 5.2?  "))
+                                    "Would you like to run 5.1 or 5.2?  "))
                 steps.append(step5)
                 if step5 == 5.2 and 4 in steps:
                     step4 = float(input("You selected to run step 4. "
-                        "Would you like to run 4.1 or 4.2?  "))
+                                        "Would you like to run 4.1 or 4.2?  "))
                     steps.append(step4)
             if 4 in steps:
                 step4 = float(input("You selected to run step 4. "
-                    "Would you like to run 4.1 or 4.2?  "))
+                                    "Would you like to run 4.1 or 4.2?  "))
                 steps.append(step4)
             if 5.1 in steps and 4.2 in steps:
                 LOGGERS['main'].error("Steps 5.1 and 4.2 are not compatible!")
                 raise ValueError("Steps 5.1 and 4.2 are not compatible!")
         except ValueError:
-            LOGGERS['main'].error("Your steps selection was not valid! Try again...")
+            LOGGERS['main'].error("Your steps selection was not valid! "
+                                  "Try again...")
             time.sleep(1)
             continue
         break
