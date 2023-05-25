@@ -186,11 +186,12 @@ def _create_csvs(scenario_dir, **kwargs):
 
     battery_csvs = sorted(
             [*scenario_dir.joinpath('EV_Simulation', 'EV_Simulation_Outputs')
-             .glob('*/*/battery.out.csv')])
+             .glob('*/*/battery.out.csv*')])
     fcd_csvs = sorted(
             [*scenario_dir.joinpath('Mobility_Simulation', 'FCD_Data')
              .glob('*/*/fcd.out.csv*')])
 
+    # TODO Don't check this condition.
     if len(battery_csvs) == 0 or len(fcd_csvs) == 0:
         _ = dpr.auto_input(
             "Would you like to convert all battery.out.xml and fcd.out.xml "
@@ -206,7 +207,7 @@ def _create_csvs(scenario_dir, **kwargs):
         _ = dpr.auto_input(
             "Would you like to skip existing csv files? y/[n] \n\t", 'n',
             **kwargs)
-        skipping = (True if _.lower() == 'y' else False)
+        skipping = _.lower() == 'y'
 
         print("\nConverting xml files to csv...")
 
@@ -219,6 +220,7 @@ def _create_csvs(scenario_dir, **kwargs):
             if not battery_xml.exists():
                 continue
             if skipping and (battery_csv.exists() or battery_csv_gz.exists()):
+                battery_xml = dpr.compress_file(battery_xml)
                 continue
             else:
                 battery_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -244,6 +246,7 @@ def _create_csvs(scenario_dir, **kwargs):
             if not fcd_xml.exists():
                 continue
             if skipping and (fcd_csv.exists() or fcd_csv_gz.exists()):
+                fcd_xml = dpr.compress_file(fcd_xml)
                 continue
 
             fcd_csv.parent.mkdir(parents=True, exist_ok=True)
