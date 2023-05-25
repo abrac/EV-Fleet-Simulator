@@ -174,6 +174,7 @@ def filter_scenario(scenario_dir: Path, **kwargs):
         filter_cluster(clustered_file, idx, boundary_file, output_path,
                        **kwargs)
 
+    # TODO Uncomment the below and test.
     # IF NOT DEBUGGING:
     # -----------------
     # with Pool(processes=cpu_count()-1, initargs=(RLock(),),

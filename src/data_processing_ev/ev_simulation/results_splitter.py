@@ -280,6 +280,7 @@ def split_results(scenario_dir: Path, **kwargs):
     args = zip(xmls, repeat(scenario_dir, len(xmls)),
                repeat(skip_splitting, len(xmls)))
 
+    # TODO Make this multithreaded again.
     # with mp.Pool(mp.cpu_count() - 1) as p:
     #     p.starmap(_split_ev_xml, args)
 

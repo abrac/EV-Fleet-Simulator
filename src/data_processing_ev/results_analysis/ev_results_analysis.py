@@ -75,6 +75,7 @@ class Data_Analysis:
                                          dpr.DATA_FMTS['GPS'])
         self.graphs_dir = scenario_dir.joinpath('EV_Results')
 
+        # TODO Make this multithreaded again.
         # Convert all battery.out.xml files to csv files
         # with Pool() as p:
         #    p.map(self.__create_csvs, ev_sim_dirs)

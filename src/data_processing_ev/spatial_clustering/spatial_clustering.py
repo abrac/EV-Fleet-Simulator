@@ -37,7 +37,7 @@ import data_processing_ev as dpr
 # Deprecated imports:
 # import hdbscan  # HDBSCAN clustering algorithm. (Hopefully better.)
 # from folium.plugins import Search
-# from tqdm import tqdm
+from tqdm import tqdm
 
 
 def map_scatter(df, map, colors=[0]):
@@ -285,7 +285,7 @@ def cluster_scenario(scenario_dir: Path, skip: bool = False, **kwargs):
                   str(saved_model_dir.absolute()))
             _ = dpr.auto_input("Would you like to use these files (otherwise "
                                "program will regenerate models)? [y]/n", 'y',
-                                **kwargs)
+                               **kwargs)
             regenerate_model = True if _.lower() == 'n' else False
             if not regenerate_model:
                 print("Using existing model labels...")
@@ -298,18 +298,16 @@ def cluster_scenario(scenario_dir: Path, skip: bool = False, **kwargs):
         # cluster_traces(traces_combined, scenario_dir, regenerate_model,
         #                saved_model_dir)
 
-        # TODO Make debugging a function parameter.
-
-        # IF DEBUGGING:
-        # -------------
-        # for trace_file in tqdm(trace_files):
-        #     cluster_traces(trace_file, scenario_dir, regenerate_model,
-        #                    saved_model_dir)
-        # IF NOT DEBUGGING:
-        # ----------------- XXX
-        with Pool(cpu_count() - 1) as p:
-            args = zip(trace_files,
-                       repeat(scenario_dir, len(trace_files)),
-                       repeat(regenerate_model, len(trace_files)),
-                       repeat(saved_model_dir, len(trace_files)))
-            p.starmap(cluster_traces, args)
+        # Use multithreading.
+        if not kwargs.get('debug_mode'):
+            with Pool(cpu_count() - 1) as pool:
+                args = zip(trace_files,
+                           repeat(scenario_dir, len(trace_files)),
+                           repeat(regenerate_model, len(trace_files)),
+                           repeat(saved_model_dir, len(trace_files)))
+                pool.starmap(cluster_traces, args)
+        # Else, if debugging, run linearly.
+        else:
+            for trace_file in tqdm(trace_files):
+                cluster_traces(trace_file, scenario_dir, regenerate_model,
+                               saved_model_dir)

@@ -431,13 +431,19 @@ def simulate(scenario_dir: Path,
         repeat(integration_mthd))
     kwargs_simulation = repeat(kwargs)
 
-    with mp.Pool(mp.cpu_count() - 1) as p:
-        battery_outputs = starmap_with_kwargs(p, simulate_trace,
-            args_simulation, kwargs_simulation)
-    # # OR Old multithreaded way
-    # for fcd_file in tqdm(fcd_files):
-    #     battery_output = simulate_trace(scenario_dir, fcd_file, geo, integration_mthd, **kwargs)
-    #     battery_outputs.append(battery_output)
+    # Multithreaded
+    if not kwargs.get('debug_mode'):
+        with mp.Pool(mp.cpu_count() - 1) as process:
+            battery_outputs = starmap_with_kwargs(
+                    process, simulate_trace,
+                    args_simulation, kwargs_simulation)
+
+    # Single-threaded if debugging
+    else:
+        for fcd_file in tqdm(fcd_files):
+            battery_output = simulate_trace(
+                    scenario_dir, fcd_file, geo, integration_mthd, **kwargs)
+            battery_outputs.append(battery_output)
 
     for fcd_file, battery_output in tqdm(zip(fcd_files, battery_outputs)):
 

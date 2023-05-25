@@ -493,16 +493,16 @@ def cluster_scenario(scenario_dir: Path, input_type: str, **kwargs):
     if (regenerating_clusters):
         trace_dfs_and_names = [*_gen_trace_dfs(scenario_dir, input_type)]
 
-        ### IF NOT DEBUGGING: ###  XXX I think this needs to be deleted.
-                                #  cyclometric complexity is too high for
-                                #  multi-threading apparently...
+        # IF NOT DEBUGGING:
+        #   TODO I think this needs to be deleted. Cyclometric complexity is
+        #   too high for multi-threading apparently...
         # args = zip([trace_df for trace_df, _ in trace_dfs_and_names],
         #            [ev_name for _, ev_name in trace_dfs_and_names],
         #            repeat(scenario_dir, len(trace_dfs_and_names)))
         # with Pool() as p:
         #     vehicle_dfs = list(p.starmap(_cluster_ev, args))
 
-        ### IF DEBUGGING: ###
+        # IF DEBUGGING:
         vehicle_dfs = []
         for trace_df, ev_name in trace_dfs_and_names:
             vehicle_dfs.append(_cluster_ev(trace_df, ev_name, scenario_dir,
