@@ -181,14 +181,17 @@ def decompress_file(file: Path, **kwargs) -> Path:
                 LOGGERS['main'].warning("Decompressed file already exists")
                 return decompressed_file
 
+        # TODO Abandon Pigz on Unix?
         if platform.system() == 'Windows':
             raise OSError()
         else:
             # Decompress the file in Pigz.
             p = subprocess.Popen(['pigz', '-dp', str(mp.cpu_count() - 1),
                                   str(compressed_file.absolute())])
+            # TODO Remove the below, and replace the above with
+            # subprocesses.run's timeout parameter. Make sure that the process
+            # is blocking. Do the same in the compression function.
             # Wait until the decompression is complete.
-            start_time = dt.datetime.now()
             process_complete = False
             while not process_complete:
                 poll = p.poll()
@@ -196,11 +199,6 @@ def decompress_file(file: Path, **kwargs) -> Path:
                     process_complete = False
                 else:
                     process_complete = True
-                time_delta = dt.datetime.now() - start_time
-                if time_delta.total_seconds() > PIGZ_TIMEOUT:
-                    raise ValueError("Timeout reached! Pigz took longer than "
-                                     f"{PIGZ_TIMEOUT} seconds to complete.")
-                time.sleep(1)
 
         return decompressed_file
 
@@ -257,7 +255,6 @@ def compress_file(file: Path, **kwargs) -> Path:
             p = subprocess.Popen(['pigz', '-p', str(mp.cpu_count() - 1),
                                   str(decompressed_file.absolute())])
             # Wait until the compression is complete.
-            start_time = dt.datetime.now()
             process_complete = False
             while not process_complete:
                 poll = p.poll()
@@ -265,11 +262,6 @@ def compress_file(file: Path, **kwargs) -> Path:
                     process_complete = False
                 else:
                     process_complete = True
-                time_delta = dt.datetime.now() - start_time
-                if time_delta.total_seconds() > PIGZ_TIMEOUT:
-                    raise ValueError("Timeout reached! Pigz took longer than "
-                                     f"{PIGZ_TIMEOUT} seconds to complete.")
-                time.sleep(1)
 
         return compressed_file
 
