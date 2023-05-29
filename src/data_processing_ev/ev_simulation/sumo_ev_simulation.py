@@ -162,7 +162,8 @@ def simulate_all_routes(scenario_dir: Path,
         print(msg_simulating)
         dpr.LOGGERS['sumo_output'].info(msg_simulating)
 
-        result = subprocess.run(simulation_cmd, capture_output=True)
+        result = subprocess.run(
+                simulation_cmd, capture_output=True, check=True)
 
         # Save the output:
         dpr.LOGGERS['sumo_output'].info(result.stdout)

@@ -225,7 +225,7 @@ def _create_csvs(scenario_dir, **kwargs):
             else:
                 battery_csv.parent.mkdir(parents=True, exist_ok=True)
                 subprocess.run(['python', xml2csv, '-s', ',',
-                                '-o', battery_csv, battery_xml])
+                                '-o', battery_csv, battery_xml], check=True)
                 # Warn if battery_csv *still* doesn't exist
                 if not battery_csv.exists():
                     dpr.LOGGERS['main'].warning(
@@ -251,7 +251,7 @@ def _create_csvs(scenario_dir, **kwargs):
 
             fcd_csv.parent.mkdir(parents=True, exist_ok=True)
             subprocess.run(['python', xml2csv, '-s', ',',
-                            '-o', fcd_csv, fcd_xml])
+                            '-o', fcd_csv, fcd_xml], check=True)
             # Warn if fcd_csv *still* doesn't exist
             if not fcd_csv.exists():
                 dpr.LOGGERS['main'].warning(
