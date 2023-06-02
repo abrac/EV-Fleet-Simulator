@@ -84,20 +84,12 @@ def initialise_scenario(scenario_dir: Path, **kwargs):
             'initialisation-instructions.md'))
 
         for src_file, dest_file in zip(src_files, dest_files):
-            similar_file_found = False
-            if dest_file.exists():
-                similar_file_found = True
-            else:
-                suffixes = dest_file.suffixes
-                if any(dest_file.parent.glob('*' + ''.join(suffixes))):
-                    similar_file_found = True
-
-            if not similar_file_found:
+            if not dest_file.exists():
                 shutil.copy(src_file, dest_file)
             else:
                 dpr.LOGGERS['main'].warning(
-                    "Not overwriting. Destination file already exists: \n\t\t " +
-                    str(dest_file.absolute()))
+                    "Not overwriting. Destination file already "
+                    "exists: \n\t\t " + str(dest_file.absolute()))
 
     def create_readme():
         with open(str(scenario_dir.joinpath('directory_structure.json')), 'w') as f:
