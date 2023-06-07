@@ -12,14 +12,20 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 import data_processing_ev as dpr
+from nautical_calculations import get_bearing
 
 MAX_VELOCITY = np.inf  # km/h
 
 
 def convert_data(scenario_dir: Path, **kwargs):
     # List the folders containing the traces of each EV.
-    ev_dirs = sorted([*scenario_dir.joinpath(
-        'Spatial_Clusters', 'Filtered_Traces').glob('*/')])
+    filtered_traces_path = scenario_dir.joinpath(
+            'Spatial_Clusters', 'Filtered_Traces')
+
+    ev_dirs = sorted([*filtered_traces_path.glob('*/')])
+
+    if not any(ev_dirs):
+        raise ValueError(f'{filtered_traces_path} is empty.')
 
     altitude_conversion = None
     # For each EV, convert its traces to a SUMO FCD-style output.
@@ -61,6 +67,15 @@ def convert_data(scenario_dir: Path, **kwargs):
                     trace_new['vehicle_z'] = trace['Altitude']
             if 'Heading' in trace.columns:
                 trace_new['vehicle_angle'] = trace['Heading']
+            else:
+                trace_new['vehicle_angle'] = pd.Series()
+                for i in range(1, len(trace)):
+                    trace_new.loc[i, 'vehicle_angle'] = get_bearing(
+                        trace.loc[i-1, 'Latitude'],
+                        trace.loc[i-1, 'Longitude'],
+                        trace.loc[i, 'Latitude'],
+                        trace.loc[i, 'Longitude'])
+                trace_new.loc[0, 'vehicle_angle'] = 0
 
             output_file = scenario_dir.joinpath(
                 'Mobility_Simulation', 'FCD_Data', ev_dir.name,
