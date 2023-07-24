@@ -7,7 +7,8 @@ title: Blog
   {% for post in site.posts %}
     <li>
         <h2><a href="{{site.baseurl}}{{ post.url }}">{{ post.title }}</a></h2>
-        {{ post.excerpt }}
+        <h4>{{ post.date | date_to_string }}</h4>
+        {{ post.excerpt }} <a href="{{site.baseurl}}{{ post.url }}">more...</a>
     </li>
   {% endfor %}
 </ul>
