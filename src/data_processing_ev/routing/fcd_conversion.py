@@ -52,7 +52,7 @@ def convert_data(scenario_dir: Path, **kwargs):
             trace_new['timestep_time'] = trace['Time'].\
                 map(lambda time: (time - midnight).seconds)
             trace_new['vehicle_speed'] = trace['Velocity']/3.6
-                # FIXME Don't convert km/h to m/s! The input should
+                # TODO Don't convert km/h to m/s! The input should
                 # already be in m/s.
             trace_new['vehicle_x'] = trace['Longitude']
             trace_new['vehicle_y'] = trace['Latitude']
@@ -76,6 +76,8 @@ def convert_data(scenario_dir: Path, **kwargs):
                         trace.loc[i, 'Latitude'],
                         trace.loc[i, 'Longitude'])
                 trace_new.loc[0, 'vehicle_angle'] = 0
+            if 'Efficiency' in trace.columns:
+                trace_new['efficiency'] = trace['Efficiency']
 
             output_file = scenario_dir.joinpath(
                 'Mobility_Simulation', 'FCD_Data', ev_dir.name,

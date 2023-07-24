@@ -263,9 +263,13 @@ class Vehicle:
         dt = journey['DeltaT']  # s
         dv = journey['DeltaV']  # m/s
         dθ = journey['Deltaθ']  # rad
+        if 'efficiency' in journey.columns:
+            eff = journey['efficiency']
+            # TODO Not sure if making this efficiency only for propultion is
+            # the best approach.
 
         # TODO Do this in the init.
-        RGBeff = self.rgbeff  # static regen coeff
+        self.rgbeff  # static regen coeff
 
         # ---------------------------------------------------------------------
 
@@ -289,7 +293,7 @@ class Vehicle:
             else:
                 # TODO The below 3 drag forces use the current velocity as a
                 # parameter. Change this to the average velocity! Also in SUMO.
-                Err = -getRoadFriction(self.mass,self.crr, slope, vel) * dist
+                Err = -getRoadFriction(self.mass, self.crr, slope, vel) * dist
                 Ea = -getAerodynamicDrag(self.cd, self.A, vel) * dist
                 Erd = -getRadialDrag(self.mass, self.c_rad, delta_θ, dist, vel) * dist
                 Ehc = -getRoadSlopeDrag(self.mass, slope) * dist
@@ -321,12 +325,22 @@ class Vehicle:
                                       # it here too.
 
         cur_bat_state = self.battery  # Current battery state.
+        try:  # FIXME This is ugly. Remove this partial dependence on `eff`.
+            eff
+        except NameError:
+            eff = None
         for i in range(len(Er)):
             if Er[i] >= 0:  # energy that is used for propulsion
-                Er_batt[i] = Er[i]/self.eff
-
+                if eff is not None:
+                    Er_batt[i] = Er[i] / eff[i]
+                else:
+                    Er_batt[i] = Er[i] / self.eff
             else:  # energy that is regen'd back into the battery
-                Er_batt[i] = Er[i] * RGBeff
+                if eff is not None:
+                    Er_batt[i] = Er[i] * self.rgbeff
+                    # FIXME Replace self.rgbeff with eff[i].
+                else:
+                    Er_batt[i] = Er[i] * self.rgbeff
 
             # # FIXME SUMO adds constant consumers as part of the propulsion work.
 
