@@ -50,6 +50,7 @@ def gen_map_traces(scenario_dir: Path, mapping_points: bool = True,
         map_area = folium.Map(location=[latitude, longitude],
                               titles=scenario_name, zoom_start=12,
                               control_scale=True)
+        map_area.add_child(folium.LatLngPopup())
         if mapping_geojson:
             # Add geographic data to map
             folium.GeoJson(geojson_data).add_to(map_area)
