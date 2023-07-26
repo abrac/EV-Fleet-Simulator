@@ -329,15 +329,18 @@ class Vehicle:
             eff
         except NameError:
             eff = None
+
+        GENERATOR_EFF = 0.95
+        POWER_EL_EFF = 0.9
         for i in range(len(Er)):
             if Er[i] >= 0:  # energy that is used for propulsion
                 if eff is not None:
-                    Er_batt[i] = Er[i] / eff[i]
+                    Er_batt[i] = Er[i] / eff[i] / POWER_EL_EFF
                 else:
                     Er_batt[i] = Er[i] / self.eff
             else:  # energy that is regen'd back into the battery
                 if eff is not None:
-                    Er_batt[i] = Er[i] * self.rgbeff
+                    Er_batt[i] = Er[i] * eff[i] * GENERATOR_EFF * POWER_EL_EFF
                     # FIXME Replace self.rgbeff with eff[i].
                 else:
                     Er_batt[i] = Er[i] * self.rgbeff
