@@ -43,16 +43,12 @@ abstract = {Minibus taxi public transport is a seemingly chaotic phenomenon in t
 ```
 </details>
 
-Please also click the "star" button on the top of our [repository's homepage](https://gitlab.com/eputs/ev-fleet-sim) so that we know how many people our software is benefitting. This helps us to justify future funding and work on the project. Thank you!
+Please also click the "star" button on the top of our [code repository](https://gitlab.com/eputs/ev-fleet-sim) so that we know how many people our software is benefitting. This helps us to justify future funding and work on the project. Thank you!
 
 Documentation
 =============
 
-To learn how to install and use this software, please refer to the [documentation](https://eputs.gitlab.io/ev-fleet-sim/):
-
-<a href="https://eputs.gitlab.io/ev-fleet-sim/docs.html">
-<button>To the Documentation!</button>
-</a>
+To learn how to install and use this software, please refer to the [documentation](https://ev-fleet-sim.online/docs.html).
 
 If you learn better with videos, here is a video tutorial of the software:
 
