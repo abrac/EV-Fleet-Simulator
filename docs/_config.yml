@@ -40,3 +40,24 @@ theme: minima
 
 exclude:
   - vendor
+
+markdown: kramdown
+
+kramdown:
+  syntax_highlighter: rouge
+  input: GFM
+  auto_ids: true
+  toc_levels: 1..3
+
+
+socials:
+  # GitHub: 
+  GitLab: https://gitlab.com/eputs/ev-fleet-sim
+  # Google-Plus: 
+  # Instagram:
+  # WhatsApp:
+  LinkedIn: https://www.linkedin.com/in/abrahamcj/
+  # Twitter: 
+  # Facebook:
+  # Slack:
+  RSS: /feed.xml

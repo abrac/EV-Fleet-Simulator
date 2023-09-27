@@ -2,7 +2,7 @@
 layout: default
 ---
 
-# Electric-Vehicle Fleet Simulator
+# Electric-Vehicle Fleet Simulator <i class="fa-solid fa-charging-station"></i>
 ## Rapidly analyse the potential of electric-vehicle technology for a vehicle fleet
 
 [![PyPI Version](https://img.shields.io/pypi/v/ev-fleet-sim)](https://pypi.org/project/ev-fleet-sim/)
@@ -12,11 +12,15 @@ Move from old fossil-fuel vehicles to electric vehicles, using the power of data
 Get started by installing and running the program, as explained in the [documentation]({{site.baseurl}}/docs.html)
 
 <a href="{{site.baseurl}}/docs.html">
-<button>To the Documentation!</button>
+<button><i class="fa-solid fa-book"></i> To the Documentation!</button>
 </a>
 
-For scientists and programmers: the software is open source and can be modified. Download the source code from [here](https://gitlab.com/eputs/ev-fleet-sim).
+The software is open source! Report issues and view source code in our [code repository](https://gitlab.com/eputs/ev-fleet-sim).
+
+<a href="https://gitlab.com/eputs/ev-fleet-sim">
+<button><i class='fa-brands fa-gitlab'></i> Source Code</button>
+</a>
 
 ---
 
-Subscribe to our blog [via RSS]({{site.baseurl}}/feed.xml)
+For more updates, subscribe to our blog via [e-mail <i class="fa-solid fa-envelope"></i>]({{site.baseurl}}/blog.html#subscribe) or old-school [RSS <i class="fa-solid fa-square-rss"></i>]({{site.baseurl}}/rss.html)

@@ -11,7 +11,7 @@ For private communcation, you can reach me on my e-mail address:
 `chris <abraham-without-the-A's> [at] gmail [dot] com` or via Matrix:
 [https://matrix.to/#/@abrac:matrix.org](https://matrix.to/#/@abrac:matrix.org).
 
-Also, follow the latest news surrounding EV-Fleet-Sim, by following [our RSS feed]({{site.baseurl}}/feed.xml) in your favourite RSS news reader.
+Also, follow the latest news surrounding EV-Fleet-Sim, by following [our RSS feed]({{site.baseurl}}/rss.html) in your favourite RSS news reader.
 
 <h2>Team</h2>
 
