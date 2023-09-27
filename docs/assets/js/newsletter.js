@@ -1,6 +1,3 @@
----
-title: Blog
----
 <!-- MailerLite Universal -->
 <script>
     (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
@@ -10,18 +7,3 @@ title: Blog
     ml('account', '567208');
 </script>
 <!-- End MailerLite Universal -->
-
-
-<h1>Latest Posts</h1>
-
-<ul>
-  {% for post in site.posts %}
-    <li>
-        <h2><a href="{{site.baseurl}}{{ post.url }}">{{ post.title }}</a></h2>
-        <h4>{{ post.date | date_to_string }}</h4>
-        {{ post.excerpt }} <a href="{{site.baseurl}}{{ post.url }}">more...</a>
-    </li>
-  {% endfor %}
-</ul>
-
-<div class="ml-embedded" data-form="dUbjIw"></div>

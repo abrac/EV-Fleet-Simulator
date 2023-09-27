@@ -1,6 +1,15 @@
 ---
 permalink: docs.html
 ---
+<!-- MailerLite Universal -->
+<script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '567208');
+</script>
+<!-- End MailerLite Universal -->
 
 Summary
 =======
@@ -67,4 +76,6 @@ For private communcation, you can reach me on my e-mail address:
 `chris <abraham-without-the-A's> [at] gmail [dot] com` or via Matrix:
 [https://matrix.to/#/@abrac:matrix.org](https://matrix.to/#/@abrac:matrix.org).
 
-Also, follow the latest news surrounding EV-Fleet-Sim, by following [our RSS feed]({{site.baseurl}}/feed.xml) in your favourite RSS news reader.
+Also, follow the latest news surrounding EV-Fleet-Sim, by subscribing below.
+
+<div class="ml-embedded" data-form="dUbjIw"></div>
