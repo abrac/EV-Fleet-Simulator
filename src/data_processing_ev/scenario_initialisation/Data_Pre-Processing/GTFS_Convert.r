@@ -10,7 +10,7 @@ filtering <- readline(prompt="    ")
 if (tolower(filtering) != 'n'){
     cat('Looking for "./Original/GTFS_Orig.zip"...\n')
 
-    gtfs = read_gtfs(here("Original", "GTFS_Orig.zip"))
+    gtfs = read_gtfs("Original/GTFS_Orig.zip")
 
     agencies <- c()
 
@@ -35,10 +35,10 @@ if (tolower(filtering) != 'n'){
         gtfs_small <- gtfs
     }
 
-    write_gtfs(gtfs_small, here("Original", "GTFS.zip"))
+    write_gtfs(gtfs_small, "Original/GTFS.zip")
 }
 
-kampala_gps <- gtfs2gps(here("Original", "GTFS.zip"), parallel=TRUE, 
+kampala_gps <- gtfs2gps("Original/GTFS.zip", parallel=TRUE, 
                         spatial_resolution=50)
 
 kampala_gps <- adjust_speed(kampala_gps)

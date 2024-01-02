@@ -128,13 +128,19 @@ Initialising Trace Data
 
    If your input data is of the GTFS data format, you should use the `GTFS_Convert.r` and `GTFS_Splitter.py` scripts which are also in our [Git repository](https://gitlab.com/eputs/ev-fleet-sim/-/tree/master/src/data_processing_ev/scenario_initialisation/Data_Pre-Processing). You can use them as-is. No changes should be necessary. The scripts will generate one csv file per [trip](https://gtfs.org/reference/static#dataset-files) defined in the GTFS data.
 
-   First run `GTFS_Convert.r`. After running it, extract the new file:
+   First, copy these two scripts to the `<scenario-dir>/_Inputs/Traces/` directory.
+
+   Secondly, run `GTFS_Convert.r`, as follows: 
+
+   Open a terminal in the `Traces` directly. Run the `R` command, to open an R prompt. Enter `source(GTFS_Convert.r)` into the prompt. Follow the various prompts until the script returns you to the R prompt. Exit the R prompt, by entering `quit()` and entering `n`.
+
+   After this, extract the new file:
    `<scenario-dir>/_Inputs/Traces/Original/GTFS.zip` to 
    `<scenario-dir>/_Inputs/Traces/Original/GTFS/`.
 
-   After this, run the `GTFS_Splitter.py` script. It will tell you the maximum
+   Finally, run the `GTFS_Splitter.py` script. It will tell you the maximum
    and minimum GPS coorindates encountered. Hold onto these values. They will
-   be useful when [generating the road-network](#initialising-road-network).
+   be useful when [generating the road-network](#initialising-road-network). Press enter to continue, and waith for the script to complete. The data files compatible with EV-Fleet-Sim will be found in the `Processed` directory.
 
    ##### Table: CSV input format for EV-Fleet-Sim
 

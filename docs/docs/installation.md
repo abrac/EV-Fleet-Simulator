@@ -77,11 +77,14 @@ When you install EV-Fleet-Sim with Pip, it will automatically install all the de
 R packages
 ----------
 
-| Name                | Version | Description                                        |
-|---------------------|:-------:|----------------------------------------------------|
+| Name               | Version | Description                                        |
+|--------------------|:-------:|----------------------------------------------------|
 | +[gtfs2gps][1][^6] |  1.6-0  | Converts GTFS public transport data to GPS traces. |
+| +colorout[2][^6]   |   any   |                                                    |
+| +here[^6]          |   any   |                                                    |
 
 [1]: https://github.com/ipeaGIT/gtfs2gps/
+[2]: https://github.com/jalvesaq/colorout
 
 Installing EV-Fleet-Sim
 =======================

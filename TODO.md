@@ -2,6 +2,7 @@
      view this file. Just search the web for a nice markdown editor (like
      Ghostwriter). -->
 
+- [ ] Create a script which automatically calls GTFS_Convert, calls GTFS_Split, and extracts the GTFS.zip file.
 - [ ] Test SUMO 1.12, so that it can be automatically installed through pip.
 - [ ] Add WSL instructions for Windows. 
 - [ ] Add RAM requirements to docs.
