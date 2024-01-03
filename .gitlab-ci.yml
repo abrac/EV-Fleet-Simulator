@@ -6,7 +6,7 @@ cache:
 
 before_script:
   - cd docs
-  - gem install bundler
+  - gem install bundler -v 2.4.22
   - bundle install
   - cd ..
 
