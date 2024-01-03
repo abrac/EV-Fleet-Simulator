@@ -12,10 +12,11 @@ def main(scenario_dir: Path):
 
         timedelta = dt.timedelta(seconds=cumtime)
         days = timedelta.days
+        date = f'1900-01-{days+1:02d}'
         hms = str(timedelta).split(', ')[-1]
         hour, minute, second = hms.split(':')
         new_hour = int(hour)  # * 24
-        new_time = f'{days}d {new_hour:02d}:{minute}:{second}'
+        new_time = f'{date} {new_hour:02d}:{minute}:{second}'
 
         return new_time
 
