@@ -2,6 +2,8 @@
      view this file. Just search the web for a nice markdown editor (like
      Ghostwriter). -->
 
+- [ ] Critical!!!! Make sure the "monolithic" folder does not get copied during the splitting process for GTFS EV outputs.
+- [ ] Create a fork of gtfs2gps at version 0.6-0
 - [ ] Create a script which automatically calls GTFS_Convert, calls GTFS_Split, and extracts the GTFS.zip file.
 - [ ] Test SUMO 1.12, so that it can be automatically installed through pip.
 - [ ] Add WSL instructions for Windows. 

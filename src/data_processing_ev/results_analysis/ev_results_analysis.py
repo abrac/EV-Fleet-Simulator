@@ -105,6 +105,8 @@ class Data_Analysis:
                          input data format is GTFS, the colum will be converted
                          to timedeltas.
         """
+        # FIXME Deprecate secs_to_dts=false
+
         # Read the csv
         ev_csv = dpr.decompress_file(ev_csv, **kwargs)
         ev_df = pd.read_csv(ev_csv, sep=delim,
@@ -123,17 +125,11 @@ class Data_Analysis:
         #         date-time objects. Currently adding a flag in function
         #         arguments...
         if (secs_to_dts):
-            if self.input_data_fmt == dpr.DATA_FMTS['GPS']:
-                date_arr_str = ev_csv.parents[0].name.split('-')
-                date_arr = [int(date_el) for date_el in date_arr_str]
-                date = dt.date(*date_arr)
-                ev_df['timestep_time'] = pd.to_datetime(
-                    ev_df['timestep_time'], unit='s', origin=date)
-            elif self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
-                ev_df['timestep_time'] = pd.to_timedelta(
-                    ev_df['timestep_time'], unit='seconds')
-            else:
-                raise ValueError(dpr.DATA_FMT_ERROR_MSG)
+            date_arr_str = ev_csv.parents[0].name.split('-')
+            date_arr = [int(date_el) for date_el in date_arr_str]
+            date = dt.date(*date_arr)
+            ev_df['timestep_time'] = pd.to_datetime(
+                ev_df['timestep_time'], unit='s', origin=date)
         else:
             # This option is used if the column is already in a datetime
             # format. This is the case when generating fleet statistics.
@@ -310,7 +306,7 @@ class Data_Analysis:
         # Convert the timestep_time column to datetimes if the current dtype is
         # timedelta.
         if pd.api.types.is_timedelta64_ns_dtype(time):
-            time = dt.datetime(2000, 1, 1, 0, 0) + time
+            time = dt.datetime(1900, 1, 1, 0, 0) + time
 
         # Variables needed in plots
         # Approx_distance in km. Note: `ev_df['vehicle_speed']` is in m/s.
@@ -530,10 +526,10 @@ class Data_Analysis:
                     times = []
                     for _, frequency_definition in frequency_definitions.iterrows():
                         service_start_time = dt.datetime(
-                            2000, 1, 1, *[int(x) for x in frequency_definition[
+                            1900, 1, 1, *[int(x) for x in frequency_definition[
                                 'start_time'].split(':')])
                         service_end_time = dt.datetime(
-                            2000, 1, 1, *[int(x) for x in frequency_definition[
+                            1900, 1, 1, *[int(x) for x in frequency_definition[
                                 'end_time'].split(':')])
                         headway_time = dt.timedelta(
                             seconds=int(frequency_definition['headway_secs']))
@@ -548,18 +544,19 @@ class Data_Analysis:
                     hour, minute, second = [
                         int(x) for x in
                         stop_times.iloc[0]['arrival_time'].split(':')]
-                    times = [dt.datetime(2000, 1, 1, hour, minute, second)]
+                    times = [dt.datetime(1900, 1, 1, hour, minute, second)]
 
                 departure_delay = _get_departure_delay(trip_id)
 
+                # Create Graphs folder.
+                graphdir = self.graphs_dir.joinpath(trip_id, trip_segment)
+                graphdir.mkdir(parents=True, exist_ok=True)
                 if plotting:
                     # Plot the trip itinary.
                     plt_fig = self.__plot_summary_graph(
                         trip_df, plt_title="Simulation output of experiment: "
                         + f"{trip_id} > {trip_segment} -- itinary")
-                    # Create Graphs folder and save plot
-                    graphdir = self.graphs_dir.joinpath(trip_id, trip_segment)
-                    graphdir.mkdir(parents=True, exist_ok=True)
+                    # Save plot
                     save_path = graphdir.joinpath('trip_itinary.svg')
                     plt_fig.savefig(save_path)
                     # Save interactive figure
@@ -573,7 +570,8 @@ class Data_Analysis:
                 for time in times:
                     trip_segment = trip_df.copy()
                     trip_segment['timestep_time'] = (
-                        trip_segment['timestep_time'] + time -
+                        trip_segment['timestep_time'] +
+                        (time - dt.datetime(1900, 1, 1, 0, 0)) -
                         departure_delay)
                     trip_instances.append(trip_segment)
 
@@ -655,9 +653,7 @@ class Data_Analysis:
 
                 # Save aggregated trip_instances dataframe
                 trip_mean_profile.to_csv(graphdir.joinpath(
-                    'battery.out.aggregated.csv'))  # TODO FIXME Make sure that
-                    # `ev_fleet_stats` reads *this* csv file in the case of
-                    # GTFS mode.
+                    'battery.out.aggregated.csv'))
 
                 if plotting:
                     # Plot aggregated trip_instances
@@ -738,7 +734,9 @@ class Data_Analysis:
                     if self.input_data_fmt == dpr.DATA_FMTS['GPS']:
                         pass
                     elif self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
-                        battery_csv = battery_csv.parent.joinpath(
+                        battery_csv = self.graphs_dir.joinpath(
+                            battery_csv.parents[1].name,
+                            battery_csv.parents[0].name,
                             'battery.out.aggregated.csv')
                     else:
                         raise ValueError(dpr.DATA_FMT_ERROR_MSG)
@@ -753,7 +751,7 @@ class Data_Analysis:
                         elif self.input_data_fmt == dpr.DATA_FMTS['GTFS']:
                             ev_df = self.__ev_csv_to_df(
                                 battery_csv, secs_to_dts=False,
-                                delim=',', **kwargs).iloc[:-1]
+                                **kwargs).iloc[:-1]
                         else:
                             raise ValueError(dpr.DATA_FMT_ERROR_MSG)
                         # If ev_df ends on a different date than it started,
@@ -1299,10 +1297,10 @@ class Data_Analysis:
                         frequencies_df['trip_id'] == trip_id]
                     for _, frequency_definition in frequency_definitions.iterrows():
                         service_start_time = dt.datetime(
-                            2000, 1, 1, *[int(x) for x in frequency_definition[
+                            1900, 1, 1, *[int(x) for x in frequency_definition[
                                 'start_time'].split(':')])
                         service_end_time = dt.datetime(
-                            2000, 1, 1, *[int(x) for x in frequency_definition[
+                            1900, 1, 1, *[int(x) for x in frequency_definition[
                                 'end_time'].split(':')])
                         headway_time = dt.timedelta(
                             seconds=int(frequency_definition['headway_secs']))

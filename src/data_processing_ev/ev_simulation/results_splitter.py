@@ -296,4 +296,7 @@ def split_results(scenario_dir: Path, **kwargs):
         new_location.parent.mkdir(parents=True, exist_ok=True)
         fcd_file.rename(new_location)
 
+    # FIXME XXX Remove
+    dpr.LOGGERS['main'].warn('If using GTFS inputs, please delete the EV_Simulation/EV_Simulation_Outputs/monolithic/ folder.')
+
     _create_csvs(scenario_dir, **kwargs)

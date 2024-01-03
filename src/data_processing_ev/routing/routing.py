@@ -481,37 +481,23 @@ def build_routes(scenario_dir: Path, **kwargs):
     stop_labels_all = []
     for stop_labels_file in stop_labels_files:
         stop_labels_ev = pd.read_csv(stop_labels_file)
-        # Convert the timecolumn to datetimes or timedeltas.
-        if input_data_fmt == dpr.DATA_FMTS['GPS']:
-            stop_labels_ev['Time'] = pd.to_datetime(stop_labels_ev['Time'])
-        elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
-            stop_labels_ev['Time'] = pd.to_timedelta(stop_labels_ev['Time'])
-        else: raise ValueError(dpr.DATA_FMT_ERROR_MSG)
+        # Convert the timecolumn to datetimes.
+        stop_labels_ev['Time'] = pd.to_datetime(stop_labels_ev['Time'])
 
         # Make the time column the index.
         stop_labels_ev = stop_labels_ev.set_index('Time')
         # Take the time index.
         time_index = stop_labels_ev.index.get_level_values('Time')
         # Set the dates in the time index as the new index.
-        if input_data_fmt == dpr.DATA_FMTS['GPS']:
-            stop_labels_ev = stop_labels_ev.set_index(time_index.date)
-        elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
-            stop_labels_ev = stop_labels_ev.set_index(time_index.days)
-        else: raise ValueError(dpr.DATA_FMT_ERROR_MSG)
+        stop_labels_ev = stop_labels_ev.set_index(time_index.date)
         # Rename the index to 'Date'
         stop_labels_ev.index.names = ['Date']
 
         # Seperate the dataframe by date.
         # For each date in the index:
-        if input_data_fmt == dpr.DATA_FMTS['GPS']:
-            for date in sorted(set(time_index.date)):
-                # Append the stop_labels on that date to the stop_labels_all list.
-                stop_labels_all.append(stop_labels_ev.loc[[date]])
-        elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
-            for date in sorted(set(time_index.days)):
-                # Append the stop_labels on that date to the stop_labels_all list.
-                stop_labels_all.append(stop_labels_ev.loc[[date]])
-        else: raise ValueError(dpr.DATA_FMT_ERROR_MSG)
+        for date in sorted(set(time_index.date)):
+            # Append the stop_labels on that date to the stop_labels_all list.
+            stop_labels_all.append(stop_labels_ev.loc[[date]])
 
     # Ask user if s/he wants to skip existing rou.xml files
     _ = dpr.auto_input("Would you like to skip existing rou.xml files? y/[n]",

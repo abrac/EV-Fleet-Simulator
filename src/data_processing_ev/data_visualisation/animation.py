@@ -8,27 +8,19 @@ from pathlib import Path
 from tqdm import tqdm
 from typing import Iterable, Generator
 import data_processing_ev as dpr
+from datetime import datetime as dt
 
 
 def _reformat_time(time_old, **kwargs):
     # time format: "year/month/day hr12:min:sec meridiem" -->
     # "year-month-day{T}hr24:min:sec"
     time_old = str(time_old)
-    input_data_fmt = kwargs.get('input_data_fmt')
-    if input_data_fmt == dpr.DATA_FMTS['GPS']:
-        (date, time) = time_old.split(' ')
-        (year, month, day) = date.split("-")
-        (hr24_str, minute, sec) = time.split(":")
-        hr24 = int(hr24_str)
-        # hr24 = (int(hr12) % 12) + (12 if meridiem == "PM" else 0)
-        return_str = f"{year}-{month}-{day}T{hr24:02d}:{minute}:{sec}"
-    elif input_data_fmt == dpr.DATA_FMTS['GTFS']:
-        (date, time) = time_old.split(' ')
-        (year, month) = ['2000', '01']
-        day = int(date[:-1]) + 1
-        (hr24_str, minute, sec) = time.split(":")
-        hr24 = int(hr24_str)
-        return_str = f"{year}-{month}-{day:02d}T{hr24:02d}:{minute}:{sec}"
+    (date, time) = time_old.split(' ')
+    (year, month, day) = date.split("-")
+    (hr24_str, minute, sec) = time.split(":")
+    hr24 = int(hr24_str)
+    # hr24 = (int(hr12) % 12) + (12 if meridiem == "PM" else 0)
+    return_str = f"{year}-{month}-{day}T{hr24:02d}:{minute}:{sec}"
     return return_str
 
 
