@@ -34,9 +34,10 @@ def _split_ev_xml(ev_xml_file: Path, scenario_dir: Path, skipping: bool,
     ev_name = ev_xml_file.parent.name
     print(f"### {ev_name} ###")
 
-    output_dir = scenario_dir.joinpath(
-        'EV_Simulation', 'EV_Simulation_Outputs', ev_name)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if ev_name != 'monolithic':
+        output_dir = scenario_dir.joinpath(
+            'EV_Simulation', 'EV_Simulation_Outputs', ev_name)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     # If there is something in the directory and you are skipping non-empty
     # directories, then exit. Otherwise, split the SUMO outputs.
@@ -295,8 +296,5 @@ def split_results(scenario_dir: Path, **kwargs):
             fcd_file.parent.name, fcd_file.name)
         new_location.parent.mkdir(parents=True, exist_ok=True)
         fcd_file.rename(new_location)
-
-    # FIXME XXX Remove
-    dpr.LOGGERS['main'].warn('If using GTFS inputs, please delete the EV_Simulation/EV_Simulation_Outputs/monolithic/ folder.')
 
     _create_csvs(scenario_dir, **kwargs)
