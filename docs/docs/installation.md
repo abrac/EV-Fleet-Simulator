@@ -46,7 +46,6 @@ Please install the following software before installing `EV-Fleet-Sim`. Install 
 [7]: https://wiki.openstreetmap.org/wiki/Osmconvert
 [8]: https://wiki.openstreetmap.org/wiki/Osmosis
 [9]: https://visualstudio.microsoft.com/visual-cpp-build-tools/
-[12]: https://zwbetz.com/how-to-add-a-binary-to-your-path-on-macos-linux-windows/#windows-gui
 
 
 SUMO Compilation Dependencies
@@ -77,14 +76,14 @@ When you install EV-Fleet-Sim with Pip, it will automatically install all the de
 R packages
 ----------
 
-| Name               | Version | Description                                        |
-|--------------------|:-------:|----------------------------------------------------|
-| +[gtfs2gps][1][^6] |  1.6-0  | Converts GTFS public transport data to GPS traces. |
-| +colorout[2][^6]   |   any   |                                                    |
-| +here[^6]          |   any   |                                                    |
+| Name                | Version | Description                                        |
+|---------------------|:-------:|----------------------------------------------------|
+| +[gtfs2gps][10][^6] |  1.6-0  | Converts GTFS public transport data to GPS traces. |
+| +[colorout][11][^6] |   any   |                                                    |
+| +here[^6]           |   any   |                                                    |
 
-[1]: https://github.com/ipeaGIT/gtfs2gps/
-[2]: https://github.com/jalvesaq/colorout
+[10]: https://github.com/ipeaGIT/gtfs2gps/
+[11]: https://github.com/jalvesaq/colorout
 
 Installing EV-Fleet-Sim
 =======================
